@@ -514,7 +514,6 @@ class AIJsonGeneratorGUI(tk.Tk):
         self.export_dir = tk.StringVar(value=str(default_worktree_export_dir()))
         self.overwrite = tk.BooleanVar(value=False)
         self.copy_schema = tk.BooleanVar(value=True)
-        self.create_log = tk.BooleanVar(value=True)
         self.export_as_zip = tk.BooleanVar(value=False)
         self.compact_export = tk.BooleanVar(value=False)
         self.create_export_as_zip = tk.BooleanVar(value=True)
@@ -1838,6 +1837,25 @@ class AIJsonGeneratorGUI(tk.Tk):
 
         threading.Thread(target=runner, name=f"ai-json-generator-{task_name}", daemon=True).start()
 
+    def _start_loadingbar_thread(self, task_name: str, worker, thread_name: str, *, set_busy: bool = False) -> None:
+        """Start a custom-result worker while still routing it through the LoadingBar."""
+        if set_busy and self._active_task and self._active_task != task_name:
+            self._set_progress(f"{task_name}: waiting for active task {self._active_task}", None, 0)
+            return
+        if set_busy:
+            self._set_busy(task_name)
+        self._set_progress(f"{task_name}: started", None, 0)
+
+        def runner() -> None:
+            try:
+                worker()
+            except Exception as exc:
+                self._task_queue.put(("loadingbar_thread_error", task_name, exc))
+            finally:
+                self._task_queue.put(("loadingbar_thread_done", task_name))
+
+        threading.Thread(target=runner, name=thread_name, daemon=True).start()
+
     def _poll_task_queue(self) -> None:
         processed_events = 0
         max_events_per_tick = 120
@@ -1911,6 +1929,15 @@ class AIJsonGeneratorGUI(tk.Tk):
                 elif kind == "create_ecosystem_probe_result":
                     _, generation, payload = event
                     self._apply_ecosystem_probe_result(generation, payload)
+                elif kind == "loadingbar_thread_done":
+                    _, task_name = event
+                    if self._active_task == task_name:
+                        self._set_busy(None)
+                elif kind == "loadingbar_thread_error":
+                    _, task_name, exc = event
+                    if self._active_task == task_name:
+                        self._set_busy(None)
+                    self._set_progress(f"{task_name}: failed: {exc}", 0)
         except queue.Empty:
             pass
         # Do not drain an unbounded terminal-output queue in one Tk tick. Long
@@ -7726,7 +7753,7 @@ raise SystemExit(2)
             "operator_research_plan": self._create_operator_research_plan(config),
             "ai_response_callback": self._ai_response_callback_contract(),
             "brutally_honest_introductions": self._brutally_honest_intro_enabled(),
-            "progress_manifest": self._progress_json_file_name(),
+            "selected_progress_callback": self._selected_progress_callback_manifest_entry(config),
             "dependency_abstraction": layer,
             "terminal": {
                 "auto_join": True,
@@ -10203,7 +10230,7 @@ raise SystemExit(2)
             duration_ms = int((time.monotonic() - started) * 1000)
             self._task_queue.put(("create_nvm_probe_result", generation, version, status, duration_ms))
 
-        threading.Thread(target=worker, name="create-nvm-probe", daemon=True).start()
+        self._start_loadingbar_thread("NVM probe", worker, "create-nvm-probe")
         return ""
 
     def _sync_gradle_version_from_stack_switch(self, config: dict | None = None, reason: str = "stack_changed") -> str:
@@ -10249,7 +10276,7 @@ raise SystemExit(2)
             duration_ms = int((time.monotonic() - started) * 1000)
             self._task_queue.put(("create_gradle_probe_result", generation, version, status, duration_ms))
 
-        threading.Thread(target=worker, name="create-gradle-probe", daemon=True).start()
+        self._start_loadingbar_thread("Gradle probe", worker, "create-gradle-probe")
         return ""
 
     def _node_version_from_spec(self, spec: object) -> str:
@@ -11134,7 +11161,7 @@ raise SystemExit(2)
                 self._task_queue.put(("create_terminal_status", f"Term stopped" if exit_code is None else f"Term stopped: exit={exit_code}"))
                 self._task_queue.put(("create_terminal_output", f"[terminal] stopped exit={exit_code}"))
 
-        threading.Thread(target=reader, name="create-terminal-reader", daemon=True).start()
+        self._start_loadingbar_thread("Create terminal reader", reader, "create-terminal-reader")
         return True
 
     def _restart_create_terminal_session(self) -> bool:
@@ -11898,7 +11925,7 @@ raise SystemExit(2)
                 "routine": "develop_feature_from_successful_build_or_verified_start_tree",
                 "start_requirement": "successful_timeline_build_or_start_working_dir_reference",
                 "profiles": base["profiles"] + ["RepositoryManagement", "CreatePipeline", "ChangedFilesOnly"],
-                "references": base["references"] + ["create_timeline_stop_progress_reference", "process_log_reference", "summary_documentation_reference"],
+                "references": base["references"] + ["create_timeline_stop_progress_reference", "tokens_reference", "handoff_documentation_reference"],
                 "roles": base["roles"] + ["micro_task_operator", "repository_management_prompt_operator", "create_export_boundary_operator"],
                 "weights": base["weights"] + ["micro_tasks_standard", "create_pipeline_production_standard", "export_traceability_standard"],
                 "prompt_essentials": base["prompt_essentials"] + [
@@ -11913,7 +11940,7 @@ raise SystemExit(2)
                 "routine": "refactor_verified_stack",
                 "start_requirement": "successful_timeline_build_or_start_working_dir_reference",
                 "profiles": base["profiles"] + ["CleanProject", "RepositoryManagement", "ChangedFilesOnly"],
-                "references": base["references"] + ["clean_project_reference", "process_log_reference", "summary_documentation_reference"],
+                "references": base["references"] + ["clean_project_reference", "tokens_reference", "handoff_documentation_reference"],
                 "roles": base["roles"] + ["repository_management_prompt_operator", "create_project_mapping_operator", "create_export_boundary_operator"],
                 "weights": base["weights"] + ["clean_project_standard", "documentation_traceability_standard", "export_traceability_standard"],
                 "prompt_essentials": base["prompt_essentials"] + [
@@ -14277,7 +14304,7 @@ raise SystemExit(2)
             widget.insert("1.0", compiled.rstrip() + "\n")
             self._show_prompt_builder_context_preview()
             self._apply_text_widget_theme()
-            self._set_progress("Prompt Builder: @ shortcuts human-compiled", 1, 1)
+            self._set_progress(self._ui_text("Prompt Builder: @ shortcuts compiled", "Prompt Builder: @ shortcuts compiled"), 1, 1)
         except Exception as exc:
             messagebox.showerror("Compile shortcuts", str(exc))
 
@@ -15514,7 +15541,7 @@ raise SystemExit(2)
             except Exception:
                 return self._with_brutally_honest_intro(text_id, template, language)
         defaults = {
-            "prompt_intro": "This is a human-compiled Create prompt. Use the manifests as evidence, but execute according to this prompt.",
+            "prompt_intro": "This prompt is a clear work order. Use the handoff files as evidence, but execute according to the readable task.",
             "operator_confirm_then_execute": "List the active roles first and wait for confirmation before implementation.",
             "operator_start_immediately": "You may start directly with the selected roles.",
             "operator_sequential_roles": "Process roles and references sequentially and keep the order visible.",
@@ -15522,6 +15549,20 @@ raise SystemExit(2)
             "research_not_required": "Mandatory per-role research is not enabled; still verify uncertain or time-sensitive facts.",
             "chain_intro": "The following schema chain is compiled as a human work reference. Use it as logic, not as raw configuration.",
             "validation_intro": "Accept the result only when goal, scope, changed files, validation, rollback and known gaps are traceable.",
+            "tasks_target_phase_instruction": "Use this enabled target as the boundary for this phase. Work only inside this target path and ignore inactive target rows.",
+            "tasks_target_phase_source": "Source: active WRITE_AI_RULES_TO target checkboxes. Detected defaults and inactive rows do not create TASKS phases.",
+            "tasks_schema_phase_instruction": "Use this selected schema or boilerplate row as one concrete phase for the active Create target.",
+            "tasks_schema_phase_source": "Source: active UI checkbox or selection state. USER_PROMPT.txt explains the readable task; TOKENS.json carries concrete values.",
+            "tasks_target_fallback": "No enabled target checkbox or checkbox-active boilerplate/schema row was resolved. TASKS.TXT ignores inactive targets and unselected catalog rows.",
+            "tasks_export_seed_instruction": "Write TASKS.TXT as a readable work order for the active project context. Create phases only from enabled targets and selected schema/boilerplate rows. Merge the left Own Prompt once as an additional task phase.",
+            "tasks_merge_policy": "USER_PROMPT.txt is not parsed into TASKS.TXT. TASKS phases come from enabled target checkboxes, selected schema/boilerplate rows and the left Own Prompt once.",
+            "tasks_human_intro": "TASKS.TXT lists the concrete work phases for this export in simple words. It uses Mode, Routine, Stack, enabled targets and selected schema rows; the left Own Prompt is merged once when present.",
+            "tasks_preview_heading": "### Prompt-Builder TASKS.TXT hook - readable tasks",
+            "tasks_preview_description": "Preview/Compile shows the TASKS.TXT export hook for traceability. The actual TASKS.TXT file is written only during Export; if the left Own Prompt contains text, Export merges it once as an additional task instruction.",
+            "tasks_origin_behavior": "Behavior: Export hook. Preview and Compile show only the reference; the file itself is written during Export and is not a Create-tab selection or catalog entry.",
+            "tasks_compiled_instruction_heading": "### Clear work instruction",
+            "cmd_action_label": "Action",
+            "cmd_boundary_label": "Boundary",
         }
         return self._with_brutally_honest_intro(text_id, defaults.get(text_id, text_id).format(**{key: str(value) for key, value in values.items()}), language)
 
@@ -15801,7 +15842,7 @@ raise SystemExit(2)
                 lines.extend(item_lines)
         template = self._humanize_prompt_value(entry.get("template") or "")
         if template and profile.get("id") == "hoch":
-            lines.append("- Human-compiled template:")
+            lines.append("- Readable template:")
             for line in template.splitlines()[:10]:
                 clean = self._humanize_prompt_value(line)
                 if clean:
@@ -15827,10 +15868,9 @@ raise SystemExit(2)
         if compact and export_as_zip:
             rows.append(("*_compact_context.zip", "contains the recursively assembled project files and control artifacts of the compact export"))
         rows.extend([
-            ("USER_PROMPT.txt", "human-compiled work instruction; no raw configuration and no full ID list"),
+            ("USER_PROMPT.txt", "readable work instruction; no raw configuration and no full ID list"),
             ("TOKENS.json", "single source of concrete @token values used by USER_PROMPT.txt, TASKS.TXT, AI-RULES.json and schema handoff resources"),
             ("CMD.json", "compact machine-readable CMD contract for START, RESTART, REFACTOR, SKIP, EXTEND, SHRINK, FIX and STATUS"),
-            (self._progress_json_file_name(), "compact callback/status contract for create responses"),
         ])
         if compact:
             rows.extend([
@@ -16133,8 +16173,8 @@ raise SystemExit(2)
             lines.extend([
                 f"### {item.get('command')}",
                 f"Applies to: {item.get('applies_to')}",
-                f"Instruction: {item.get('instruction')}",
-                f"Guardrail: {item.get('guardrail')}",
+                f"{self._export_human_prompt_text('cmd_action_label')}: {item.get('instruction')}",
+                f"{self._export_human_prompt_text('cmd_boundary_label')}: {item.get('guardrail')}",
                 "",
             ])
         lines.append("## Guardrails")
@@ -16543,7 +16583,7 @@ raise SystemExit(2)
         config = self._current_create_config()
         record = self._active_successful_create_build_for_current_stack() or {}
         lines: list[str] = [
-            "# Human-compiled Normal/Generator export prompt",
+            "# Readable Normal/Generator export prompt",
             "",
             self._export_human_prompt_text("prompt_intro"),
             "",
@@ -16601,7 +16641,7 @@ raise SystemExit(2)
             "## Export file contract",
             "- USER_PROMPT.txt is the human handoff and stays outside ZIP exports.",
             "- TASKS.TXT is generated during Export from Mode/Routine/Stack and stays outside ZIP exports; left CUSTOM_USER_PROMPT is merged when present.",
-            "- CMD.json, PROGRESS.json and schema/ remain compact machine-readable evidence; do not replace USER_PROMPT.txt or TASKS.TXT with USER_PROMPT.json or TASK.json.",
+            "- CMD.json, MANIFEST.json and schema/ remain compact machine-readable evidence; do not replace USER_PROMPT.txt or TASKS.TXT with USER_PROMPT.json or TASK.json.",
             "- USER_PROMPT.txt carries roles, references, schema chain and target context in human-readable form.",
             "",
             "## Validation and response contract",
@@ -16673,7 +16713,7 @@ raise SystemExit(2)
             r"Cross-tab control",
             r"Shortcut commands",
             r"Manifest-Guided Project Processing",
-            r"AI-CALLBACK\s*/\s*PROGRESS\.json",
+            r"AI-CALLBACK\s*/\s*selected callback",
             r"Project-scope reference\s+preview",
         ]
         for pattern in forbidden_patterns:
@@ -16888,7 +16928,7 @@ raise SystemExit(2)
         if not body:
             return ""
         pattern = re.compile(
-            r"(?ms)^### Prompt-Builder TASKS\.TXT hook — human-compiled tasks\n.*?(?=^### Kompilierter Prompt\n|\Z)"
+            r"(?ms)^### Prompt-Builder TASKS\.TXT hook - readable tasks\n.*?(?=^### Kompilierter Prompt\n|\Z)"
         )
         return pattern.sub("", body).strip()
 
@@ -16934,14 +16974,27 @@ raise SystemExit(2)
                 overlay = overlay[:end_match.start()].strip()
             return overlay
 
-        # TASKS.TXT exports store the real merge under this heading. If such a
-        # file/block is pasted into the left box, recover only that user part.
+        # Older TASKS.TXT exports stored the real merge under this heading. If
+        # such a file/block is pasted into the left box, recover only that user
+        # part. Current TASKS.TXT exports keep the Own Prompt once as its phase,
+        # so support that shape too without re-importing generated instructions.
         merged_marker = "## Merged Own Prompt input"
         if merged_marker in raw:
             overlay = raw.split(merged_marker, 1)[1].strip()
             end_match = re.search(r"(?m)^##\s+(?:Phase\s+\d+|Export task seed|Origin|Boilerplate-)", overlay)
             if end_match:
                 overlay = overlay[:end_match.start()].strip()
+            return "" if overlay in {"- leer", "- empty"} else overlay
+
+        own_phase_match = re.search(
+            r"(?ms)^##\s+Phase\s+\d+:\s+Own Weighted Prompt\s*\nOriginal:\s*(.*?)(?=\n\s*###\s+Clear work instruction\b|\n\s*##\s+Phase\s+\d+:|\Z)",
+            raw,
+        )
+        if own_phase_match:
+            overlay = own_phase_match.group(1).strip()
+            own_heading = "# Prompt Builder Own Prompt input"
+            if overlay.startswith(own_heading):
+                overlay = overlay[len(own_heading):].strip()
             return "" if overlay in {"- leer", "- empty"} else overlay
 
         own_marker = "# Prompt Builder Own Prompt input"
@@ -16962,7 +17015,6 @@ raise SystemExit(2)
         # overlay marker, it is process context, not a user TASKS.TXT input.
         lower_head = "\n".join(raw.splitlines()[:10]).lower()
         generated_markers = (
-            "human-compiled create prompt",
             "human classification for the prompt builder",
             "kompilierter prompt",
             "# tasks.txt",
@@ -17176,12 +17228,12 @@ raise SystemExit(2)
                 f"Relative path: {row.get('relative_path') or '.'}",
                 f"Target kind: {row.get('path_type') or row.get('build_target') or 'target'}",
                 f"AI target: {row.get('ai_target') or '-'}",
-                "Instruction: Treat this enabled target checkbox as its own execution boundary. Do not create TASKS phases for inactive target rows.",
+                self._export_human_prompt_text("tasks_target_phase_instruction"),
             ]
             profiles = row.get("boilerplate_profiles") if isinstance(row.get("boilerplate_profiles"), list) else []
             if profiles:
                 lines.append("- Checkbox-active target boilerplates: " + ", ".join(str(item) for item in profiles[:24]))
-            lines.append("Manifest source: active WRITE_AI_RULES_TO target checkboxes; inactive detected/default targets are intentionally ignored for TASKS.TXT.")
+            lines.append(self._export_human_prompt_text("tasks_target_phase_source"))
             add("Target: " + title, "\n".join(lines))
 
         # 2) Schema/Boilerplate rows: direct checkbox-active rows only.  Do not
@@ -17211,7 +17263,7 @@ raise SystemExit(2)
         if not phases:
             add(
                 "Schema/Target fallback",
-                "# Schema/Target fallback\nNo enabled target checkbox or checkbox-active boilerplate/schema row was resolved. TASKS.TXT intentionally ignores inactive targets and unselected catalog rows.",
+                "# Schema/Target fallback\n" + self._export_human_prompt_text("tasks_target_fallback"),
             )
         return phases
 
@@ -17224,8 +17276,8 @@ raise SystemExit(2)
             f"# Schema/Boilerplate Phase: {self._humanize_prompt_value(schema_key)} / {label}",
             f"Schema family: {schema_key}",
             f"Schema id: {row_id or '-'}",
-            "Instruction: Apply this checkbox-active schema/boilerplate row as an execution phase for the active Create target context.",
-            "Manifest source: active UI checkbox/selection state; USER_PROMPT.txt remains the machine-readable detail source.",
+            self._export_human_prompt_text("tasks_schema_phase_instruction"),
+            self._export_human_prompt_text("tasks_schema_phase_source"),
         ]
         field_order = [
             "intent", "user_goal", "context_hint", "description", "policy", "source_policy",
@@ -17305,7 +17357,7 @@ raise SystemExit(2)
             f"Boilerplate intent: {plan_intent}",
             f"Weights: {weight_summary}",
             f"Source of truth: {source_policy}",
-            "Task: Export a human-compiled TASKS.TXT handoff for the active project context. Declare enabled target checkboxes and checkbox-active boilerplate/schema rows as phases, excluding file-type catalog rows; merge the left Own Prompt only once as an additional weighted human instruction.",
+            self._export_human_prompt_text("tasks_export_seed_instruction"),
         ]
         return "\n".join(line.rstrip() for line in lines if line is not None).strip()
 
@@ -17432,7 +17484,7 @@ raise SystemExit(2)
             "custom_user_prompt_text": user_raw,
             "custom_user_prompt_merged": bool(str(user_raw or "").strip()),
             "task_phases": phases,
-            "merge_policy": "USER_PROMPT.txt is not parsed into TASKS.TXT. TASKS phases are generated from enabled target checkboxes plus checkbox-active boilerplate/schema rows; left Own Prompt is merged exactly once.",
+            "merge_policy": self._export_human_prompt_text("tasks_merge_policy"),
         }
         return self._enrich_tasks_sidecar_payload(payload)
 
@@ -17626,11 +17678,7 @@ raise SystemExit(2)
         if not isinstance(payload, dict):
             return payload
         context = self._tasks_boilerplate_context()
-        payload["human_intro"] = (
-            "Diese Datei ist eine automatische Nebenfunktion des Prompt-Builder-Tabs. "
-            "Sie erstellt beim Export aus Mode/Routine/Stack, aktivierten Target-Checkboxen und checkbox-aktiven Boilerplate-/Schema-Zeilen ohne File-Type-Katalogzeilen eine TASKS.TXT und merged den linken CUSTOM_USER_PROMPT genau einmal als zusätzliche menschliche Task-Phase. "
-            "Der Human-API-Engineering-Mantel wird einmal global eingebettet und nicht als eigene TASKS-Phase wiederholt."
-        )
+        payload["human_intro"] = self._export_human_prompt_text("tasks_human_intro")
         payload["boilerplate_context"] = self._prune_false_export_values({
             "mode": context.get("mode"),
             "stack": context.get("stack"),
@@ -17669,14 +17717,14 @@ raise SystemExit(2)
         lines = [
             "# TASKS.TXT",
             "",
-            str(payload.get("human_intro") or "The left Prompt Builder input was compiled into human task phases."),
+            str(payload.get("human_intro") or self._export_human_prompt_text("tasks_human_intro")),
             "",
             "## Origin",
             "- Token contract: Resolve @tokens_file first; all @token values are serialized from TOKENS.json and not inferred from this text.",
             f"- Source: {payload.get('source')}",
             f"- Parser: {payload.get('parsed_as')}",
             f"- Erstellt: {payload.get('created_at')}",
-            "- Behavior: Export-Hook; Preview/Compile zeigt nur die Referenz, die Datei selbst wird erst beim Export geschrieben; keine Create-Tab-Auswahl und kein Catalog Entry.",
+            "- " + self._export_human_prompt_text("tasks_origin_behavior"),
             "",
             "## Boilerplate- und Weight-Kontext",
             "- Mode: @create_mode",
@@ -17699,12 +17747,9 @@ raise SystemExit(2)
             str(payload.get("generated_export_task_text") or "").strip() or "- leer",
             "",
         ])
-        if str(payload.get("custom_user_prompt_text") or "").strip():
-            lines.extend([
-                "## Merged Own Prompt input",
-                str(payload.get("custom_user_prompt_text") or "").strip(),
-                "",
-            ])
+        # The left Own Prompt is represented exactly once below as the
+        # "Own Weighted Prompt" phase. Do not also echo it as a separate raw
+        # block, or a pasted TASKS.TXT can recursively duplicate user text.
         lines.extend([
             "## Target/schema TASKS context",
             str(payload.get("recursive_export_context_text") or "").strip() or "- leer",
@@ -17718,7 +17763,7 @@ raise SystemExit(2)
                 f"## Phase {phase.get('phase')}: {phase.get('title')}",
                 f"Original: {phase.get('text')}",
                 "",
-                "### Human-compiled instruction",
+                self._export_human_prompt_text("tasks_compiled_instruction_heading"),
                 str(phase.get("compiled_instruction") or self._compiled_task_phase_instruction(phase)),
             ])
             subtasks = phase.get("subtasks") if isinstance(phase.get("subtasks"), list) else []
@@ -17737,8 +17782,8 @@ raise SystemExit(2)
         phases = payload.get("task_phases") if isinstance(payload.get("task_phases"), list) else []
         context = payload.get("boilerplate_context") if isinstance(payload.get("boilerplate_context"), dict) else {}
         lines = [
-            "### Prompt-Builder TASKS.TXT hook — human-compiled tasks",
-            "Preview/Compile shows this TASKS.TXT export hook for traceability. The actual TASKS.TXT file is written only during Export; if the left Own Prompt contains text, Export merges it there as an additional human-formulated task instruction. The existing boilerplate/pipeline process remains intact.",
+            self._export_human_prompt_text("tasks_preview_heading"),
+            self._export_human_prompt_text("tasks_preview_description"),
             f"- Source: {payload.get('source')}",
             f"- Parser: {payload.get('parsed_as')}",
             f"- Phasen: {len(phases)}",
@@ -17757,7 +17802,7 @@ raise SystemExit(2)
                 lines.append(f"- Phase {phase.get('phase')}: {phase.get('title')} — {compiled}")
         return [line for line in lines if not self._is_false_export_line(line)]
 
-    def _write_tasks_sidecar_and_patch_manifest(self, export_dir: Path, payload: dict | None = None) -> None:
+    def _write_tasks_sidecar(self, export_dir: Path, payload: dict | None = None) -> None:
         payload = payload if isinstance(payload, dict) else self._create_tasks_sidecar_payload()
         if not payload or not str(payload.get("raw_text") or "").strip():
             return
@@ -17844,7 +17889,7 @@ raise SystemExit(2)
         display_target_path = self._compile_project_path_for_export(target_path, prompt_base)
         create_tree = self._compact_create_working_tree_context(prompt_base, config, record, self._scope_paths_for_worker()) if bool(profile.get("include_tree_preview", False)) else {}
         lines: list[str] = [
-            "# Human-compiled Create prompt",
+            "# Readable Create prompt",
             "",
             self._export_human_prompt_text(f"surface_{surface}_intro") or self._export_human_prompt_text("prompt_intro"),
             "",
@@ -17860,7 +17905,7 @@ raise SystemExit(2)
             f"- Target path: {display_target_path}",
             f"- Build-Ziel: {build_target}",
             f"- Export intelligence: {profile.get('label') or level}",
-            "- USER_PROMPT.txt is the human-readable work instruction; schema/, CMD.json and PROGRESS.json carry compact execution context.",
+            "- USER_PROMPT.txt is the human-readable work instruction; schema/, CMD.json and MANIFEST.json carry compact execution context.",
             "",
         ]
         lines.extend(self._human_operator_flow_lines(operator_flow, profile))
@@ -17895,7 +17940,7 @@ raise SystemExit(2)
         if self._create_export_absolute_paths_enabled():
             lines.append("- Absolute Projektpfade im Export: yes; ZIP-Mitgliedsnamen bleiben portabel projekt-relativ.")
         lines.extend([
-            "- Use project tree, USER_PROMPT, schema resources, dependency evidence and compact CMD/PROGRESS context as evidence sources; do not invent files, commands or frameworks.",
+            "- Use project tree, USER_PROMPT, schema resources, dependency evidence, CMD.json and MANIFEST.json as evidence sources; do not invent files, commands or frameworks.",
             "- Write only inside the resolved target/scope area and document every deviation as a known gap.",
         ])
         if create_tree:
@@ -18027,45 +18072,6 @@ raise SystemExit(2)
         """
         return self._compile_human_create_prompt_text(config, build_record, surface=surface)
 
-    def _progress_json_file_name(self) -> str:
-        return "PROGRESS.json"
-
-    def _progress_json_detail_mode(self, profile: dict | None = None) -> str:
-        profile = profile or self._export_intelligence_profile(self._create_export_intelligence_value())
-        level = str(profile.get("id") or self._create_export_intelligence_value() or "mittel").strip().lower()
-        if level == "niedrig":
-            return "compact"
-        if level == "hoch":
-            return "full"
-        return "standard"
-
-    def _progress_json_human_intro(self, profile: dict, callback_contract: dict) -> dict:
-        """English human-readable introduction for PROGRESS.json.
-
-        Export intelligence changes how much prose is embedded, never whether
-        PROGRESS.json is written. AI_LANGUAGE is not used here because exports
-        and generated artifacts are intentionally English-only.
-        """
-        detail_mode = self._progress_json_detail_mode(profile)
-        base = {
-            "title": "AI-CALLBACK response design",
-            "export_intelligence": str(profile.get("label") or self._create_export_intelligence_value()),
-            "detail_mode": detail_mode,
-            "purpose": "PROGRESS.json describes the mathematical response design for AI status messages. It controls only response shape, not scope, tool rights, validation or file access.",
-            "canvas_rule": "The AI must design its own clear text canvas and show the specified mathematical values visibly instead of hiding them in prose.",
-            "active_selection": f"Status={callback_contract.get('template')}; Design={callback_contract.get('design_type')}",
-        }
-        if detail_mode == "compact":
-            base["introduction"] = "Low export intelligence: USER_PROMPT reduces callback prose; PROGRESS.json remains the complete machine-readable sidecar."
-            base["template_introduction_policy"] = "Compact: status and design type are described per entry; additional prose is reduced to the minimum."
-        elif detail_mode == "full":
-            base["introduction"] = "High export intelligence: every status template and design type is introduced in human-readable form so the AI understands the response design as a canvas task."
-            base["template_introduction_policy"] = "Full: every status and design type includes an introduction, mathematical display rule and clear non-goals."
-        else:
-            base["introduction"] = "Medium export intelligence: PROGRESS.json explains the callback contract clearly and keeps all templates structurally available."
-            base["template_introduction_policy"] = "Standard: every status and design type is introduced concisely; details remain in the template text."
-        return base
-
     def _progress_status_intro(self, state: str) -> str:
         return {
             "IDLE": "Idle state: shows zero values, readiness and the next expected input without claiming progress.",
@@ -18085,53 +18091,30 @@ raise SystemExit(2)
             "RADIAL-BAR": "Radial-bar design: describes ring/center logic textually for task and total progress.",
         }.get(str(design or "").upper(), "Design type: describes the mathematical display form of the callback canvas.")
 
-    def _create_progress_json_payload(self, config: dict | None = None, build_record: dict | None = None) -> dict:
+    def _selected_progress_callback_manifest_entry(self, config: dict | None = None, build_record: dict | None = None) -> dict:
+        """Return the one active AI-CALLBACK entry embedded in MANIFEST.json."""
         config = config or self._current_create_config()
         record = build_record or self._active_successful_create_build_for_current_stack() or {}
         profile = self._export_intelligence_profile(self._create_export_intelligence_value())
         callback_contract = self._ai_response_callback_contract()
         matrix = self._ai_callback_template_matrix()
-        detail_mode = self._progress_json_detail_mode(profile)
-        templates: dict[str, dict] = {}
-        for design in self._ai_callback_design_types():
-            design_key = str(design).upper()
-            state_map = matrix.get(design_key, {}) if isinstance(matrix, dict) else {}
-            templates[design_key] = {
-                "introduction": self._progress_design_intro(design_key),
-                "states": {},
-            }
-            for state in self._ai_callback_states():
-                state_key = str(state).upper()
-                text = str(state_map.get(state_key) or "").strip()
-                entry = {
-                    "introduction": self._progress_status_intro(state_key),
-                    "template": text,
-                    "math_contract": "Display must be measurable: no invented completion claim, no unverifiable percentages, no scope expansion.",
-                }
-                if detail_mode == "compact":
-                    entry = {
-                        "introduction": entry["introduction"],
-                        "template": text,
-                    }
-                templates[design_key]["states"][state_key] = entry
+        state_key = str(callback_contract.get("template") or "PROGRESS").strip().upper() or "PROGRESS"
+        design_key = str(callback_contract.get("design_type") or "PERCENT").strip().upper() or "PERCENT"
+        state_map = matrix.get(design_key, {}) if isinstance(matrix, dict) else {}
+        template_text = str(callback_contract.get("text") or state_map.get(state_key) or "").strip()
         payload = {
-            "artifact": self._progress_json_file_name(),
-            "schema_version": "2026.create.progress_callback.v1",
-            "created_at": datetime.now().isoformat(timespec="seconds"),
-            "source": "Prompt Builder AI-CALLBACK response design",
+            "source": "AI-CALLBACK response design",
+            "schema_version": "2026.create.selected_callback.v1",
             "export_intelligence": self._create_export_intelligence_value(),
-            "detail_mode": detail_mode,
-            "human_introduction": self._progress_json_human_intro(profile, callback_contract),
-            "active_callback": callback_contract,
-            "status_order": self._ai_callback_states(),
-            "design_type_order": self._ai_callback_design_types(),
-            "templates": templates,
-            "export_policy": {
-                "outside_zip": True,
-                "inside_zip": True,
-                "low_intelligence_user_prompt_policy": "USER_PROMPT may reduce or omit verbose callback prose, but PROGRESS.json is still written outside and inside the ZIP.",
-                "scope_boundary": "Response design only; does not change tools, repository access, safety limits, validation boundaries or task scope.",
-            },
+            "detail_level": str(profile.get("id") or self._create_export_intelligence_value() or "medium"),
+            "field": "AI-CALLBACK",
+            "selected_state": state_key,
+            "selected_design_type": design_key,
+            "state_introduction": self._progress_status_intro(state_key),
+            "design_introduction": self._progress_design_intro(design_key),
+            "template": template_text,
+            "math_contract": "Display must be measurable: no invented completion claim, no unverifiable percentages, no scope expansion.",
+            "scope_boundary": "Response design only; does not change tools, repository access, safety limits, validation boundaries or task scope.",
             "create_context": {
                 "project": self.project_name.get().strip(),
                 "mode": self.create_mode.get(),
@@ -18144,18 +18127,14 @@ raise SystemExit(2)
         return payload
 
     def _human_progress_reference_lines(self, config: dict | None = None, profile: dict | None = None, build_record: dict | None = None) -> list[str]:
-        """Return compact inline PROGRESS.json reference; no USER_PROMPT section block."""
-        payload = self._create_progress_json_payload(config, build_record)
-        active = payload.get("active_callback", {}) if isinstance(payload.get("active_callback"), dict) else {}
+        """Return compact inline reference to the selected AI-CALLBACK manifest entry."""
+        entry = self._selected_progress_callback_manifest_entry(config, build_record)
         return [
-            f"- Manifest-Hinweis: AI-CALLBACK response design is stored in {self._progress_json_file_name()} (active={active.get('template')}/{active.get('design_type')}); USER_PROMPT introduces the response contract without duplicating callback templates."
+            f"- Manifest-Hinweis: MANIFEST.json contains the selected AI-CALLBACK entry (state={entry.get('selected_state')}; design={entry.get('selected_design_type')}); no separate progress file is exported."
         ]
 
     def _create_context_artifact_names(self, config: dict | None = None) -> list[str]:
-        names = [
-            "CMD.json",
-            self._progress_json_file_name(),
-        ]
+        names = ["CMD.json"]
         if self._create_should_include_last_git_commit_reference(config):
             names.append("LAST_GIT_COMMIT.json")
         seen: set[str] = set()
@@ -18165,15 +18144,6 @@ raise SystemExit(2)
                 seen.add(name)
                 unique.append(name)
         return unique
-
-    def _write_json_alias_file(self, export_dir: Path, primary_name: str, alias_name: str, payload: dict) -> None:
-        text = self._json_export_dumps(payload)
-        (export_dir / primary_name).write_text(text, encoding="utf-8")
-        if alias_name and alias_name != primary_name:
-            (export_dir / alias_name).write_text(text, encoding="utf-8")
-
-    def _register_create_context_artifacts_in_handoff_index(self, export_dir: Path, config: dict | None = None) -> None:
-        return
 
     def _rewrite_zip_with_create_context_artifacts(self, export_dir: Path, config: dict | None = None) -> list[str]:
         export_dir = Path(export_dir)
@@ -18237,12 +18207,7 @@ raise SystemExit(2)
         return {key: value for key, value in context.items() if value not in ("", {}, [], None)}
 
     def _apply_create_zip_sidecar_contract(self, export_dir: Path, config: dict, tasks_payload: dict, final_user_prompt_text: str | None = None, build_record: dict | None = None) -> list[str]:
-        """Keep outside ZIP sidecars human-first while preserving JSON inside ZIP.
-
-        The Export ZIP keeps only compact machine JSON context (CMD.json and
-        PROGRESS.json). The outside export folder is cleaned to the final ZIP plus
-        human text sidecars.
-        """
+        """Keep outside ZIP sidecars human-first while preserving compact JSON inside ZIP."""
         export_dir = Path(export_dir)
         if not bool(self.create_export_as_zip.get()):
             return []
@@ -18262,7 +18227,6 @@ raise SystemExit(2)
             tasks_path = export_dir / "TASKS.TXT"
             tasks_path.write_text(self._tasks_sidecar_text(tasks_payload), encoding="utf-8")
             text_sidecar_names.add("TASKS.TXT")
-            self._write_tasks_schema_copy(export_dir, tasks_payload)
 
         manifest_payload = {
             "artifact": "MANIFEST.json",
@@ -18271,25 +18235,26 @@ raise SystemExit(2)
             "project_name": self.project_name.get().strip(),
             "manifest_scope": "prompt_execution_handoff",
             "prompt_execution_context": self._compact_create_plan_manifest_context(config),
+            "selected_progress_callback": self._selected_progress_callback_manifest_entry(config, record),
             "human_sidecars_outside_zip": sorted(text_sidecar_names),
             "schema_handoff_files": schema_handoff_files,
             "json_context_policy": "Only compact machine JSON files remain inside the ZIP; TASKS.TXT remains a human sidecar outside /schema; /schema contains schema resources.",
-            "required_json_inside_zip": ["CMD.json", self._progress_json_file_name()],
+            "required_json_inside_zip": ["CMD.json"],
             "validation_focus": (config or {}).get("validation_focus", []),
-            "ui_state_policy": "UI widget/tab state is excluded; prompt and execution context is carried by USER_PROMPT.txt plus compact CMD/PROGRESS JSON.",
+            "ui_state_policy": "UI widget/tab state is excluded; prompt and execution context is carried by USER_PROMPT.txt, CMD.json and the selected callback entry in MANIFEST.json.",
         }
 
         for zip_path in zip_paths:
             tmp_path = zip_path.with_suffix(zip_path.suffix + ".tmp")
             try:
                 with zipfile.ZipFile(zip_path, "r") as source, zipfile.ZipFile(tmp_path, "w", compression=zipfile.ZIP_DEFLATED) as target:
-                    existing_names = {info.filename for info in source.infolist()}
                     for info in source.infolist():
                         # Preserve generated JSON/MD context in the ZIP. Only text
                         # sidecars are refreshed outside; they are not destructive.
+                        if info.filename == "MANIFEST.json":
+                            continue
                         target.writestr(info, source.read(info.filename))
-                    if "MANIFEST.json" not in existing_names:
-                        target.writestr("MANIFEST.json", self._json_export_dumps(manifest_payload))
+                    target.writestr("MANIFEST.json", self._json_export_dumps(manifest_payload))
                 tmp_path.replace(zip_path)
                 messages.append(f"ZIP   preserved machine JSON context in {zip_path.name}")
             except Exception as exc:
@@ -18316,7 +18281,6 @@ raise SystemExit(2)
 
     def _write_create_export_context_sidecars(self, base: Path, export_dir: Path, config: dict, build_record: dict | None = None, final_user_prompt_text: str | None = None) -> list[str]:
         self._write_create_export_context_files(base, export_dir, config, build_record, final_user_prompt_text)
-        self._register_create_context_artifacts_in_handoff_index(export_dir, config)
         messages = [f"WRITE {Path(export_dir) / name}" for name in self._create_context_artifact_names(config) if (Path(export_dir) / name).exists()]
         messages.extend(self._rewrite_zip_with_create_context_artifacts(export_dir, config))
         return messages
@@ -18326,9 +18290,7 @@ raise SystemExit(2)
         record = build_record or {}
         final_prompt = self._resolved_create_user_prompt_text(config, record, final_user_prompt_text)
         cmd_manifest = self._create_cmd_manifest_payload(config)
-        progress_payload = self._create_progress_json_payload(config, record)
         (export_dir / "CMD.json").write_text(self._json_export_dumps(cmd_manifest), encoding="utf-8")
-        (export_dir / self._progress_json_file_name()).write_text(self._json_export_dumps(progress_payload), encoding="utf-8")
         if self._create_should_include_last_git_commit_reference(config):
             last_git_reference = self._last_git_commit_reference_for_manifest(config, reason="create_export")
             (export_dir / "LAST_GIT_COMMIT.json").write_text(self._json_export_dumps(self._last_git_commit_manifest_payload(config, last_git_reference, base=base)), encoding="utf-8")
@@ -18506,8 +18468,9 @@ raise SystemExit(2)
         if not export_prompt:
             export_prompt = fallback_export_prompt
         # TASKS.TXT is built from the active Create targets, selected
-        # boilerplates and used-schema resolution.  It must not parse
-        # USER_PROMPT.txt back into itself.
+        # boilerplates/schema rows and optional left Own Prompt.  It must not
+        # parse USER_PROMPT.txt or the recursive used-schema closure back into
+        # itself.
         tasks_payload = self._create_tasks_sidecar_payload(config=config, build_record=record, base=base)
         targets = self._create_export_save_targets(config, record, base)
         params = {
@@ -18518,7 +18481,6 @@ raise SystemExit(2)
             "overwrite": bool(self.overwrite.get()),
             "schema_dir": Path(self.schema_dir.get()),
             "copy_schema": self.copy_schema.get(),
-            "create_log": self.create_log.get(),
             "role_date": self.role_date.get().strip() or None,
             "scope_paths": create_scope_paths,
             "export_as_zip": self.create_export_as_zip.get(),
@@ -18566,7 +18528,7 @@ raise SystemExit(2)
                 "operator_flow": self._operator_flow_contract(),
                 "operator_research_plan": self._create_operator_research_plan(config),
                 "ai_response_callback": self._ai_response_callback_contract(),
-                "progress_manifest": self._progress_json_file_name(),
+                "selected_progress_callback": self._selected_progress_callback_manifest_entry(config, record),
                 "source_clone": self._create_source_clone_manifest or None,
                 "last_git_commit_reference": self._last_git_commit_reference_for_manifest(config, reason="compact_export_context"),
                 "tasks_sidecar": {"file": "TASKS.TXT", "enabled": bool(str(tasks_payload.get("raw_text") or "").strip()), "parsed_as": tasks_payload.get("parsed_as"), "phase_count": len(tasks_payload.get("task_phases") or [])},
@@ -18587,8 +18549,7 @@ raise SystemExit(2)
             except Exception as exc:
                 messages.append(f"Create context sidecars skipped: {exc}")
             try:
-                self._write_tasks_sidecar_and_patch_manifest(export_dir, tasks_payload)
-                self._register_create_context_artifacts_in_handoff_index(export_dir, config)
+                self._write_tasks_sidecar(export_dir, tasks_payload)
                 messages.extend(self._rewrite_zip_with_create_context_artifacts(export_dir, config))
                 messages.extend(self._apply_create_zip_sidecar_contract(export_dir, config, tasks_payload, export_prompt, record))
             except Exception as exc:
@@ -19767,6 +19728,9 @@ raise SystemExit(2)
             ".cxx", ".h", ".hpp", ".rs", ".go", ".php", ".rb", ".sql", ".sh", ".bat", ".ps1", ".xml",
         }
         dst.mkdir(parents=True, exist_ok=True)
+        file_candidates = [path for path in sorted(src.rglob("*")) if path.is_file()]
+        total = max(len(file_candidates), 1)
+        checked = 0
         for current, dirs, files in os.walk(src):
             dirs[:] = sorted(d for d in dirs if d not in self._patch_denied_path_parts())
             current_path = Path(current)
@@ -19775,19 +19739,24 @@ raise SystemExit(2)
             except Exception:
                 rel_dir = "."
             for filename in sorted(files):
+                checked += 1
                 rel = filename if rel_dir == "." else f"{rel_dir}/{filename}"
                 suffix = Path(filename).suffix.lower()
                 if not (self._patch_allowed_project_file(rel) or filename in self._patch_denied_file_names() or suffix in text_suffixes or filename in {"Dockerfile", "Makefile"}):
+                    self._set_progress(f"Patch apply tree: {checked}/{len(file_candidates)} checked", checked, total)
                     continue
                 file_path = current_path / filename
                 try:
                     if file_path.stat().st_size > 5 * 1024 * 1024:
+                        self._set_progress(f"Patch apply tree: {checked}/{len(file_candidates)} skipped large file", checked, total)
                         continue
                     target = dst / rel
                     target.parent.mkdir(parents=True, exist_ok=True)
                     shutil.copy2(file_path, target)
                     copied += 1
+                    self._set_progress(f"Patch apply tree: {checked}/{len(file_candidates)} copied - {rel}", checked, total)
                 except Exception:
+                    self._set_progress(f"Patch apply tree: {checked}/{len(file_candidates)} skipped after copy error", checked, total)
                     continue
         return copied
 
@@ -19982,6 +19951,9 @@ raise SystemExit(2)
         if not src.exists() or not src.is_dir():
             return copied
         dst.mkdir(parents=True, exist_ok=True)
+        file_candidates = [path for path in sorted(src.rglob("*")) if path.is_file()]
+        total = max(len(file_candidates), 1)
+        checked = 0
         for current, dirs, files in os.walk(src):
             dirs[:] = sorted(dirs)
             files = sorted(files)
@@ -19992,15 +19964,19 @@ raise SystemExit(2)
                 rel_dir = "."
             dirs[:] = [d for d in dirs if d not in self._patch_denied_path_parts()]
             for filename in files:
+                checked += 1
                 rel = filename if rel_dir == "." else f"{rel_dir}/{filename}"
                 if not self._patch_allowed_project_file(rel):
+                    self._set_progress(f"Patch baseline copy: {checked}/{len(file_candidates)} checked", checked, total)
                     continue
                 target = dst / rel
                 try:
                     target.parent.mkdir(parents=True, exist_ok=True)
                     shutil.copy2(current_path / filename, target)
                     copied += 1
+                    self._set_progress(f"Patch baseline copy: {checked}/{len(file_candidates)} copied - {rel}", checked, total)
                 except Exception:
+                    self._set_progress(f"Patch baseline copy: {checked}/{len(file_candidates)} skipped after copy error", checked, total)
                     continue
         return copied
 
@@ -20231,7 +20207,9 @@ raise SystemExit(2)
         imported = 0
         skipped = 0
         try:
-            for path in valid_paths:
+            total_sources = max(len(valid_paths), 1)
+            for source_index, path in enumerate(valid_paths, start=1):
+                self._set_progress(f"Patch import: source {source_index}/{len(valid_paths)} - {path.name}", source_index, total_sources)
                 if path.is_dir():
                     add, skip = self._import_patch_directory(path, stage)
                 elif path.suffix.lower() == ".zip":
@@ -20246,16 +20224,19 @@ raise SystemExit(2)
                         dst = stage / rel
                         dst.parent.mkdir(parents=True, exist_ok=True)
                         shutil.copy2(path, dst)
+                        self._set_progress(f"Patch import: copied {rel}", 1, 1)
                         add, skip = 1, 0
                     else:
                         add, skip = 0, 1
                 imported += add
                 skipped += skip
         except Exception as exc:
+            self._set_progress(f"Patch import failed: {exc}", 0)
             messagebox.showerror("Patch import failed", str(exc))
             return
         label = ", ".join(path.name for path in valid_paths[:3]) + (" …" if len(valid_paths) > 3 else "")
         self.patch_status.set(f"Patch loaded into {self._patch_branch_slug()}: {imported} project file(s), {skipped} skipped item(s) · {label}")
+        self._set_progress(f"Patch import complete: {imported} file(s), {skipped} skipped", 1, 1)
         self._refresh_patch_status()
 
     def _safe_patch_member_rel(self, raw_name: str) -> str:
@@ -20269,64 +20250,77 @@ raise SystemExit(2)
     def _import_patch_directory(self, source: Path, stage: Path) -> tuple[int, int]:
         imported = skipped = 0
         base = source.resolve()
+        file_candidates = [path for path in sorted(base.rglob("*")) if path.is_file()]
+        total = max(len(file_candidates), 1)
+        checked = 0
         for current, dirs, files in os.walk(base):
             dirs[:] = sorted(d for d in dirs if d not in self._patch_denied_path_parts())
             for filename in sorted(files):
+                checked += 1
                 src = Path(current) / filename
                 try:
                     rel = src.relative_to(base).as_posix()
                 except Exception:
                     skipped += 1
+                    self._set_progress(f"Patch directory import: {checked}/{len(file_candidates)} checked", checked, total)
                     continue
                 rel = self._safe_patch_member_rel(rel)
                 if not self._patch_allowed_project_file(rel):
                     skipped += 1
+                    self._set_progress(f"Patch directory import: {checked}/{len(file_candidates)} checked", checked, total)
                     continue
                 dst = stage / rel
                 dst.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(src, dst)
                 imported += 1
+                self._set_progress(f"Patch directory import: {checked}/{len(file_candidates)} copied - {rel}", checked, total)
         return imported, skipped
 
     def _import_patch_zip(self, archive_path: Path, stage: Path) -> tuple[int, int]:
         imported = skipped = 0
         with zipfile.ZipFile(archive_path) as archive:
-            for member in archive.infolist():
-                if member.is_dir():
-                    continue
+            members = [member for member in archive.infolist() if not member.is_dir()]
+            total = max(len(members), 1)
+            for index, member in enumerate(members, start=1):
                 rel = self._safe_patch_member_rel(member.filename)
                 if not self._patch_allowed_project_file(rel):
                     skipped += 1
+                    self._set_progress(f"Patch ZIP import: {index}/{len(members)} skipped", index, total)
                     continue
                 dst = stage / rel
                 dst.parent.mkdir(parents=True, exist_ok=True)
                 with archive.open(member) as src, dst.open("wb") as out:
                     shutil.copyfileobj(src, out)
                 imported += 1
+                self._set_progress(f"Patch ZIP import: {index}/{len(members)} copied - {rel}", index, total)
         return imported, skipped
 
     def _import_patch_tar(self, archive_path: Path, stage: Path) -> tuple[int, int]:
         imported = skipped = 0
         with tarfile.open(archive_path) as archive:
-            for member in archive.getmembers():
-                if not member.isfile():
-                    continue
+            members = [member for member in archive.getmembers() if member.isfile()]
+            total = max(len(members), 1)
+            for index, member in enumerate(members, start=1):
                 rel = self._safe_patch_member_rel(member.name)
                 if not self._patch_allowed_project_file(rel):
                     skipped += 1
+                    self._set_progress(f"Patch TAR import: {index}/{len(members)} skipped", index, total)
                     continue
                 extracted = archive.extractfile(member)
                 if extracted is None:
                     skipped += 1
+                    self._set_progress(f"Patch TAR import: {index}/{len(members)} skipped", index, total)
                     continue
                 dst = stage / rel
                 dst.parent.mkdir(parents=True, exist_ok=True)
                 with dst.open("wb") as out:
                     shutil.copyfileobj(extracted, out)
                 imported += 1
+                self._set_progress(f"Patch TAR import: {index}/{len(members)} copied - {rel}", index, total)
         return imported, skipped
 
     def _import_patch_diff_manifest(self, patch_file: Path, stage: Path) -> tuple[int, int]:
+        self._set_progress(f"Patch diff import: reading {patch_file.name}", None, 0)
         text = patch_file.read_text(encoding="utf-8", errors="ignore")
         live, _stage, _baseline = self._patch_ensure_version_roots()
         diff_roots = self._patch_diff_roots(text)
@@ -20365,13 +20359,15 @@ raise SystemExit(2)
             imported = 0
             changed_paths: list[str] = []
             delete_paths: list[str] = []
-            for rel, src in after.items():
+            total_after = max(len(after), 1)
+            for index, (rel, src) in enumerate(after.items(), start=1):
                 if rel not in before or self._patch_file_hash(src) != self._patch_file_hash(before[rel]):
                     dst = stage / rel
                     dst.parent.mkdir(parents=True, exist_ok=True)
                     shutil.copy2(src, dst)
                     imported += 1
                     changed_paths.append(rel)
+                    self._set_progress(f"Patch diff import: {index}/{len(after)} staged - {rel}", index, total_after)
             for rel in before:
                 if rel not in after and self._patch_allowed_project_file(rel):
                     delete_paths.append(rel)
@@ -20660,22 +20656,28 @@ raise SystemExit(2)
             messagebox.showinfo("Patch", self._ui_text("No staged files to commit.", "No staged files to commit."))
             return
         committed = 0
+        total_ops = max(len(files) + len(deleted_paths), 1)
+        op_index = 0
         for rel in deleted_paths:
+            op_index += 1
             target = live / rel
             try:
                 if target.exists() and target.is_file():
                     target.unlink()
                     committed += 1
+                    self._set_progress(f"Patch commit: {op_index}/{total_ops} deleted - {rel}", op_index, total_ops)
             except Exception:
                 pass
         for rel, src in files.items():
             if not self._patch_allowed_project_file(rel):
                 continue
+            op_index += 1
             dst = live / rel
             try:
                 dst.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(src, dst)
                 committed += 1
+                self._set_progress(f"Patch commit: {op_index}/{total_ops} copied - {rel}", op_index, total_ops)
             except Exception:
                 continue
         # Commit in the fallback VC means: staged files become live and the new main baseline.
@@ -20700,6 +20702,7 @@ raise SystemExit(2)
         except Exception:
             pass
         self.patch_status.set(f"Committed {committed} file(s) to temp branch {self._patch_branch_slug()}")
+        self._set_progress(f"Patch commit complete: {committed} file(s)", 1, 1)
         self._refresh_patch_status()
 
     def _build_schema_tab(self) -> None:
@@ -21132,7 +21135,7 @@ raise SystemExit(2)
         purpose_text = (
             "Purpose: builds a human-guided prompt contract from target, prompt type, export intelligence, operator flow, "
             "weights, references and Build.complete tokens. Prompt type entries are loaded from schema/prompt_operators.json "
-            "and related schema files; USER_PROMPT, PROGRESS.json and manifest context stay consistent."
+            "and related schema files; USER_PROMPT and manifest context stay consistent."
         )
         ttk.Label(meta_column, text=purpose_text, wraplength=420).grid(row=2, column=0, columnspan=2, sticky="w", pady=(10, 0))
 
@@ -21159,7 +21162,7 @@ raise SystemExit(2)
         self.prompt_builder_operator_flow_box.bind("<<ComboboxSelected>>", self._on_operator_flow_changed)
         ttk.Label(
             config_column,
-            text="Same operator flow as the Export tab; export intelligence controls USER_PROMPT text depth and the PROGRESS.json introduction.",
+            text="Same operator flow as the Export tab; export intelligence controls USER_PROMPT text depth and the selected callback manifest entry.",
             wraplength=360,
         ).grid(row=2, column=0, columnspan=2, sticky="w", pady=(8, 0))
         config_column.columnconfigure(1, weight=1)
@@ -21181,7 +21184,7 @@ raise SystemExit(2)
         ttk.Label(callback_box, textvariable=self.ai_callback_status, wraplength=220).pack(anchor="w", pady=(2, 0))
         ttk.Label(
             callback_box,
-            text="Mathematical canvas design for IDLE, PENDING, PROGRESS, ERROR and FINISH; PROGRESS.json remains export truth.",
+            text="Mathematical canvas design for IDLE, PENDING, PROGRESS, ERROR and FINISH; the selected entry is written into MANIFEST.json.",
             wraplength=220,
         ).pack(anchor="w", pady=(2, 4))
         self.ai_callback_text = self._pack_text_with_scrollbars(callback_box, wrap="word", height=3)
@@ -21203,7 +21206,7 @@ raise SystemExit(2)
             custom_box,
             text=(
                 "Own Prompt: write or paste the functional task text here. Use the Actions column to build the weighted prompt; "
-                "it mixes this text with export intelligence, operator flow, weights, references, PROGRESS.json callback design and selected Build.complete/@ tokens."
+                "it mixes this text with export intelligence, operator flow, weights, references, selected callback design and Build.complete/@ tokens."
             ),
             wraplength=620,
         ).pack(anchor="w", pady=(0, 6))
@@ -22150,7 +22153,13 @@ raise SystemExit(2)
         )
         intelligence_box.pack(side="left", padx=(8, 0))
         intelligence_box.bind("<<ComboboxSelected>>", self._on_export_intelligence_changed)
-        ttk.Label(intelligence_row, text="Controls how much human-compiled context is placed into USER_PROMPT.txt.").pack(side="left", padx=(10, 0))
+        ttk.Label(
+            intelligence_row,
+            text=self._ui_text(
+                "Controls how much readable context is placed into USER_PROMPT.txt.",
+                "Controls how much readable context is placed into USER_PROMPT.txt.",
+            ),
+        ).pack(side="left", padx=(10, 0))
         fields = [
             ("Overwrite existing generated files", self.overwrite, self._on_export_setting_changed),
             ("Create ZIP" if is_create else "Worktree ZIP", self.create_export_as_zip if is_create else self.export_as_zip, self._on_export_setting_changed),
@@ -22158,7 +22167,6 @@ raise SystemExit(2)
             ("Include imports", self.create_include_imports if is_create else self.include_imports, self._on_include_imports_changed),
             ("Include dependency manifests in export", self.include_dependency_manifests, self._on_export_setting_changed),
             ("Copy schema folder into export", self.copy_schema, self._on_export_setting_changed),
-            ("Write JSON generation log", self.create_log, self._on_export_setting_changed),
             ("Changed files only", self.create_changed_files_only if is_create else self.changed_files_only, self._on_export_setting_changed),
             ("Sequential role/reference search", self.ai_research_schemas_boilerplates, self._on_export_setting_changed),
             ("Brutally honest introductions", self.export_brutally_honest, self._on_export_setting_changed),
@@ -23289,7 +23297,7 @@ raise SystemExit(2)
             results = {eco: self._probe_ecosystem_runtime_version(eco, roots, selected_paths) for eco in sorted(wanted)}
             self._task_queue.put(("create_ecosystem_probe_result", generation, {"reason": reason, "results": results, "duration_ms": int((time.monotonic() - started) * 1000)}))
 
-        threading.Thread(target=worker, name="create-ecosystem-runtime-probe", daemon=True).start()
+        self._start_loadingbar_thread("Ecosystem runtime probe", worker, "create-ecosystem-runtime-probe")
 
     def _apply_ecosystem_probe_result(self, generation: int, payload: dict) -> None:
         if generation != getattr(self, "_create_ecosystem_probe_generation", 0):
@@ -24705,7 +24713,7 @@ raise SystemExit(2)
             except Exception as exc:
                 self._task_queue.put(("import_index_error", generation, exc))
 
-        threading.Thread(target=runner, name="ai-json-generator-import-index", daemon=True).start()
+        self._start_loadingbar_thread("Import index", runner, "ai-json-generator-import-index")
 
     def _apply_import_index_result(self, payload: dict) -> None:
         if payload.get("cancelled"):
@@ -25093,7 +25101,7 @@ raise SystemExit(2)
             except Exception as exc:
                 self._task_queue.put(("import_error", generation, exc))
 
-        threading.Thread(target=runner, name="ai-json-generator-import-matching", daemon=True).start()
+        self._start_loadingbar_thread("Import matching", runner, "ai-json-generator-import-matching", set_busy=True)
 
     def _apply_import_match_result(self, payload: dict) -> None:
         base_key = str(Path(payload.get("base", self.output_base.get())).resolve())
@@ -25608,7 +25616,7 @@ raise SystemExit(2)
             f"- Source of truth: {source_label}.",
             f"- Project base: {base or '-'}",
             f"- Create mode: {self.create_mode.get()}; stack: {self.create_stack.get()}.",
-            "- Build a weighted prompt for the active project context, selected targets, schema weights, references, operator flow and PROGRESS.json callback contract.",
+            "- Build a weighted prompt for the active project context, selected targets, schema weights, references, operator flow and selected AI-CALLBACK manifest entry.",
             "- Treat this as a real project handoff: use the preview clone / Project Root evidence and do not fall back to boilerplate-only templates.",
             "- Respect selected Export-tree scope and include-import settings; do not invent files outside the active project evidence.",
             "",
@@ -25632,7 +25640,7 @@ raise SystemExit(2)
         if not targets:
             raise RuntimeError("No active Generator target available for weighted prompt.")
         self._progress_callback(f"{progress_prefix}: loading schema", None, 0)
-        schema = load_schema(schema_dir)
+        schema = load_schema(schema_dir, self._progress_callback)
         normalized_targets = [item.normalized(schema) for item in targets]
         effective_scope = list(scope_paths if scope_paths is not None else (self._scope_paths_for_worker() or []))
         effective_include_imports = self._active_tree_include_imports() if include_imports is None else bool(include_imports)
@@ -25646,7 +25654,7 @@ raise SystemExit(2)
         metadata["create_mode_parameters"] = self._create_mode_parameter_profile()
         metadata["ai_response_callback"] = self._ai_response_callback_contract()
         metadata["brutally_honest_introductions"] = self._brutally_honest_intro_enabled()
-        metadata["progress_manifest"] = self._progress_json_file_name()
+        metadata["selected_progress_callback"] = self._selected_progress_callback_manifest_entry(config, record)
         metadata["build_complete_tokens"] = self._prompt_builder_build_complete_token_rows(custom, record)
         metadata["response_policy"] = {
             "changed_files_only": bool(changed_files_only),
@@ -25678,7 +25686,7 @@ raise SystemExit(2)
 
         def worker():
             self._progress_callback("Prompt context: loading schema", None, 0)
-            schema = load_schema(schema_dir)
+            schema = load_schema(schema_dir, self._progress_callback)
             normalized_targets = [item.normalized(schema) for item in targets]
             effective_scope = list(scope_paths or [])
             if include_imports and effective_scope:
@@ -25691,7 +25699,7 @@ raise SystemExit(2)
             metadata["create_mode_parameters"] = self._create_mode_parameter_profile()
             metadata["ai_response_callback"] = self._ai_response_callback_contract()
             metadata["brutally_honest_introductions"] = self._brutally_honest_intro_enabled()
-            metadata["progress_manifest"] = self._progress_json_file_name()
+            metadata["selected_progress_callback"] = self._selected_progress_callback_manifest_entry()
             metadata["build_complete_tokens"] = self._prompt_builder_build_complete_token_rows(custom if 'custom' in locals() else "", self._active_successful_create_build_for_current_stack())
             metadata["response_policy"] = {
                 "changed_files_only": bool(changed_files_only),
@@ -25802,7 +25810,6 @@ raise SystemExit(2)
             "overwrite": self.overwrite.get(),
             "schema_dir": Path(self.schema_dir.get()),
             "copy_schema": self.copy_schema.get(),
-            "create_log": self.create_log.get(),
             "role_date": self.role_date.get().strip() or None,
             "scope_paths": scope_paths,
             "export_as_zip": self.export_as_zip.get(),
@@ -25841,7 +25848,7 @@ raise SystemExit(2)
         def success(messages: list[str]) -> None:
             try:
                 sidecar_dir = export_target_dir
-                self._write_tasks_sidecar_and_patch_manifest(sidecar_dir, self._create_tasks_sidecar_payload(custom_prompt))
+                self._write_tasks_sidecar(sidecar_dir, self._create_tasks_sidecar_payload(custom_prompt))
                 messages.append(f"TASKS.TXT sidecar checked: {sidecar_dir}")
             except Exception as exc:
                 messages.append(f"TASKS.TXT sidecar skipped: {exc}")
@@ -25874,7 +25881,7 @@ raise SystemExit(2)
 
         def worker():
             self._progress_callback("Metadata: loading schema", None, 0)
-            schema = load_schema(schema_dir)
+            schema = load_schema(schema_dir, self._progress_callback)
             normalized_targets = [target.normalized(schema) for target in targets]
             effective_scope = list(scope_paths or [])
             if include_imports and effective_scope:
@@ -25885,7 +25892,7 @@ raise SystemExit(2)
             metadata = scan_project_metadata(base, normalized_targets, schema, effective_scope, export_dir, selected_refs, selected_roles, progress_callback=self._progress_callback, project_scope=cached_scope)
             metadata["create_mode_parameters"] = self._create_mode_parameter_profile()
             metadata["ai_response_callback"] = self._ai_response_callback_contract()
-            metadata["progress_manifest"] = self._progress_json_file_name()
+            metadata["selected_progress_callback"] = self._selected_progress_callback_manifest_entry()
             metadata["build_complete_tokens"] = self._prompt_builder_build_complete_token_rows(custom if 'custom' in locals() else "", self._active_successful_create_build_for_current_stack())
             metadata["response_policy"] = {
                 "changed_files_only": bool(changed_files_only),
@@ -25903,7 +25910,8 @@ raise SystemExit(2)
         try:
             resolved_schema_dir = resolve_schema_dir(Path(self.schema_dir.get()))
             self.schema_dir.set(str(resolved_schema_dir))
-            self.schema = load_schema(resolved_schema_dir)
+            self._set_progress("Schema reload: loading schema resources", None, 0)
+            self.schema = load_schema(resolved_schema_dir, self._progress_callback)
             self._rebuild_dynamic_controls()
             self.targets = default_targets(self.schema)
             self._refresh_targets()
@@ -25912,7 +25920,9 @@ raise SystemExit(2)
             self._refresh_reference_preview()
             self._refresh_project_tree()
             self._apply_text_widget_theme()
+            self._set_progress("Schema reload: complete", 1, 1)
         except Exception as exc:
+            self._set_progress(f"Schema reload failed: {exc}", 0)
             messagebox.showerror("Schema load failed", str(exc))
 
     # ---------- Schema Editor ----------
@@ -25923,8 +25933,13 @@ raise SystemExit(2)
             self.schema_files_tree.delete(item)
         root = Path(self.schema_dir.get())
         if root.exists():
-            for file in sorted(root.rglob("*.json")):
+            files = sorted(root.rglob("*.json"))
+            total = max(len(files), 1)
+            for index, file in enumerate(files, start=1):
                 self.schema_files_tree.insert("", "end", values=(str(file.relative_to(root)),))
+                self._set_progress(f"Schema files: {index}/{len(files)} listed", index, total)
+        else:
+            self._set_progress("Schema files: schema folder missing", 0)
 
     def _load_schema_file_to_editor(self, _event=None) -> None:
         sel = self.schema_files_tree.selection()
@@ -25933,9 +25948,11 @@ raise SystemExit(2)
         rel = self.schema_files_tree.item(sel[0], "values")[0]
         path = Path(self.schema_dir.get()) / rel
         self.current_schema_file = path
+        self._set_progress(f"Schema editor: reading {rel}", None, 0)
         self.schema_text.delete("1.0", "end")
         self.schema_text.insert("1.0", path.read_text(encoding="utf-8"))
         self._refresh_schema_outline()
+        self._set_progress(f"Schema editor: loaded {rel}", 1, 1)
 
     def _save_schema_text(self) -> None:
         path = getattr(self, "current_schema_file", None)
@@ -25943,11 +25960,15 @@ raise SystemExit(2)
             return
         raw = self.schema_text.get("1.0", "end").strip()
         try:
+            self._set_progress(f"Schema editor: validating {path.name}", None, 0)
             parsed = json.loads(raw)
         except Exception as exc:
+            self._set_progress(f"Schema editor: invalid JSON in {path.name}", 0)
             messagebox.showerror("Invalid JSON", str(exc))
             return
+        self._set_progress(f"Schema editor: writing {path.name}", None, 0)
         path.write_text(json.dumps(parsed, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        self._set_progress(f"Schema editor: saved {path.name}", 1, 1)
         self._reload_schema()
 
     def _new_schema_file(self) -> None:
@@ -25960,7 +25981,9 @@ raise SystemExit(2)
         if path.exists():
             messagebox.showerror("File exists", str(path))
             return
+        self._set_progress(f"Schema editor: creating {path.name}", None, 0)
         path.write_text(json.dumps({"hooks": []}, indent=2) + "\n", encoding="utf-8")
+        self._set_progress(f"Schema editor: created {path.name}", 1, 1)
         self._refresh_schema_files()
 
     # ---------- Hooks/Output ----------
@@ -25994,15 +26017,19 @@ raise SystemExit(2)
         except Exception:
             pass
         seen: set[str] = set()
+        self._set_progress("Output tree: reading generated artifacts", None, 0)
         for base in bases:
             if not base.exists():
                 continue
-            for file in generated_output_files(base):
+            files = generated_output_files(base)
+            total = max(len(files), 1)
+            for index, file in enumerate(files, start=1):
                 display = str(file if base != Path(self.output_base.get()) else file.relative_to(base))
                 if display in seen:
                     continue
                 seen.add(display)
                 self.output_tree.insert("", "end", values=(display,))
+                self._set_progress(f"Output tree: {index}/{len(files)} artifacts listed", index, total)
         self._refresh_schema_files()
         self._refresh_hook_views()
 
@@ -26014,13 +26041,18 @@ raise SystemExit(2)
         path = Path(rel) if Path(rel).is_absolute() else Path(self.output_base.get()) / rel
         if path.suffix == ".zip":
             try:
+                self._set_progress(f"Output preview: reading ZIP {path.name}", None, 0)
                 with zipfile.ZipFile(path) as archive:
                     lines = [f"ZIP: {path}", "", "Files:"] + archive.namelist()
                 self._show_text("\n".join(lines))
+                self._set_progress(f"Output preview: ZIP loaded {path.name}", 1, 1)
             except Exception as exc:
+                self._set_progress(f"Output preview: ZIP failed {path.name}", 0)
                 self._show_text(f"Could not preview ZIP: {exc}")
             return
+        self._set_progress(f"Output preview: reading {path.name}", None, 0)
         self._show_text(path.read_text(encoding="utf-8", errors="ignore"))
+        self._set_progress(f"Output preview: loaded {path.name}", 1, 1)
 
     def _show_text(self, text: str) -> None:
         if hasattr(self, "output_text"):

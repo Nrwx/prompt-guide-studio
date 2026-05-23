@@ -3901,7 +3901,7 @@
         "create_micro_tasks_reference",
         "readme_tree_reference",
         "tokens_reference",
-        "summary_documentation_reference"
+        "handoff_documentation_reference"
       ],
       "applies_to_path_types": [
         "wrapper",

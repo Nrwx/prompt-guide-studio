@@ -418,7 +418,7 @@
       ],
       "rules": [
         "Project root and generated/export output folder are separate paths.",
-        "Generated files, prompt files, schema copies, logs, summaries, ZIPs and compact handoff files must prefer output/export.",
+        "Generated files, prompt files, schema copies, token files, handoff notes, ZIPs and compact handoff files must prefer output/export.",
         "ZIP export clears only stale clone/ZIP/manifest/prompt sidecars inside output/export, never the project root and never the whole generated output folder."
       ]
     },

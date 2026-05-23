@@ -385,16 +385,21 @@ def _plugin_reference_entry_to_role(entry: Dict[str, Any]) -> Dict[str, Any]:
         "source_refs": _list(entry.get("source_refs")),
     }
 
-def load_schema(schema_dir: Path) -> Dict[str, Any]:
+def load_schema(schema_dir: Path, progress_callback: Callable[[str, int | None, int], None] | None = None) -> Dict[str, Any]:
     requested_schema_dir = Path(schema_dir).expanduser()
     schema_dir = resolve_schema_dir(requested_schema_dir)
     raw: Dict[str, Any] = {key: [] for key in SCHEMA_ARRAY_KEYS}
     loaded_files: List[str] = []
 
     if schema_dir.exists():
-        for file in sorted(schema_dir.rglob("*.json")):
+        files = sorted(schema_dir.rglob("*.json"))
+        total = max(len(files), 1)
+        if not files:
+            _emit_progress(progress_callback, "Schema Load: keine JSON-Dateien", 1, 1)
+        for index, file in enumerate(files, start=1):
             data = json.loads(file.read_text(encoding="utf-8"))
-            loaded_files.append(str(file.relative_to(schema_dir)))
+            rel = str(file.relative_to(schema_dir))
+            loaded_files.append(rel)
             for key, value in data.items():
                 if isinstance(value, list):
                     if key in SCHEMA_ARRAY_KEYS and key != "classifier_fields":
@@ -405,6 +410,9 @@ def load_schema(schema_dir: Path) -> Dict[str, Any]:
                 else:
                     raw.setdefault("metadata", {})
                     raw["metadata"][key] = value
+            _emit_progress(progress_callback, f"Schema Load: Datei {index}/{len(files)} gelesen - {rel}", index, total)
+    else:
+        _emit_progress(progress_callback, f"Schema Load: Ordner fehlt - {schema_dir}", 1, 1)
 
     plugin_entries = raw.get("plugin_reference_entries", [])
     plugin_domains = [
@@ -427,6 +435,7 @@ def load_schema(schema_dir: Path) -> Dict[str, Any]:
     raw["metadata"]["schema_dir_requested"] = str(requested_schema_dir)
     if not loaded_files:
         raw["metadata"]["schema_resource_error"] = f"No JSON schema resources found in {schema_dir}"
+    _emit_progress(progress_callback, f"Schema Load: fertig ({len(loaded_files)} Dateien)", 1, 1)
 
     return {
         "loaded_files": loaded_files,
@@ -1160,15 +1169,6 @@ def _target_scope_from_project_scope(project_scope: Dict[str, Any], target_path:
     return scoped
 
 
-def _generated_ai_files_for_targets(root: Path, targets: List[SaveTarget], create_log: bool = False) -> List[Path]:
-    root = Path(root).resolve()
-    paths = [root / "TOKENS.json", root / "LIBRARY.log"]
-    for target in targets:
-        target_dir = root / target.path
-        paths.append(target_dir.resolve() / "AI-RULES.json")
-    return _dedupe_path_list([path for path in paths if path.exists() and path.is_file()])
-
-
 def _generated_export_artifacts_for_zip(root: Path) -> List[Path]:
     """Return all generated AI/export artifacts that belong inside a ZIP export."""
     root = Path(root).resolve()
@@ -1775,7 +1775,6 @@ def write_generation_documentation_files(
     project_metadata: Dict[str, Any],
     messages: List[str],
     *,
-    create_log: bool,
     export_as_zip: bool,
     include_imports: bool,
     include_dependency_manifests: bool,
@@ -2192,7 +2191,6 @@ def export_project_clone_zip(
     targets: List[SaveTarget],
     export_dir: Path | None = None,
     prompt_text: str | None = None,
-    create_log: bool = False,
     include_dependency_manifests: bool = False,
     generated_output_base: Path | None = None,
     project_name: str = "",
@@ -3182,7 +3180,7 @@ def _build_export_tokens_payload(
         "@tokens_file": "TOKENS.json",
         "@schema_dir": "schema/",
         "@cmd_file": "CMD.json",
-        "@progress_file": "PROGRESS.json",
+        "@selected_progress_callback": metadata.get("selected_progress_callback") or {},
         "@role_manifest_file": "ROLE_OPERATOR_BOILERPLATE_MANIFEST.json",
         "@export_conditions_file": "EXPORT_CONDITIONS.json",
         "@project_tree_file": "PROJECT_TREE.md",
@@ -4819,7 +4817,7 @@ def generated_output_files(output_base: Path) -> List[Path]:
     output_base = Path(output_base)
     names = {
         "AI-RULES.json", "TOKENS.json", "LIBRARY.log",
-        "CMD.json", "PROGRESS.json", "LAST_GIT_COMMIT.json", "MANIFEST.json",
+        "CMD.json", "LAST_GIT_COMMIT.json", "MANIFEST.json",
         "ROLE_OPERATOR_BOILERPLATE_MANIFEST.json", "EXPORT_CONDITIONS.json",
     }
     files: List[Path] = []
@@ -5009,7 +5007,6 @@ def generate_files(
     overwrite: bool = False,
     schema_dir: Path | None = None,
     copy_schema: bool = True,
-    create_log: bool = False,
     role_date: str | None = None,
     scope_paths: Iterable[str] | None = None,
     export_as_zip: bool = False,
@@ -5032,7 +5029,7 @@ def generate_files(
 
     _emit_progress(progress_callback, "Schema wird geladen", None, 0)
     schema_dir = schema_dir or default_schema_dir()
-    schema = load_schema(schema_dir)
+    schema = load_schema(schema_dir, progress_callback)
     raw_normalized_targets = []
     for target in targets:
         if not target.enabled:
@@ -5239,7 +5236,6 @@ def generate_files(
         normalized_targets,
         project_metadata,
         documentation_messages,
-        create_log=create_log,
         export_as_zip=export_as_zip,
         include_imports=include_imports,
         include_dependency_manifests=include_dependency_manifests,
@@ -5271,7 +5267,6 @@ def generate_files(
             normalized_targets,
             export_dir,
             sidecar_prompt,
-            create_log,
             include_dependency_manifests,
             generated_output_base,
             project_name=project_name,

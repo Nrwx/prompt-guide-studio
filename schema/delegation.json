@@ -1,4 +1,7 @@
 {
+  "artifact": "schema/delegation.json",
+  "schema_subset": "delegation",
+  "policy": "Resolved rows only; not a full schema catalog.",
   "delegation": [
     {
       "id": "wrapper",
@@ -24,24 +27,5 @@
         "Report low confidence instead of inventing a target."
       ]
     }
-  ],
-  "classifier_fields": [
-    "task_text",
-    "current_path",
-    "available_targets",
-    "selected_path",
-    "selected_path_type",
-    "selected_rules_path",
-    "selected_ai_target",
-    "selected_boilerplate_profile",
-    "selected_hooks",
-    "active_weight_table",
-    "confidence",
-    "reason",
-    "clarification_question",
-    "evidence_strength",
-    "access_boundary",
-    "target_mismatch",
-    "validation_plan"
   ]
 }

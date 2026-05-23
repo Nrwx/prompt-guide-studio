@@ -348,7 +348,7 @@
         "py",
         "scss"
       ],
-      "weight_profile": "summary_standard",
+      "weight_profile": "handoff_documentation_standard",
       "weight_operator": "summarize_operator",
       "inject_into": [
         "PROMPT",
@@ -459,8 +459,8 @@
       }
     },
     {
-      "id": "summary_standard",
-      "label": "Summary Standard",
+      "id": "handoff_documentation_standard",
+      "label": "Handoff Documentation Standard",
       "target_ai": "ChatGPT",
       "weights": {
         "scope_fidelity": 10,
@@ -841,7 +841,7 @@
       "category": "summary",
       "reference_domains": [
         "summarize_scope_reference",
-        "summary_documentation_reference"
+        "handoff_documentation_reference"
       ],
       "applies_to_path_types": [],
       "applies_to_file_types": [],

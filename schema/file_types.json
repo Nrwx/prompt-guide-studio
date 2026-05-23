@@ -1,5 +1,186 @@
 {
+  "artifact": "schema/file_types.json",
+  "schema_subset": "file_types",
+  "policy": "Resolved rows only; not a full schema catalog.",
   "file_types": [
+    {
+      "id": "json",
+      "label": "JSON",
+      "extensions": [
+        ".json"
+      ],
+      "standard": "Strict JSON configuration",
+      "category": "config",
+      "keywords": [
+        "json",
+        "schema",
+        "config",
+        "package",
+        "build",
+        "rules"
+      ],
+      "rules": [
+        "Keep JSON valid and machine-readable.",
+        "Keep AI-readable configuration in English.",
+        "Do not store secrets in JSON.",
+        "Prefer flat extendable arrays with id fields over deeply nested objects."
+      ],
+      "quality_commands": [],
+      "weight_operator": "config_json_operator"
+    },
+    {
+      "id": "md",
+      "label": "Markdown",
+      "extensions": [
+        ".md"
+      ],
+      "standard": "Project documentation",
+      "category": "docs",
+      "keywords": [
+        "markdown",
+        "readme",
+        "docs",
+        "documentation"
+      ],
+      "rules": [
+        "Document what changed, why it changed and how to validate it.",
+        "Avoid outdated instructions.",
+        "Keep command examples copy-pasteable."
+      ],
+      "quality_commands": [],
+      "weight_operator": "documentation_operator"
+    },
+    {
+      "id": "dockerfile",
+      "label": "Dockerfile",
+      "extensions": [
+        "Dockerfile",
+        ".dockerfile"
+      ],
+      "standard": "Container build recipe",
+      "category": "ops",
+      "keywords": [
+        "docker",
+        "container",
+        "image",
+        "build"
+      ],
+      "rules": [
+        "Keep images minimal and target-specific.",
+        "Do not copy dependency caches unless explicitly required."
+      ],
+      "quality_commands": []
+    },
+    {
+      "id": "env",
+      "label": "Environment template",
+      "extensions": [
+        ".env",
+        ".env.example"
+      ],
+      "rules": [
+        "Never store real secrets; use placeholders only."
+      ]
+    },
+    {
+      "id": "yaml",
+      "label": "YAML",
+      "extensions": [
+        ".yaml",
+        ".yml"
+      ],
+      "standard": "YAML configuration",
+      "category": "config",
+      "keywords": [
+        "yaml",
+        "yml",
+        "config",
+        "environment",
+        "pubspec"
+      ],
+      "rules": [
+        "Preserve indentation and key order where humans maintain the file.",
+        "Do not store secrets in YAML."
+      ],
+      "quality_commands": []
+    },
+    {
+      "id": "py",
+      "label": "Python",
+      "extensions": [
+        ".py"
+      ],
+      "standard": "Python 3.11+ typed backend style",
+      "category": "backend",
+      "keywords": [
+        "python",
+        "py",
+        "flask",
+        "backend",
+        "controller",
+        "model",
+        "service"
+      ],
+      "rules": [
+        "Use type hints for new functions.",
+        "Prefer pathlib for filesystem paths.",
+        "Keep Flask routes thin and push business logic into model/service layers.",
+        "Validate JSON, form, query, path and upload inputs.",
+        "Never log secrets or user binary payloads."
+      ],
+      "quality_commands": [
+        "python -m compileall .",
+        "pytest"
+      ],
+      "weight_operator": "backend_python_operator"
+    },
+    {
+      "id": "svg",
+      "label": "SVG",
+      "extensions": [
+        ".svg"
+      ],
+      "standard": "Scalable Vector Graphics",
+      "category": "asset",
+      "keywords": [
+        "svg",
+        "illustration",
+        "vector",
+        "icon"
+      ],
+      "rules": [
+        "Keep SVGs readable and metadata-light.",
+        "Preserve viewBox and semantic grouping when editing existing assets."
+      ],
+      "quality_commands": []
+    },
+    {
+      "id": "ts",
+      "label": "TypeScript",
+      "extensions": [
+        ".ts",
+        ".tsx"
+      ],
+      "standard": "TypeScript / ES modules",
+      "category": "frontend",
+      "keywords": [
+        "typescript",
+        "ts",
+        "tsx",
+        "types",
+        "interface"
+      ],
+      "rules": [
+        "Prefer explicit types at public boundaries.",
+        "Do not introduce TypeScript migration unless the project already uses it or the user asks.",
+        "Keep Vue/ThreeJS types aligned with installed versions."
+      ],
+      "quality_commands": [
+        "npm run typecheck",
+        "npm run build"
+      ],
+      "weight_operator": "frontend_es_module_operator"
+    },
     {
       "id": "js",
       "label": "JavaScript",
@@ -29,6 +210,58 @@
         "npm run build"
       ],
       "weight_operator": "frontend_es_module_operator"
+    },
+    {
+      "id": "documentation",
+      "label": "Documentation Bundle",
+      "extensions": [
+        ".md",
+        ".mdx",
+        ".rst",
+        ".txt"
+      ],
+      "standard": "Markdown/RST documentation",
+      "category": "documentation",
+      "keywords": [
+        "documentation",
+        "readme",
+        "architecture",
+        "summary",
+        "operator",
+        "handoff"
+      ],
+      "rules": [
+        "Keep documentation evidence-backed and scope-limited.",
+        "Separate observed facts, assumptions and recommended next steps.",
+        "Do not copy large source files into documentation."
+      ],
+      "quality_commands": [],
+      "weight_operator": "software_documentation_weight_operator"
+    },
+    {
+      "id": "log",
+      "label": "Token / Library Handoff",
+      "extensions": [
+        ".log",
+        ".md",
+        ".json"
+      ],
+      "standard": "Current token and inventory handoff files",
+      "category": "documentation",
+      "keywords": [
+        "tokens",
+        "handoff",
+        "library.log",
+        "generation tokens",
+        "audit trail"
+      ],
+      "rules": [
+        "Handoff files must be current and honest about skipped validation.",
+        "Library logs must count files from PROJECT_SCOPE and respect .gitignore.",
+        "Do not store secrets or full file contents in handoff files."
+      ],
+      "quality_commands": [],
+      "weight_operator": "token_contract_weight_operator"
     },
     {
       "id": "vue",
@@ -89,110 +322,51 @@
       "weight_operator": "design_scss_operator"
     },
     {
-      "id": "py",
-      "label": "Python",
+      "id": "shell",
+      "label": "Shell Script",
       "extensions": [
-        ".py"
+        ".sh",
+        ".bash"
       ],
-      "standard": "Python 3.11+ typed backend style",
-      "category": "backend",
+      "standard": "POSIX/Bash project script",
+      "category": "ops",
       "keywords": [
-        "python",
-        "py",
-        "flask",
-        "backend",
-        "controller",
-        "model",
-        "service"
+        "shell",
+        "bash",
+        "script",
+        "watch",
+        "setup"
       ],
       "rules": [
-        "Use type hints for new functions.",
-        "Prefer pathlib for filesystem paths.",
-        "Keep Flask routes thin and push business logic into model/service layers.",
-        "Validate JSON, form, query, path and upload inputs.",
-        "Never log secrets or user binary payloads."
+        "Keep scripts target-scoped and reversible.",
+        "Use set -euo pipefail only when the script is compatible with it.",
+        "Do not embed secrets."
       ],
       "quality_commands": [
-        "python -m compileall .",
-        "pytest"
-      ],
-      "weight_operator": "backend_python_operator"
+        "bash -n <script>"
+      ]
     },
     {
-      "id": "json",
-      "label": "JSON",
+      "id": "txt",
+      "label": "Plain text",
       "extensions": [
-        ".json"
+        ".txt"
       ],
-      "standard": "Strict JSON configuration",
-      "category": "config",
+      "standard": "UTF-8 plain text",
+      "category": "documentation",
       "keywords": [
-        "json",
-        "schema",
-        "config",
-        "package",
-        "build",
-        "rules"
+        "text",
+        "txt",
+        "plain",
+        "credits",
+        "metadata"
       ],
       "rules": [
-        "Keep JSON valid and machine-readable.",
-        "Keep AI-readable configuration in English.",
-        "Do not store secrets in JSON.",
-        "Prefer flat extendable arrays with id fields over deeply nested objects."
-      ],
-      "quality_commands": [],
-      "weight_operator": "config_json_operator"
-    },
-    {
-      "id": "md",
-      "label": "Markdown",
-      "extensions": [
-        ".md"
-      ],
-      "standard": "Project documentation",
-      "category": "docs",
-      "keywords": [
-        "markdown",
-        "readme",
-        "docs",
-        "documentation"
-      ],
-      "rules": [
-        "Document what changed, why it changed and how to validate it.",
-        "Avoid outdated instructions.",
-        "Keep command examples copy-pasteable."
+        "Keep text readable and line-ending stable.",
+        "Use plain text boxes for metadata; do not insert language-specific comment syntax."
       ],
       "quality_commands": [],
       "weight_operator": "documentation_operator"
-    },
-    {
-      "id": "shader",
-      "label": "Shader",
-      "extensions": [
-        ".glsl",
-        ".wgsl",
-        ".hlsl",
-        ".shader"
-      ],
-      "standard": "Real-time rendering shader code",
-      "category": "game_rendering",
-      "keywords": [
-        "shader",
-        "glsl",
-        "wgsl",
-        "hlsl",
-        "material",
-        "render",
-        "gpu"
-      ],
-      "rules": [
-        "Keep shader code deterministic and performance-aware.",
-        "Avoid expensive branches in hot fragment paths unless justified.",
-        "Preserve material input compatibility.",
-        "Document coordinate space and texture map assumptions."
-      ],
-      "quality_commands": [],
-      "weight_operator": "game_shader_operator"
     },
     {
       "id": "asset_image",
@@ -225,33 +399,6 @@
       ],
       "quality_commands": [],
       "weight_operator": "asset_texture_operator"
-    },
-    {
-      "id": "ts",
-      "label": "TypeScript",
-      "extensions": [
-        ".ts",
-        ".tsx"
-      ],
-      "standard": "TypeScript / ES modules",
-      "category": "frontend",
-      "keywords": [
-        "typescript",
-        "ts",
-        "tsx",
-        "types",
-        "interface"
-      ],
-      "rules": [
-        "Prefer explicit types at public boundaries.",
-        "Do not introduce TypeScript migration unless the project already uses it or the user asks.",
-        "Keep Vue/ThreeJS types aligned with installed versions."
-      ],
-      "quality_commands": [
-        "npm run typecheck",
-        "npm run build"
-      ],
-      "weight_operator": "frontend_es_module_operator"
     },
     {
       "id": "scene_3d",
@@ -291,87 +438,33 @@
       "weight_operator": "blender_material_operator"
     },
     {
-      "id": "psd",
-      "label": "Photoshop Document",
+      "id": "shader",
+      "label": "Shader",
       "extensions": [
-        ".psd",
-        ".psb"
+        ".glsl",
+        ".wgsl",
+        ".hlsl",
+        ".shader"
       ],
-      "standard": "Layered Photoshop source document",
-      "category": "assets_2d",
+      "standard": "Real-time rendering shader code",
+      "category": "game_rendering",
       "keywords": [
-        "photoshop",
-        "psd",
-        "psb",
-        "layer",
-        "layers",
-        "smart object",
-        "mask"
+        "shader",
+        "glsl",
+        "wgsl",
+        "hlsl",
+        "material",
+        "render",
+        "gpu"
       ],
       "rules": [
-        "Treat PSD/PSB as source assets.",
-        "Preserve layer/group naming and non-destructive edit intent.",
-        "Export derivatives beside sources unless explicitly asked to overwrite."
+        "Keep shader code deterministic and performance-aware.",
+        "Avoid expensive branches in hot fragment paths unless justified.",
+        "Preserve material input compatibility.",
+        "Document coordinate space and texture map assumptions."
       ],
       "quality_commands": [],
-      "weight_operator": "photoshop_layer_operator"
-    },
-    {
-      "id": "data_table",
-      "label": "Data Table",
-      "extensions": [
-        ".csv",
-        ".tsv",
-        ".xlsx"
-      ],
-      "standard": "Business/math data table",
-      "category": "data",
-      "keywords": [
-        "csv",
-        "spreadsheet",
-        "xlsx",
-        "table",
-        "revenue",
-        "sales",
-        "metrics",
-        "calculation"
-      ],
-      "rules": [
-        "Preserve headers and units.",
-        "Do not silently coerce currency, decimals or dates.",
-        "Document formulas used for derived values."
-      ],
-      "quality_commands": [],
-      "weight_operator": "math_business_data_operator"
-    },
-    {
-      "id": "i18n",
-      "label": "Localization / Translation",
-      "extensions": [
-        ".po",
-        ".pot",
-        ".mo",
-        ".json",
-        ".yaml",
-        ".yml"
-      ],
-      "standard": "Localization resources",
-      "category": "translation",
-      "keywords": [
-        "i18n",
-        "locale",
-        "translation",
-        "gettext",
-        "messages",
-        "lang"
-      ],
-      "rules": [
-        "Preserve message ids, keys and placeholders.",
-        "Translate values only when keys are code-facing identifiers.",
-        "Keep pluralization and interpolation syntax intact."
-      ],
-      "quality_commands": [],
-      "weight_operator": "translation_scope_operator"
+      "weight_operator": "game_shader_operator"
     },
     {
       "id": "cs",
@@ -432,25 +525,66 @@
       ]
     },
     {
-      "id": "html",
-      "label": "HTML",
+      "id": "data_table",
+      "label": "Data Table",
       "extensions": [
-        ".html"
+        ".csv",
+        ".tsv",
+        ".xlsx"
       ],
-      "standard": "HTML5 document structure",
-      "category": "frontend",
+      "standard": "Business/math data table",
+      "category": "data",
       "keywords": [
-        "html",
-        "document",
-        "template",
-        "web"
+        "csv",
+        "spreadsheet",
+        "xlsx",
+        "table",
+        "revenue",
+        "sales",
+        "metrics",
+        "calculation"
       ],
       "rules": [
-        "Keep HTML semantic and accessible.",
-        "Do not inline large scripts or styles when project structure exists."
+        "Preserve headers and units.",
+        "Do not silently coerce currency, decimals or dates.",
+        "Document formulas used for derived values."
+      ],
+      "quality_commands": [],
+      "weight_operator": "math_business_data_operator"
+    },
+    {
+      "id": "toml",
+      "label": "TOML config",
+      "extensions": [
+        ".toml"
+      ],
+      "rules": [
+        "Use for pyproject.toml and tool configuration manifests."
+      ]
+    },
+    {
+      "id": "gradle",
+      "label": "Gradle",
+      "extensions": [
+        ".gradle",
+        ".gradle.kts"
       ],
       "quality_commands": [
-        "npm run build"
+        "./gradlew tasks"
+      ],
+      "rules": [
+        "Preserve Gradle wrapper and module separation."
+      ]
+    },
+    {
+      "id": "xml",
+      "label": "XML",
+      "extensions": [
+        ".xml"
+      ],
+      "quality_commands": [],
+      "rules": [
+        "Preserve unknown XML attributes and namespaces."
       ]
     },
     {
@@ -474,311 +608,6 @@
       "quality_commands": [
         "npm run build"
       ]
-    },
-    {
-      "id": "svg",
-      "label": "SVG",
-      "extensions": [
-        ".svg"
-      ],
-      "standard": "Scalable Vector Graphics",
-      "category": "asset",
-      "keywords": [
-        "svg",
-        "illustration",
-        "vector",
-        "icon"
-      ],
-      "rules": [
-        "Keep SVGs readable and metadata-light.",
-        "Preserve viewBox and semantic grouping when editing existing assets."
-      ],
-      "quality_commands": []
-    },
-    {
-      "id": "shell",
-      "label": "Shell Script",
-      "extensions": [
-        ".sh",
-        ".bash"
-      ],
-      "standard": "POSIX/Bash project script",
-      "category": "ops",
-      "keywords": [
-        "shell",
-        "bash",
-        "script",
-        "watch",
-        "setup"
-      ],
-      "rules": [
-        "Keep scripts target-scoped and reversible.",
-        "Use set -euo pipefail only when the script is compatible with it.",
-        "Do not embed secrets."
-      ],
-      "quality_commands": [
-        "bash -n <script>"
-      ]
-    },
-    {
-      "id": "dockerfile",
-      "label": "Dockerfile",
-      "extensions": [
-        "Dockerfile",
-        ".dockerfile"
-      ],
-      "standard": "Container build recipe",
-      "category": "ops",
-      "keywords": [
-        "docker",
-        "container",
-        "image",
-        "build"
-      ],
-      "rules": [
-        "Keep images minimal and target-specific.",
-        "Do not copy dependency caches unless explicitly required."
-      ],
-      "quality_commands": []
-    },
-    {
-      "id": "yaml",
-      "label": "YAML",
-      "extensions": [
-        ".yaml",
-        ".yml"
-      ],
-      "standard": "YAML configuration",
-      "category": "config",
-      "keywords": [
-        "yaml",
-        "yml",
-        "config",
-        "environment",
-        "pubspec"
-      ],
-      "rules": [
-        "Preserve indentation and key order where humans maintain the file.",
-        "Do not store secrets in YAML."
-      ],
-      "quality_commands": []
-    },
-    {
-      "id": "dart",
-      "label": "Dart",
-      "extensions": [
-        ".dart"
-      ],
-      "standard": "Dart / Flutter source",
-      "category": "mobile",
-      "keywords": [
-        "dart",
-        "flutter",
-        "widget",
-        "mobile"
-      ],
-      "rules": [
-        "Keep widgets small and state ownership explicit.",
-        "Do not assume Flutter SDK commands unless the selected stack or project evidence provides them."
-      ],
-      "quality_commands": [
-        "flutter test"
-      ]
-    },
-    {
-      "id": "c",
-      "label": "C Source",
-      "extensions": [
-        ".c"
-      ],
-      "standard": "C source file",
-      "category": "native",
-      "keywords": [
-        "c",
-        "native",
-        "source",
-        "systems"
-      ],
-      "rules": [
-        "Keep headers and source files separated.",
-        "Avoid undefined behavior and document ownership/lifetime rules."
-      ],
-      "quality_commands": [
-        "cmake --build build"
-      ]
-    },
-    {
-      "id": "toml",
-      "label": "TOML config",
-      "extensions": [
-        ".toml"
-      ],
-      "rules": [
-        "Use for pyproject.toml and tool configuration manifests."
-      ]
-    },
-    {
-      "id": "env",
-      "label": "Environment template",
-      "extensions": [
-        ".env",
-        ".env.example"
-      ],
-      "rules": [
-        "Never store real secrets; use placeholders only."
-      ]
-    },
-    {
-      "id": "sql",
-      "label": "SQL schema/query",
-      "extensions": [
-        ".sql"
-      ],
-      "rules": [
-        "Keep migrations, seed data and ad-hoc queries separated."
-      ]
-    },
-    {
-      "id": "cmake",
-      "label": "CMake config",
-      "extensions": [
-        "CMakeLists.txt",
-        ".cmake"
-      ],
-      "rules": [
-        "Keep build options explicit and platform-neutral where possible."
-      ]
-    },
-    {
-      "id": "make",
-      "label": "Makefile",
-      "extensions": [
-        "Makefile",
-        ".mk"
-      ],
-      "rules": [
-        "Use target-scoped commands and document side effects."
-      ]
-    },
-    {
-      "id": "go",
-      "label": "Go source",
-      "extensions": [
-        ".go"
-      ],
-      "rules": [
-        "Respect module boundaries and go.mod ownership."
-      ]
-    },
-    {
-      "id": "rs",
-      "label": "Rust source",
-      "extensions": [
-        ".rs"
-      ],
-      "rules": [
-        "Respect Cargo manifest and crate boundaries."
-      ]
-    },
-    {
-      "id": "php",
-      "label": "PHP source",
-      "extensions": [
-        ".php"
-      ],
-      "rules": [
-        "Respect composer.json dependency ownership."
-      ]
-    },
-    {
-      "id": "rb",
-      "label": "Ruby source",
-      "extensions": [
-        ".rb"
-      ],
-      "rules": [
-        "Respect Gemfile dependency ownership."
-      ]
-    },
-    {
-      "id": "csproj",
-      "label": "C# project file",
-      "extensions": [
-        ".csproj",
-        ".sln"
-      ],
-      "rules": [
-        "Treat project references and package references as manifest evidence."
-      ]
-    },
-    {
-      "id": "ipynb",
-      "label": "Jupyter notebook",
-      "extensions": [
-        ".ipynb"
-      ],
-      "rules": [
-        "Keep notebooks reproducible; mirror dependencies in environment.yml or requirements.txt."
-      ]
-    },
-    {
-      "id": "r",
-      "label": "R source",
-      "extensions": [
-        ".R",
-        ".r"
-      ],
-      "rules": [
-        "Document package setup and data provenance."
-      ]
-    },
-    {
-      "id": "proto",
-      "label": "Protocol Buffer",
-      "extensions": [
-        ".proto"
-      ],
-      "rules": [
-        "Keep generated code separate from source schema."
-      ]
-    },
-    {
-      "id": "lock",
-      "label": "Dependency lock file",
-      "extensions": [
-        "package-lock.json",
-        "pnpm-lock.yaml",
-        "yarn.lock",
-        "poetry.lock",
-        "uv.lock",
-        "Cargo.lock"
-      ],
-      "rules": [
-        "Treat lock files as generated/pinned dependency evidence."
-      ]
-    },
-    {
-      "id": "txt",
-      "label": "Plain text",
-      "extensions": [
-        ".txt"
-      ],
-      "standard": "UTF-8 plain text",
-      "category": "documentation",
-      "keywords": [
-        "text",
-        "txt",
-        "plain",
-        "credits",
-        "metadata"
-      ],
-      "rules": [
-        "Keep text readable and line-ending stable.",
-        "Use plain text boxes for metadata; do not insert language-specific comment syntax."
-      ],
-      "quality_commands": [],
-      "weight_operator": "documentation_operator"
     }
-  ],
-  "file_type_selection_rule": "Targets may select multiple file_types. Active rules, hooks, weights and boilerplates must be reduced to the selected file types."
+  ]
 }

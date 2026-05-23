@@ -91,7 +91,7 @@
     {
       "id": "OperationsDocs",
       "label": "Operations / Admin Documentation",
-      "purpose": "Document TOKENS.jsons, summaries, compact handoff files, validation gaps and operator handoff notes.",
+      "purpose": "Document TOKENS.json files, summaries, compact handoff files, validation gaps and operator handoff notes.",
       "keywords": [
         "TOKENS.json",
         "summary",
@@ -150,25 +150,25 @@
     },
     {
       "id": "log",
-      "label": "Process / Library Log",
+      "label": "Token / Library Handoff",
       "extensions": [
         ".log",
         ".md",
         ".json"
       ],
-      "standard": "Appendable process and inventory logs",
+      "standard": "Current token and inventory handoff files",
       "category": "documentation",
       "keywords": [
-        "process_log",
-        "summary",
+        "tokens",
+        "handoff",
         "library.log",
-        "generation log",
+        "generation tokens",
         "audit trail"
       ],
       "rules": [
-        "Logs must be chronological and honest about skipped validation.",
+        "Handoff files must be current and honest about skipped validation.",
         "Library logs must count files from PROJECT_SCOPE and respect .gitignore.",
-        "Do not store secrets or full file contents in logs."
+        "Do not store secrets or full file contents in handoff files."
       ],
       "quality_commands": [],
       "weight_operator": "token_contract_weight_operator"
@@ -217,7 +217,7 @@
   "hooks": [
     {
       "id": "token_contract_gate",
-      "label": "TOKENS.json and Summary Gate",
+      "label": "TOKENS.json Handoff Gate",
       "lifecycle_phase": "post_generation",
       "priority": 100,
       "target_path_types": [],
@@ -373,21 +373,21 @@
   "weight_operators": [
     {
       "id": "token_contract_operator",
-      "label": "TOKENS.json / Summary Operator",
+      "label": "TOKENS.json Handoff Operator",
       "applies_to_file_types": [],
       "applies_to_profiles": [],
       "applies_to_path_types": [],
       "minimal_change_bias": 8,
       "evidence_required": 8,
       "rules": [
-        "Maintain TOKENS.json as an current generation trace.",
+        "Maintain TOKENS.json as a current generation trace.",
         "Maintain TOKENS.json as the latest scope snapshot.",
         "Mention validation status honestly; generated does not mean validated.",
         "Keep token entries human-readable and timestamped."
       ],
       "source_ids": [
         "tokens_reference",
-        "summary_documentation_reference"
+        "handoff_documentation_reference"
       ]
     },
     {
@@ -540,7 +540,7 @@
       "applies_to_profiles": [],
       "trigger_keywords": [
         "TOKENS.json",
-        "generation log",
+        "generation tokens",
         "audit trail",
         "summary",
         "handoff"
@@ -560,8 +560,8 @@
       ]
     },
     {
-      "id": "summary_documentation_reference",
-      "label": "Summary Documentation Reference",
+      "id": "handoff_documentation_reference",
+      "label": "Handoff Documentation Reference",
       "category": "documentation",
       "always_on": true,
       "applies_to_path_types": [],
@@ -876,7 +876,7 @@
       "reference_domains": [
         "documentation_project_reference",
         "architecture_reference_map",
-        "summary_documentation_reference"
+        "handoff_documentation_reference"
       ],
       "applies_to_path_types": [],
       "applies_to_file_types": [
@@ -1082,7 +1082,7 @@
       "reference_domains": [
         "onboarding_admin_reference",
         "readme_tree_reference",
-        "summary_documentation_reference"
+        "handoff_documentation_reference"
       ],
       "applies_to_path_types": [
         "wrapper",

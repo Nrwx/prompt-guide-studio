@@ -1,4 +1,7 @@
 {
+  "artifact": "schema/ai_targets.json",
+  "schema_subset": "ai_targets",
+  "policy": "Resolved rows only; not a full schema catalog.",
   "ai_targets": [
     {
       "id": "ChatGPT",
@@ -23,31 +26,6 @@
         "Do not claim direct repository access.",
         "Do not invent inspected files or paths.",
         "Ask one short clarification only if delegation cannot be decided safely."
-      ]
-    },
-    {
-      "id": "WebAgent",
-      "label": "WebAgent",
-      "purpose": "External verification, documentation lookup, evidence checks and repository inspection when available.",
-      "access_model": "browser_and_evidence_driven",
-      "can_directly_edit_repo": false,
-      "can_browse_project_files": true,
-      "can_browse_web": true,
-      "mindset": "Verify first, cite evidence, avoid stale assumptions.",
-      "keywords": [
-        "webagent",
-        "browser",
-        "inspect",
-        "search",
-        "verify",
-        "docs",
-        "evidence"
-      ],
-      "rules": [
-        "Verify project evidence before recommending changes.",
-        "Check .gitignore before creating generated files.",
-        "Do not write code as if direct repo editing is available.",
-        "Report uncertainty clearly."
       ]
     },
     {
@@ -77,7 +55,31 @@
         "Do not hardcode secrets.",
         "Run or report validation commands."
       ]
+    },
+    {
+      "id": "WebAgent",
+      "label": "WebAgent",
+      "purpose": "External verification, documentation lookup, evidence checks and repository inspection when available.",
+      "access_model": "browser_and_evidence_driven",
+      "can_directly_edit_repo": false,
+      "can_browse_project_files": true,
+      "can_browse_web": true,
+      "mindset": "Verify first, cite evidence, avoid stale assumptions.",
+      "keywords": [
+        "webagent",
+        "browser",
+        "inspect",
+        "search",
+        "verify",
+        "docs",
+        "evidence"
+      ],
+      "rules": [
+        "Verify project evidence before recommending changes.",
+        "Check .gitignore before creating generated files.",
+        "Do not write code as if direct repo editing is available.",
+        "Report uncertainty clearly."
+      ]
     }
-  ],
-  "ai_target_selection_rule": "Exactly one AI target must be selected per WRITE_AI_RULES_TO target. Never select multiple AI targets for one target path."
+  ]
 }

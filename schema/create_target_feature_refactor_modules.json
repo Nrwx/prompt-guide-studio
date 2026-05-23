@@ -411,7 +411,9 @@
       "acceptance_criteria": [
         "All shortcut commands are machine-readable and human-readable.",
         "Shortcut hooks are not user-selectable catalog entries.",
-        "STATUS cannot invent unavailable session history."
+        "STATUS cannot invent unavailable session history.",
+        "STATUS portable output uses CMD_STATUS_PORTABLE_SESSION.html with cmd-status-* naming.",
+        "AI-CALLBACK/progress output uses the CMD Progress Canvas Style reference with cmd-progress-* naming."
       ],
       "match_rules": [
         "refactor_prompt_pipeline_boundary_hardening"

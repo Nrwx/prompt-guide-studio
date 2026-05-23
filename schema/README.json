@@ -102,7 +102,7 @@
     "Runtime path Browse controls are available only for ecosystems where a selected/local executable can be meaningful; paths stay empty when auto/system resolution is enough.",
     "Export-tab Operator flow is the Prompt Builder point of truth: changing it schedules regeneration of the generated operator prompt Remember block.",
     "context-reactive feature plans: discovery/proposal and autonomous one-slice development are feature-only, evidence-ranked and bounded; randomness is only a tie-breaker, never write authority.",
-    "Reactive Human Prompt Builder Patch: schema/human_prompt_locale.json now contains surface-specific human intro texts for USER_PROMPT export, Create Preview, Prompt Builder, shortcut compile and mapping preview. Export intelligence low/medium/high controls all human-compiled prompt surfaces.",
+    "Reactive Human Prompt Builder Patch: schema/human_prompt_locale.json now contains surface-specific human intro texts for USER_PROMPT export, Create Preview, Prompt Builder, shortcut compile and mapping preview. Export intelligence low/medium/high controls all readable prompt surfaces.",
     "Handoff detail patch: medium/high USER_PROMPT compilation keeps declared details by translating actual handoff files, roles, references and plan schemas into human text; low mode stays compact."
   ],
   "custom_compiler_path_rule": "Compiler path is an explicit Create/Compiler editor value. When set, it is resolved before {$compiler_run}; only project-local Python API entrypoints are loaded and CREATE_COMPILER_DISCOVERY.json records the result.",
@@ -347,7 +347,7 @@
     "automatic": true,
     "not_create_catalog_entry": true,
     "not_user_selectable": true,
-    "rule": "The left CUSTOM_USER_PROMPT input is parsed as JSON/list/plain text and exported as TASKS.TXT sidecar when present. TASKS.TXT must explain the @TOKENS.json and refer to TOKENS.json for concrete values. Create Tab must not expose it as a plan, slice, catalog entry or module.",
+    "rule": "The left CUSTOM_USER_PROMPT input is parsed as JSON/list/plain text and exported as TASKS.TXT sidecar when present. TASKS.TXT must explain the @token contract and refer to TOKENS.json for concrete values. Create Tab must not expose it as a plan, slice, catalog entry or module.",
     "schema_mirror": false,
     "write_policy": "Root TASKS.TXT is the human sidecar. It is not mirrored into /schema; schema resources carry only schema rows and token-contract rules."
   },
@@ -366,7 +366,7 @@
       "FIX",
       "STATUS"
     ],
-    "rule": "USER_PROMPT.txt must introduce these commands so the receiving AI immediately applies the matching meaning when the user sends the CMD. The commands do not alter scope, validation, permissions or safety boundaries.",
+    "rule": "USER_PROMPT.txt must introduce these commands so the receiving AI immediately applies the matching meaning when the user sends the CMD. The commands do not alter scope, validation, permissions or safety boundaries. STATUS must create CMD_STATUS_PORTABLE_SESSION.html from available session evidence and must follow the CMD STATUS Portable Session Template plus CMD Progress Canvas Style references.",
     "shared_surfaces": [
       "Prompt Builder preview",
       "Create Preview pipeline config",
@@ -391,7 +391,7 @@
       "STATUS"
     ],
     "not_create_catalog_entry": true,
-    "guardrail": "Commands do not expand tool rights, repository access, safety limits, scope or validation boundaries.",
+    "guardrail": "Commands do not expand tool rights, repository access, safety limits, scope or validation boundaries. STATUS and progress visuals must use cmd-status-* / cmd-progress-* naming and must not reuse dsm/distort/falloff names.",
     "always_write_policy": "Create export writes the CMD manifest after generator completion, including compact/ZIP mode."
   },
   "create_abstraction_pipeline_extension_rule": {

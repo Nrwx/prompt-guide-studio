@@ -7504,7 +7504,7 @@
         "repository_management_prompt_reference",
         "schema_structured_output_reference",
         "tool_wide_prompt_engineering_reference",
-        "summary_documentation_reference",
+        "handoff_documentation_reference",
         "tokens_reference",
         "readme_tree_reference",
         "create_project_mapping_reference",

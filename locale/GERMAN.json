@@ -73,7 +73,6 @@
     "Confirm operators before start": "Operatoren vor Start bestätigen",
     "Context shortcut": "Kontext-Shortcut",
     "Contract": "Vertrag",
-    "Controls how much human-compiled context is placed into USER_PROMPT.txt.": "Steuert, wie viel menschlich kompilierter Kontext in USER_PROMPT.txt geschrieben wird.",
     "Copy schema": "Schema kopieren",
     "Create": "Create",
     "Create Mode": "Create-Modus",
@@ -146,7 +145,6 @@
     "Generated output": "Generierte Ausgabe",
     "Generator": "Generator",
     "Git / Versioning status": "Git-/Versionsstatus",
-    "Gleicher Operator-Flow wie im Export-Tab; Export-Intelligenz steuert USER_PROMPT-Texttiefe und PROGRESS.json-Einleitung.": "Gleicher Operator-Flow wie im Export-Tab; Export-Intelligenz steuert USER_PROMPT-Texttiefe und PROGRESS.json-Einleitung.",
     "Gradle runtime path": "Gradle-Runtime-Pfad",
     "High": "High",
     "Hinweis: Die Spende ist freiwillig. Die App bleibt auch ohne Spende vollständig nutzbar.": "Hinweis: Die Spende ist freiwillig. Die App bleibt auch ohne Spende vollständig nutzbar.",
@@ -186,7 +184,6 @@
     "Main dependency": "Hauptabhängigkeit",
     "Mapping": "Mapping",
     "Math Utils Libary": "Math Utils Libary",
-    "Mathematisches Canvas-Design für IDLE, PENDING, PROGRESS, ERROR und FINISH; PROGRESS.json bleibt Export-Wahrheit.": "Mathematisches Canvas-Design für IDLE, PENDING, PROGRESS, ERROR und FINISH; PROGRESS.json bleibt Export-Wahrheit.",
     "Medium": "Medium",
     "Meta": "Meta",
     "Micro Tasks": "Mikro-Tasks",
@@ -529,8 +526,6 @@
     "Feature/Refactor parameters active": "Feature-/Refactor-Parameter aktiv",
     "Feature/Refactor parameters hidden for New Project Abstraction": "Feature-/Refactor-Parameter für New Project Abstraction ausgeblendet",
     "Feature/Refactor parameters inactive for New Project Abstraction": "Feature-/Refactor-Parameter für New Project Abstraction inaktiv",
-    "Purpose: builds a human-guided prompt contract from target, prompt type, export intelligence, operator flow, weights, references and Build.complete tokens. Prompt type entries are loaded from schema/prompt_operators.json and related schema files; USER_PROMPT, PROGRESS.json and manifest context stay consistent.": "Zweck: erstellt aus Ziel, Prompt-Typ, Export-Intelligenz, Operator-Flow, Gewichten, Referenzen und Build.complete-Tokens einen menschlich geführten Prompt-Vertrag. Prompt-Typen werden aus schema/prompt_operators.json und zugehörigen Schema-Dateien geladen; USER_PROMPT, PROGRESS.json und Manifest-Kontext bleiben konsistent.",
-    "Same operator flow as the Export tab; export intelligence controls USER_PROMPT text depth and the PROGRESS.json introduction.": "Derselbe Operator-Flow wie im Export-Tab; Export-Intelligenz steuert die USER_PROMPT-Texttiefe und die PROGRESS.json-Einleitung.",
     "{project_title} is maintained by Eric Heidrich / Nrwx.\n\nThis credits area is intentionally not editable: visible app/plugin credits, repository references and support notices remain permanently assigned to the owner Eric Heidrich / Nrwx.": "{project_title} wird von Eric Heidrich / Nrwx gepflegt.\n\nDieser Credits-Bereich ist absichtlich nicht editierbar: sichtbare App-/Plugin-Credits, Repository-Verweise und Support-Hinweise bleiben dauerhaft dem Owner Eric Heidrich / Nrwx zugeordnet.",
     "Prompt Guide Studio": "Prompt Guide Studio",
     "Prompt Guide Studio reads an existing project, turns the evidence into scoped AI prompts, manifests and export packages, and keeps generated output reviewable before it is applied.": "Prompt Guide Studio liest ein bestehendes Projekt, erstellt daraus belegte AI-Prompts, Manifeste und Exportpakete und hält Ergebnisse vor dem Anwenden prüfbar.",
@@ -542,6 +537,12 @@
     "4. Use Prompt Builder/Create only after the project evidence is visible.": "4. Nutze Prompt Builder/Create erst, wenn die Projekt-Evidenz sichtbar ist.",
     "5. Review Export/Output results before copying or running anything.": "5. Prüfe Export-/Output-Ergebnisse, bevor du etwas kopierst oder ausführst.",
     "Prompt Guide Studio is only valuable if it reads project evidence before deciding. Blind AI rules are dangerous: keep the original project as evidence, separate build-only automation, and review every generated export before execution.": "Prompt Guide Studio ist nur wertvoll, wenn es vor Entscheidungen echte Projekt-Evidenz liest. Blinde AI-Regeln sind gefährlich: halte das Originalprojekt als Evidenz, trenne reine Build-Automation und prüfe jeden Export vor der Ausführung.",
-    "Prompt Guide Studio is maintained and improved continuously. If this application supports your workflow, you are welcome to support ongoing development with a voluntary contribution. Donations are directed exclusively to Eric Heidrich / Nrwx and help sustain maintenance, documentation, quality assurance and future improvements. The application remains fully usable regardless of whether you donate.": "Prompt Guide Studio wird kontinuierlich gepflegt und verbessert. Wenn diese Anwendung deinen Workflow unterstützt, kannst du die laufende Entwicklung freiwillig unterstützen. Spenden gehen ausschließlich an Eric Heidrich / Nrwx und helfen bei Wartung, Dokumentation, Qualitätssicherung und künftigen Verbesserungen. Die Anwendung bleibt unabhängig von einer Spende vollständig nutzbar."
+    "Prompt Guide Studio is maintained and improved continuously. If this application supports your workflow, you are welcome to support ongoing development with a voluntary contribution. Donations are directed exclusively to Eric Heidrich / Nrwx and help sustain maintenance, documentation, quality assurance and future improvements. The application remains fully usable regardless of whether you donate.": "Prompt Guide Studio wird kontinuierlich gepflegt und verbessert. Wenn diese Anwendung deinen Workflow unterstützt, kannst du die laufende Entwicklung freiwillig unterstützen. Spenden gehen ausschließlich an Eric Heidrich / Nrwx und helfen bei Wartung, Dokumentation, Qualitätssicherung und künftigen Verbesserungen. Die Anwendung bleibt unabhängig von einer Spende vollständig nutzbar.",
+    "Prompt Builder: @ shortcuts compiled": "Prompt Builder: @-Shortcuts kompiliert",
+    "Controls how much readable context is placed into USER_PROMPT.txt.": "Steuert, wie viel lesbarer Kontext in USER_PROMPT.txt geschrieben wird.",
+    "Purpose: builds a human-guided prompt contract from target, prompt type, export intelligence, operator flow, weights, references and Build.complete tokens. Prompt type entries are loaded from schema/prompt_operators.json and related schema files; USER_PROMPT and manifest context stay consistent.": "Zweck: erstellt aus Ziel, Prompt-Typ, Export-Intelligenz, Operator-Flow, Gewichten, Referenzen und Build.complete-Tokens einen menschlich geführten Prompt-Vertrag. Prompt-Typen werden aus schema/prompt_operators.json und zugehörigen Schema-Dateien geladen; USER_PROMPT und Manifest-Kontext bleiben konsistent.",
+    "Same operator flow as the Export tab; export intelligence controls USER_PROMPT text depth and the selected callback manifest entry.": "Derselbe Operator-Flow wie im Export-Tab; Export-Intelligenz steuert die USER_PROMPT-Texttiefe und den ausgewählten Callback-Manifest-Eintrag.",
+    "Mathematical canvas design for IDLE, PENDING, PROGRESS, ERROR and FINISH; the selected entry is written into MANIFEST.json.": "Mathematisches Canvas-Design für IDLE, PENDING, PROGRESS, ERROR und FINISH; der ausgewählte Eintrag wird in MANIFEST.json geschrieben.",
+    "Own Prompt: write or paste the functional task text here. Use the Actions column to build the weighted prompt; it mixes this text with export intelligence, operator flow, weights, references, selected callback design and Build.complete/@ tokens.": "Own Prompt: Schreibe oder füge hier den fachlichen Tasktext ein. Nutze die Actions-Spalte, um den Weighted Prompt zu bauen; er verbindet diesen Text mit Export-Intelligenz, Operator-Flow, Gewichten, Referenzen, ausgewähltem Callback-Design und Build.complete/@-Tokens."
   }
 }

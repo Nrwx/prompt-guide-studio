@@ -1,4 +1,7 @@
 {
+  "artifact": "schema/code_structures.json",
+  "schema_subset": "code_structures",
+  "policy": "Resolved rows only; not a full schema catalog.",
   "code_structures": [
     {
       "id": "flask_generated_mvc",
@@ -20,29 +23,6 @@
         "Prefer method_map extension over duplicate blueprints.",
         "Keep generated controller/model/view separation.",
         "Respect protected bootstrap/request-rewrite zones."
-      ]
-    },
-    {
-      "id": "vue_cli_build_frontend",
-      "label": "Vue CLI Build Frontend",
-      "path_type": "frontend",
-      "indicators": [
-        "package.json",
-        "src",
-        "public",
-        "vue.config.js"
-      ],
-      "file_types": [
-        "js",
-        "vue",
-        "scss",
-        "json"
-      ],
-      "rules": [
-        "Frontend is build-only unless project metadata says otherwise.",
-        "Use npm run lint and npm run build as validation.",
-        "Do not assume dev server availability.",
-        "Centralize API services."
       ]
     },
     {
@@ -88,32 +68,6 @@
       ]
     },
     {
-      "id": "vue_threejs_visual_frontend",
-      "path_type": "frontend",
-      "label": "Vue + ThreeJS Visual Frontend",
-      "indicators": [
-        "package.json",
-        "src",
-        "src/components",
-        "src/render",
-        "src/three",
-        "src/webgl"
-      ],
-      "file_types": [
-        "vue",
-        "js",
-        "ts",
-        "scss",
-        "shader",
-        "scene_3d"
-      ],
-      "rules": [
-        "Keep renderer lifecycle isolated from Vue reactivity.",
-        "Dispose WebGL resources.",
-        "Use component boundaries for controls and scene boundaries for rendering."
-      ]
-    },
-    {
       "id": "blender_asset_pipeline",
       "path_type": "assets",
       "label": "Blender / 3D Asset Pipeline",
@@ -134,52 +88,6 @@
         "Preserve source assets.",
         "Track material channels and color spaces.",
         "Write generated asset metadata."
-      ]
-    },
-    {
-      "id": "business_metrics_pipeline",
-      "path_type": "generated",
-      "label": "Business / Metrics Pipeline",
-      "indicators": [
-        "reports",
-        "metrics",
-        "analytics",
-        "data",
-        "exports"
-      ],
-      "file_types": [
-        "data_table",
-        "json",
-        "py",
-        "md"
-      ],
-      "rules": [
-        "Keep formulas auditable.",
-        "Preserve units, currency and reporting periods.",
-        "Do not invent missing data."
-      ]
-    },
-    {
-      "id": "i18n_translation_tree",
-      "path_type": "frontend",
-      "label": "Localization / Translation Tree",
-      "indicators": [
-        "locales",
-        "i18n",
-        "translations",
-        "src/i18n",
-        "lang"
-      ],
-      "file_types": [
-        "i18n",
-        "json",
-        "vue",
-        "md"
-      ],
-      "rules": [
-        "Preserve placeholders and keys.",
-        "Translate values only when human-facing.",
-        "Keep selected PROJECT_SCOPE as boundary."
       ]
     }
   ]

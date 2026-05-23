@@ -1,8 +1,8 @@
 {
   "create_cmd_manifest_schema": {
     "schema_version": "2026.create.cmd_manifest.v1",
-    "artifact": "CREATE_CMD_MANIFEST.json",
-    "purpose": "Machine-readable mirror of USER_PROMPT shortcut commands.",
+    "artifact": "CMD.json",
+    "purpose": "Machine-readable mirror of USER_PROMPT shortcut commands, including the mandatory STATUS portable session HTML template contract.",
     "owner": "USER_PROMPT export hook",
     "not_create_catalog_entry": true,
     "not_user_selectable": true,
@@ -37,12 +37,15 @@
       "command",
       "applies_to",
       "instruction",
-      "guardrail"
+      "guardrail",
+      "output_contract"
     ],
     "guardrails": [
       "Commands do not expand safety, filesystem, tool, repository, scope or validation boundaries.",
       "Commands are applied only to the current task, last patch, available project context or actually available session context.",
       "STATUS and SNAPSHOT must report missing data as Known Gap instead of inventing history.",
+      "STATUS must create CMD_STATUS_PORTABLE_SESSION.html only from available session evidence and must follow the CMD STATUS Portable Session Template design reference.",
+      "AI-CALLBACK and progress visuals must follow the CMD Progress Canvas Style reference and use cmd-progress-* naming.",
       "FIX, REFACTOR, CLEANUP, SECURITY, PERFORMANCE and SCHEMA must not introduce unrelated features.",
       "SKIP must exclude the rejected previous patch pattern before proposing a new approach.",
       "LOCK must freeze the active scope and prevent silent scope expansion."
@@ -51,14 +54,70 @@
       "USER_PROMPT.txt",
       "Prompt Builder preview",
       "Create Preview pipeline config",
-      "CREATE_USER_PROMPT.txt",
-      "CREATE_USER_PROMPT.txt",
-      "CREATE_CMD_MANIFEST.json",
       "CMD.json"
     ],
     "artifact_aliases": [
       "CMD.json"
     ],
-    "always_write_policy": "CREATE exports must write CREATE_CMD_MANIFEST.json and CMD.json after the generator finishes, including compact/ZIP mode."
+    "always_write_policy": "Create exports must write CMD.json after the generator finishes, including compact/ZIP mode.",
+    "status_portable_html_template_reference": {
+      "reference_name": "CMD STATUS Portable Session Template",
+      "required_for_commands": [
+        "STATUS"
+      ],
+      "source_design_reference": {
+        "path": "C:/Users/Eric/PhpstormProjects/Unity-Texture-Generator/frontend/src/view/page/Modifier/Distort/_Distort.scss",
+        "source_file_role": "visual design reference only",
+        "renamed_template_file": "_CMDStatusPortable.scss",
+        "source_prefix": "dsm",
+        "required_prefix": "cmd-status",
+        "rename_rule": "Every copied/adapted selector and CSS variable must be renamed from dsm/distort wording to cmd-status wording."
+      },
+      "portable_html_contract": {
+        "artifact": "CMD_STATUS_PORTABLE_SESSION.html",
+        "format": "single self-contained portable HTML document with inline CSS and no external asset dependency",
+        "scope": "complete available session state: prompt, commands, files, patches, decisions, risks, open gaps, validation and next steps",
+        "honesty_rule": "Missing chat/file/session data must be rendered as Known Gap, never invented.",
+        "design_alignment_rule": "The HTML/CSS must explicitly follow this CMD STATUS design reference before inventing a different layout."
+      },
+      "required_class_prefix": "cmd-status",
+      "required_stylesheet_name": "_CMDStatusPortable.scss",
+      "forbidden_names": [
+        "dsm-",
+        "distort",
+        "_Distort.scss",
+        "falloff"
+      ]
+    },
+    "progress_style_design_reference": {
+      "reference_name": "CMD Progress Canvas Style",
+      "required_for": [
+        "AI-CALLBACK",
+        "STATUS progress section",
+        "portable session progress canvas"
+      ],
+      "source_design_reference": {
+        "path": "C:/Users/Eric/PhpstormProjects/Unity-Texture-Generator/frontend/src/view/page/Modifier/Distort/_Distort.scss",
+        "source_file_role": "visual progress/canvas style reference only",
+        "renamed_template_file": "_CMDProgressCanvas.scss",
+        "source_prefix": "dsm",
+        "required_prefix": "cmd-progress",
+        "rename_rule": "Every adapted selector and CSS variable must be renamed from dsm/distort/falloff wording to cmd-progress wording."
+      },
+      "progress_contract": {
+        "artifact_role": "inline style block or portable CSS section for progress/status rendering",
+        "scope": "visible AI progress state, command status, session timeline completion, open-gap count and validation state",
+        "honesty_rule": "Progress visuals must use available counts and state labels only; unknown progress is shown as pending/unknown, never as a fabricated percent.",
+        "alignment_rule": "Progress/callback visuals must follow this CMD Progress Canvas Style reference before inventing a new style."
+      },
+      "required_class_prefix": "cmd-progress",
+      "required_stylesheet_name": "_CMDProgressCanvas.scss",
+      "forbidden_names": [
+        "dsm-",
+        "distort",
+        "_Distort.scss",
+        "falloff"
+      ]
+    }
   }
 }

@@ -1,4 +1,7 @@
 {
+  "artifact": "schema/path_types.json",
+  "schema_subset": "path_types",
+  "policy": "Resolved rows only; not a full schema catalog.",
   "path_types": [
     {
       "id": "wrapper",

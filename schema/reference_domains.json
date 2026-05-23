@@ -4,6 +4,282 @@
   "policy": "Resolved rows only; not a full schema catalog.",
   "reference_domains": [
     {
+      "id": "create_parameter_weight_reference",
+      "label": "Weight Parameter Reference",
+      "category": "Create Parameter Abstraction",
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated",
+        "custom"
+      ],
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "yaml",
+        "py",
+        "dockerfile",
+        "env"
+      ],
+      "applies_to_profiles": [
+        "CreateParameterWeight",
+        "Create",
+        "DevelopFeatures",
+        "Refactor"
+      ],
+      "trigger_keywords": [
+        "weight",
+        "Weight",
+        "parameter",
+        "slider",
+        "feature",
+        "refactor"
+      ],
+      "source_refs": [
+        "schema/create_mode_parameters.json#create_mode_parameter_boilerplates/weight"
+      ],
+      "rules": [
+        "Use Weight value as a bounded parameter, not as free-form prose.",
+        "State the active value and its effect on context selection.",
+        "Preserve project evidence boundaries before expanding work."
+      ],
+      "guardrails": [
+        "No hidden broadening of scope.",
+        "No fake validation success."
+      ]
+    },
+    {
+      "id": "create_parameter_security_reference",
+      "label": "Security Parameter Reference",
+      "category": "Create Parameter Abstraction",
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated",
+        "custom"
+      ],
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "yaml",
+        "py",
+        "dockerfile",
+        "env"
+      ],
+      "applies_to_profiles": [
+        "CreateParameterSecurity",
+        "Create",
+        "DevelopFeatures",
+        "Refactor"
+      ],
+      "trigger_keywords": [
+        "security",
+        "Security",
+        "parameter",
+        "slider",
+        "feature",
+        "refactor"
+      ],
+      "source_refs": [
+        "schema/create_mode_parameters.json#create_mode_parameter_boilerplates/security"
+      ],
+      "rules": [
+        "Use Security value as a bounded parameter, not as free-form prose.",
+        "State the active value and its effect on context selection.",
+        "Preserve project evidence boundaries before expanding work."
+      ],
+      "guardrails": [
+        "No hidden broadening of scope.",
+        "No fake validation success."
+      ]
+    },
+    {
+      "id": "create_parameter_precision_reference",
+      "label": "Precision Parameter Reference",
+      "category": "Create Parameter Abstraction",
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated",
+        "custom"
+      ],
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "yaml",
+        "py",
+        "dockerfile",
+        "env"
+      ],
+      "applies_to_profiles": [
+        "CreateParameterPrecision",
+        "Create",
+        "DevelopFeatures",
+        "Refactor"
+      ],
+      "trigger_keywords": [
+        "precision",
+        "Precision",
+        "parameter",
+        "slider",
+        "feature",
+        "refactor"
+      ],
+      "source_refs": [
+        "schema/create_mode_parameters.json#create_mode_parameter_boilerplates/precision"
+      ],
+      "rules": [
+        "Use Precision value as a bounded parameter, not as free-form prose.",
+        "State the active value and its effect on context selection.",
+        "Preserve project evidence boundaries before expanding work."
+      ],
+      "guardrails": [
+        "No hidden broadening of scope.",
+        "No fake validation success."
+      ]
+    },
+    {
+      "id": "create_parameter_architecture_reference",
+      "label": "Architecture Parameter Reference",
+      "category": "Create Parameter Abstraction",
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated",
+        "custom"
+      ],
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "yaml",
+        "py",
+        "dockerfile",
+        "env"
+      ],
+      "applies_to_profiles": [
+        "CreateParameterArchitecture",
+        "Create",
+        "DevelopFeatures",
+        "Refactor"
+      ],
+      "trigger_keywords": [
+        "architecture",
+        "Architecture",
+        "parameter",
+        "slider",
+        "feature",
+        "refactor"
+      ],
+      "source_refs": [
+        "schema/create_mode_parameters.json#create_mode_parameter_boilerplates/architecture"
+      ],
+      "rules": [
+        "Use Architecture value as a bounded parameter, not as free-form prose.",
+        "State the active value and its effect on context selection.",
+        "Preserve project evidence boundaries before expanding work."
+      ],
+      "guardrails": [
+        "No hidden broadening of scope.",
+        "No fake validation success."
+      ]
+    },
+    {
+      "id": "create_parameter_documentation_reference",
+      "label": "DocumentationLevel Parameter Reference",
+      "category": "Create Parameter Abstraction",
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated",
+        "custom"
+      ],
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "yaml",
+        "py",
+        "dockerfile",
+        "env"
+      ],
+      "applies_to_profiles": [
+        "CreateParameterDocumentation",
+        "Create",
+        "DevelopFeatures",
+        "Refactor"
+      ],
+      "trigger_keywords": [
+        "documentation_level",
+        "DocumentationLevel",
+        "parameter",
+        "slider",
+        "feature",
+        "refactor"
+      ],
+      "source_refs": [
+        "schema/create_mode_parameters.json#create_mode_parameter_boilerplates/documentation_level"
+      ],
+      "rules": [
+        "Use DocumentationLevel value as a bounded parameter, not as free-form prose.",
+        "State the active value and its effect on context selection.",
+        "Preserve project evidence boundaries before expanding work."
+      ],
+      "guardrails": [
+        "No hidden broadening of scope.",
+        "No fake validation success."
+      ]
+    },
+    {
+      "id": "create_parameter_usability_reference",
+      "label": "Usability Parameter Reference",
+      "category": "Create Parameter Abstraction",
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated",
+        "custom"
+      ],
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "yaml",
+        "py",
+        "dockerfile",
+        "env"
+      ],
+      "applies_to_profiles": [
+        "CreateParameterUsability",
+        "Create",
+        "DevelopFeatures",
+        "Refactor"
+      ],
+      "trigger_keywords": [
+        "usability",
+        "Usability",
+        "parameter",
+        "slider",
+        "feature",
+        "refactor"
+      ],
+      "source_refs": [
+        "schema/create_mode_parameters.json#create_mode_parameter_boilerplates/usability"
+      ],
+      "rules": [
+        "Use Usability value as a bounded parameter, not as free-form prose.",
+        "State the active value and its effect on context selection.",
+        "Preserve project evidence boundaries before expanding work."
+      ],
+      "guardrails": [
+        "No hidden broadening of scope.",
+        "No fake validation success."
+      ]
+    },
+    {
       "id": "develop_feature_reference",
       "label": "Develop Feature Reference",
       "category": "develop_features",
@@ -77,7 +353,7 @@
       "applies_to_profiles": [],
       "trigger_keywords": [
         "TOKENS.json",
-        "generation log",
+        "generation tokens",
         "audit trail",
         "summary",
         "handoff"
@@ -97,8 +373,8 @@
       ]
     },
     {
-      "id": "summary_documentation_reference",
-      "label": "Summary Documentation Reference",
+      "id": "handoff_documentation_reference",
+      "label": "Handoff Documentation Reference",
       "category": "documentation",
       "always_on": true,
       "applies_to_path_types": [],
@@ -380,282 +656,6 @@
       ],
       "guardrails": [
         "Do not hide validation gaps or model assumptions."
-      ]
-    },
-    {
-      "id": "create_parameter_weight_reference",
-      "label": "Weight Parameter Reference",
-      "category": "Create Parameter Abstraction",
-      "applies_to_path_types": [
-        "wrapper",
-        "backend",
-        "frontend",
-        "generated",
-        "custom"
-      ],
-      "applies_to_file_types": [
-        "json",
-        "md",
-        "yaml",
-        "py",
-        "dockerfile",
-        "env"
-      ],
-      "applies_to_profiles": [
-        "CreateParameterWeight",
-        "Create",
-        "DevelopFeatures",
-        "Refactor"
-      ],
-      "trigger_keywords": [
-        "weight",
-        "Weight",
-        "parameter",
-        "slider",
-        "feature",
-        "refactor"
-      ],
-      "source_refs": [
-        "schema/create_mode_parameters.json#create_mode_parameter_boilerplates/weight"
-      ],
-      "rules": [
-        "Use Weight value as a bounded parameter, not as free-form prose.",
-        "State the active value and its effect on context selection.",
-        "Preserve project evidence boundaries before expanding work."
-      ],
-      "guardrails": [
-        "No hidden broadening of scope.",
-        "No fake validation success."
-      ]
-    },
-    {
-      "id": "create_parameter_security_reference",
-      "label": "Security Parameter Reference",
-      "category": "Create Parameter Abstraction",
-      "applies_to_path_types": [
-        "wrapper",
-        "backend",
-        "frontend",
-        "generated",
-        "custom"
-      ],
-      "applies_to_file_types": [
-        "json",
-        "md",
-        "yaml",
-        "py",
-        "dockerfile",
-        "env"
-      ],
-      "applies_to_profiles": [
-        "CreateParameterSecurity",
-        "Create",
-        "DevelopFeatures",
-        "Refactor"
-      ],
-      "trigger_keywords": [
-        "security",
-        "Security",
-        "parameter",
-        "slider",
-        "feature",
-        "refactor"
-      ],
-      "source_refs": [
-        "schema/create_mode_parameters.json#create_mode_parameter_boilerplates/security"
-      ],
-      "rules": [
-        "Use Security value as a bounded parameter, not as free-form prose.",
-        "State the active value and its effect on context selection.",
-        "Preserve project evidence boundaries before expanding work."
-      ],
-      "guardrails": [
-        "No hidden broadening of scope.",
-        "No fake validation success."
-      ]
-    },
-    {
-      "id": "create_parameter_precision_reference",
-      "label": "Precision Parameter Reference",
-      "category": "Create Parameter Abstraction",
-      "applies_to_path_types": [
-        "wrapper",
-        "backend",
-        "frontend",
-        "generated",
-        "custom"
-      ],
-      "applies_to_file_types": [
-        "json",
-        "md",
-        "yaml",
-        "py",
-        "dockerfile",
-        "env"
-      ],
-      "applies_to_profiles": [
-        "CreateParameterPrecision",
-        "Create",
-        "DevelopFeatures",
-        "Refactor"
-      ],
-      "trigger_keywords": [
-        "precision",
-        "Precision",
-        "parameter",
-        "slider",
-        "feature",
-        "refactor"
-      ],
-      "source_refs": [
-        "schema/create_mode_parameters.json#create_mode_parameter_boilerplates/precision"
-      ],
-      "rules": [
-        "Use Precision value as a bounded parameter, not as free-form prose.",
-        "State the active value and its effect on context selection.",
-        "Preserve project evidence boundaries before expanding work."
-      ],
-      "guardrails": [
-        "No hidden broadening of scope.",
-        "No fake validation success."
-      ]
-    },
-    {
-      "id": "create_parameter_architecture_reference",
-      "label": "Architecture Parameter Reference",
-      "category": "Create Parameter Abstraction",
-      "applies_to_path_types": [
-        "wrapper",
-        "backend",
-        "frontend",
-        "generated",
-        "custom"
-      ],
-      "applies_to_file_types": [
-        "json",
-        "md",
-        "yaml",
-        "py",
-        "dockerfile",
-        "env"
-      ],
-      "applies_to_profiles": [
-        "CreateParameterArchitecture",
-        "Create",
-        "DevelopFeatures",
-        "Refactor"
-      ],
-      "trigger_keywords": [
-        "architecture",
-        "Architecture",
-        "parameter",
-        "slider",
-        "feature",
-        "refactor"
-      ],
-      "source_refs": [
-        "schema/create_mode_parameters.json#create_mode_parameter_boilerplates/architecture"
-      ],
-      "rules": [
-        "Use Architecture value as a bounded parameter, not as free-form prose.",
-        "State the active value and its effect on context selection.",
-        "Preserve project evidence boundaries before expanding work."
-      ],
-      "guardrails": [
-        "No hidden broadening of scope.",
-        "No fake validation success."
-      ]
-    },
-    {
-      "id": "create_parameter_documentation_reference",
-      "label": "DocumentationLevel Parameter Reference",
-      "category": "Create Parameter Abstraction",
-      "applies_to_path_types": [
-        "wrapper",
-        "backend",
-        "frontend",
-        "generated",
-        "custom"
-      ],
-      "applies_to_file_types": [
-        "json",
-        "md",
-        "yaml",
-        "py",
-        "dockerfile",
-        "env"
-      ],
-      "applies_to_profiles": [
-        "CreateParameterDocumentation",
-        "Create",
-        "DevelopFeatures",
-        "Refactor"
-      ],
-      "trigger_keywords": [
-        "documentation_level",
-        "DocumentationLevel",
-        "parameter",
-        "slider",
-        "feature",
-        "refactor"
-      ],
-      "source_refs": [
-        "schema/create_mode_parameters.json#create_mode_parameter_boilerplates/documentation_level"
-      ],
-      "rules": [
-        "Use DocumentationLevel value as a bounded parameter, not as free-form prose.",
-        "State the active value and its effect on context selection.",
-        "Preserve project evidence boundaries before expanding work."
-      ],
-      "guardrails": [
-        "No hidden broadening of scope.",
-        "No fake validation success."
-      ]
-    },
-    {
-      "id": "create_parameter_usability_reference",
-      "label": "Usability Parameter Reference",
-      "category": "Create Parameter Abstraction",
-      "applies_to_path_types": [
-        "wrapper",
-        "backend",
-        "frontend",
-        "generated",
-        "custom"
-      ],
-      "applies_to_file_types": [
-        "json",
-        "md",
-        "yaml",
-        "py",
-        "dockerfile",
-        "env"
-      ],
-      "applies_to_profiles": [
-        "CreateParameterUsability",
-        "Create",
-        "DevelopFeatures",
-        "Refactor"
-      ],
-      "trigger_keywords": [
-        "usability",
-        "Usability",
-        "parameter",
-        "slider",
-        "feature",
-        "refactor"
-      ],
-      "source_refs": [
-        "schema/create_mode_parameters.json#create_mode_parameter_boilerplates/usability"
-      ],
-      "rules": [
-        "Use Usability value as a bounded parameter, not as free-form prose.",
-        "State the active value and its effect on context selection.",
-        "Preserve project evidence boundaries before expanding work."
-      ],
-      "guardrails": [
-        "No hidden broadening of scope.",
-        "No fake validation success."
       ]
     },
     {

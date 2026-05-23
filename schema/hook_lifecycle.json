@@ -1,4 +1,7 @@
 {
+  "artifact": "schema/hook_lifecycle.json",
+  "schema_subset": "hook_lifecycle",
+  "policy": "Resolved rows only; not a full schema catalog.",
   "hook_lifecycle": [
     {
       "id": "01_classify_task",

@@ -4,8 +4,8 @@
       "id": "prompt_intro",
       "purpose": "Opening paragraph for the human-facing Create export prompt.",
       "translations": {
-        "GERMAN": "Du erhältst einen menschlich kompilierten Create-Prompt. Verarbeite ihn wie einen klaren Arbeitsauftrag: zuerst Kontext und Operator-Flow verstehen, dann den ausgewählten Plan anwenden, anschließend Validierung, Rollback und bekannte Lücken dokumentieren. Die JSON-Manifeste bleiben als Nachweis im Export, aber dieser Text ist die lesbare Handlungsanweisung.",
-        "ENGLISH": "You receive a human-compiled Create prompt. Treat it as a clear work order: understand context and operator flow first, apply the selected plan, then document validation, rollback and known gaps. compact JSON handoffs stay in the export as evidence, but this text is the readable instruction layer."
+        "GERMAN": "Du erhaeltst einen klaren Create-Arbeitsauftrag. Lies zuerst Kontext und Operator-Flow, wende dann den ausgewaehlten Plan an und dokumentiere Validierung, Rollback und bekannte Luecken. Die JSON-Handoff-Dateien bleiben als Nachweis im Export; dieser Text ist die lesbare Handlungsanweisung.",
+        "ENGLISH": "You receive a clear Create work order. Read context and operator flow first, apply the selected plan, then document validation, rollback and known gaps. Compact JSON handoff files stay in the export as evidence; this text is the readable instruction layer."
       }
     },
     {
@@ -68,16 +68,16 @@
       "id": "surface_user_prompt_export_intro",
       "purpose": "Opening for final USER_PROMPT.txt export surface.",
       "translations": {
-        "GERMAN": "Dieser Prompt ist die finale, menschlich kompilierte Übergabe aus allen relevanten Tabs. Er erklärt Aufgabe, Operator-Flow, Export-Intelligenz, rekursive Projektverarbeitung und Validierungsvertrag; technische Listen, IDs und Rohkonfigurationen bleiben in den mitgelieferten Manifestdateien.",
-        "ENGLISH": "This prompt is the final human-compiled handoff from all relevant tabs. It explains task, operator flow, export intelligence, recursive project processing, and validation contract; technical lists, IDs, and raw configuration remain in the accompanying handoff files."
+        "GERMAN": "Dieser Prompt ist die finale lesbare Uebergabe aus allen relevanten Tabs. Er erklaert Aufgabe, Operator-Flow, Export-Intelligenz, rekursive Projektverarbeitung und Validierungsvertrag; technische Listen, IDs und Rohkonfigurationen bleiben in den mitgelieferten Handoff-Dateien.",
+        "ENGLISH": "This prompt is the final readable handoff from all relevant tabs. It explains task, operator flow, export intelligence, recursive project processing and validation contract; technical lists, IDs and raw configuration remain in the accompanying handoff files."
       }
     },
     {
       "id": "surface_create_preview_intro",
       "purpose": "Opening for Preview Create contract preview.",
       "translations": {
-        "GERMAN": "Diese Create-Preview zeigt denselben menschlich kompilierten Arbeitsauftrag, der beim Export als USER_PROMPT.txt entsteht. Änderungen an Operator-Flow oder Export-Intelligenz wirken hier reaktiv, damit die Vorschau die spätere Übergabe realistisch abbildet.",
-        "ENGLISH": "This Create preview shows the same human-compiled work order that is exported as USER_PROMPT.txt. Changes to operator flow or export intelligence update this preview reactively so it mirrors the final handoff."
+        "GERMAN": "Diese Create-Preview zeigt denselben klaren Arbeitsauftrag, der beim Export als USER_PROMPT.txt entsteht. Aenderungen an Operator-Flow oder Export-Intelligenz wirken hier reaktiv, damit die Vorschau die spaetere Uebergabe realistisch abbildet.",
+        "ENGLISH": "This Create preview shows the same clear work order that is exported as USER_PROMPT.txt. Changes to operator flow or export intelligence update this preview reactively so it mirrors the final handoff."
       }
     },
     {
@@ -256,6 +256,118 @@
       "translations": {
         "GERMAN": "Die Rollenplanung wird aus den deklarierten Operation-Roles und Referenzdomänen kompiliert. Sie erklärt Zweck, Reihenfolge, Grenzen und Prüfhaltung menschlich, ohne die Rohlisten aus den Manifesten zu kopieren.",
         "ENGLISH": "Role planning is compiled from declared operation roles and reference domains. It explains purpose, order, boundaries, and validation posture in human language without copying raw manifest lists."
+      }
+    },
+    {
+      "id": "tasks_target_phase_instruction",
+      "purpose": "TASKS.TXT instruction for an enabled target checkbox.",
+      "translations": {
+        "GERMAN": "Nutze dieses aktivierte Target als Grenze fuer diese Phase. Arbeite nur innerhalb dieses Target-Pfads und ignoriere inaktive Target-Zeilen.",
+        "ENGLISH": "Use this enabled target as the boundary for this phase. Work only inside this target path and ignore inactive target rows."
+      }
+    },
+    {
+      "id": "tasks_target_phase_source",
+      "purpose": "TASKS.TXT source line for active target checkboxes.",
+      "translations": {
+        "GERMAN": "Quelle: aktive WRITE_AI_RULES_TO-Target-Checkboxen. Erkannte Defaults und inaktive Zeilen erzeugen keine TASKS-Phasen.",
+        "ENGLISH": "Source: active WRITE_AI_RULES_TO target checkboxes. Detected defaults and inactive rows do not create TASKS phases."
+      }
+    },
+    {
+      "id": "tasks_schema_phase_instruction",
+      "purpose": "TASKS.TXT instruction for a selected schema or boilerplate row.",
+      "translations": {
+        "GERMAN": "Nutze diese ausgewaehlte Schema- oder Boilerplate-Zeile als konkrete Phase fuer das aktive Create-Target.",
+        "ENGLISH": "Use this selected schema or boilerplate row as one concrete phase for the active Create target."
+      }
+    },
+    {
+      "id": "tasks_schema_phase_source",
+      "purpose": "TASKS.TXT source line for selected schema rows.",
+      "translations": {
+        "GERMAN": "Quelle: aktive UI-Checkbox oder Auswahl. USER_PROMPT.txt beschreibt die lesbare Aufgabe; TOKENS.json enthaelt konkrete Werte.",
+        "ENGLISH": "Source: active UI checkbox or selection state. USER_PROMPT.txt explains the readable task; TOKENS.json carries concrete values."
+      }
+    },
+    {
+      "id": "tasks_target_fallback",
+      "purpose": "TASKS.TXT fallback when no active target/schema phase exists.",
+      "translations": {
+        "GERMAN": "Es wurde keine aktivierte Target-Checkbox und keine checkbox-aktive Boilerplate-/Schema-Zeile gefunden. TASKS.TXT ignoriert inaktive Targets und nicht ausgewaehlte Katalogzeilen.",
+        "ENGLISH": "No enabled target checkbox or checkbox-active boilerplate/schema row was resolved. TASKS.TXT ignores inactive targets and unselected catalog rows."
+      }
+    },
+    {
+      "id": "tasks_export_seed_instruction",
+      "purpose": "TASKS.TXT export seed instruction.",
+      "translations": {
+        "GERMAN": "Schreibe TASKS.TXT als klare Aufgabenliste fuer den aktiven Projektkontext. Erzeuge Phasen nur aus aktivierten Targets und ausgewaehlten Schema-/Boilerplate-Zeilen. Fuege den linken Own Prompt genau einmal als zusaetzliche Aufgabe hinzu.",
+        "ENGLISH": "Write TASKS.TXT as a readable work order for the active project context. Create phases only from enabled targets and selected schema/boilerplate rows. Merge the left Own Prompt once as an additional task phase."
+      }
+    },
+    {
+      "id": "tasks_merge_policy",
+      "purpose": "TASKS.TXT merge policy.",
+      "translations": {
+        "GERMAN": "USER_PROMPT.txt wird nicht in TASKS.TXT zurueckgelesen. TASKS-Phasen entstehen aus aktivierten Target-Checkboxen, ausgewaehlten Schema-/Boilerplate-Zeilen und dem linken Own Prompt genau einmal.",
+        "ENGLISH": "USER_PROMPT.txt is not parsed into TASKS.TXT. TASKS phases come from enabled target checkboxes, selected schema/boilerplate rows and the left Own Prompt once."
+      }
+    },
+    {
+      "id": "tasks_human_intro",
+      "purpose": "TASKS.TXT opening text.",
+      "translations": {
+        "GERMAN": "TASKS.TXT nennt die konkreten Arbeitsphasen dieses Exports in einfachen Worten. Grundlage sind Mode, Routine, Stack, aktivierte Targets und ausgewaehlte Schema-Zeilen; der linke Own Prompt wird bei Inhalt genau einmal ergaenzt.",
+        "ENGLISH": "TASKS.TXT lists the concrete work phases for this export in simple words. It uses Mode, Routine, Stack, enabled targets and selected schema rows; the left Own Prompt is merged once when present."
+      }
+    },
+    {
+      "id": "tasks_preview_heading",
+      "purpose": "Prompt Builder TASKS preview heading.",
+      "translations": {
+        "GERMAN": "### Prompt-Builder TASKS.TXT Hook - lesbare Aufgaben",
+        "ENGLISH": "### Prompt-Builder TASKS.TXT hook - readable tasks"
+      }
+    },
+    {
+      "id": "tasks_preview_description",
+      "purpose": "Prompt Builder TASKS preview description.",
+      "translations": {
+        "GERMAN": "Preview/Compile zeigt den TASKS.TXT-Export-Hook nur als Referenz. Die echte TASKS.TXT entsteht erst beim Export; wenn links Own Prompt Text steht, wird er genau einmal als zusaetzliche Aufgabe ergaenzt.",
+        "ENGLISH": "Preview/Compile shows the TASKS.TXT export hook for traceability. The actual TASKS.TXT file is written only during Export; if the left Own Prompt contains text, Export merges it once as an additional task instruction."
+      }
+    },
+    {
+      "id": "tasks_origin_behavior",
+      "purpose": "TASKS.TXT origin behavior line.",
+      "translations": {
+        "GERMAN": "Verhalten: Export-Hook. Preview und Compile zeigen nur die Referenz; die Datei selbst wird beim Export geschrieben und ist keine Create-Tab-Auswahl und kein Katalogeintrag.",
+        "ENGLISH": "Behavior: Export hook. Preview and Compile show only the reference; the file itself is written during Export and is not a Create-tab selection or catalog entry."
+      }
+    },
+    {
+      "id": "tasks_compiled_instruction_heading",
+      "purpose": "TASKS.TXT phase instruction heading.",
+      "translations": {
+        "GERMAN": "### Klare Arbeitsanweisung",
+        "ENGLISH": "### Clear work instruction"
+      }
+    },
+    {
+      "id": "cmd_action_label",
+      "purpose": "CMD.TXT action label.",
+      "translations": {
+        "GERMAN": "Aktion",
+        "ENGLISH": "Action"
+      }
+    },
+    {
+      "id": "cmd_boundary_label",
+      "purpose": "CMD.TXT boundary label.",
+      "translations": {
+        "GERMAN": "Grenze",
+        "ENGLISH": "Boundary"
       }
     }
   ],
