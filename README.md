@@ -66,21 +66,3 @@ Support notice: donations go exclusively to Eric Heidrich / Nrwx. The donation l
 Windows users can download the portable `PromptGuideStudio.exe` from the GitHub Releases page.
 
 The source code is published under the included MIT-based license notice. The application is provided as-is and all generated prompts, manifests and exports must be reviewed before use.
-
-## Download
-
-Windows users can download the portable `PromptGuideStudio.exe` from the GitHub Releases page.
-
-The source code is published under the included MIT-based license notice. The application is provided as-is and all generated prompts, manifests and exports must be reviewed before use.
-
-## Download
-
-Windows users can download the portable `PromptGuideStudio.exe` from the GitHub Releases page.
-
-The source code is published under the included MIT-based license notice. The application is provided as-is and all generated prompts, manifests and exports must be reviewed before use.
-
-## Download
-
-Windows users can download the portable `PromptGuideStudio.exe` from the GitHub Releases page.
-
-The source code is published under the included MIT-based license notice. The application is provided as-is and all generated prompts, manifests and exports must be reviewed before use.
