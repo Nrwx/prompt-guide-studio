@@ -1,3 +1,7 @@
+# Preview
+![Prompt Guide Studio Preview](assets/demo/prompt-guide-studio-demo.gif)
+### Prompt Guide Studio provides a desktop interface for scanning existing project trees, generating evidence-based AI prompts, reviewing manifests and preparing export packages.
+
 # Deutsch
 
 # Prompt Guide Studio — Start-Tab Benutzung
