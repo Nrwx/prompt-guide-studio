@@ -1,0 +1,82 @@
+{
+  "feature_refactor_overlay_contract": {
+    "schema_version": "feature-refactor-stack-overlay.v3.documentation-testing-reuse",
+    "purpose": "Attach one clean Feature/Fix/Docs/Test/Reuse/Refactor entry to the Create Prompt without generated variants.",
+    "point_of_truth": "Create Prompt tab entry inserted by Add selected entry; targets/mapping/build.complete remain write authority.",
+    "allowed_modes": [
+      "feature_for_existing_project",
+      "refactor_existing_stack"
+    ],
+    "change_types": [
+      "feature",
+      "fix",
+      "software_documentation",
+      "unit_test_plan",
+      "resource_reuse_feature",
+      "context_discovery",
+      "autonomous_feature_slice",
+      "refactor",
+      "resource_reuse_refactor",
+      "testability_refactor"
+    ],
+    "scale_values": [
+      "bounded_change"
+    ],
+    "essential_detail_keys": [
+      "id",
+      "label",
+      "mode",
+      "modes",
+      "fields",
+      "tokens",
+      "timeline_tokens",
+      "validation_focus",
+      "steps",
+      "rules",
+      "operators",
+      "roles",
+      "references",
+      "weights",
+      "applies_to_domains",
+      "applies_to_targets",
+      "target",
+      "path",
+      "path_type",
+      "build_target",
+      "file_types",
+      "dependencies",
+      "dependency_layer",
+      "artifacts",
+      "parameter_context",
+      "chain_schema",
+      "boilerplates",
+      "ptb_schema_alignment",
+      "update_plan_contract",
+      "unit_test_plan",
+      "test_strategy",
+      "resource_reuse_policy",
+      "local_resource_detection",
+      "doc_structure",
+      "evidence_matrix",
+      "quality_gates"
+    ],
+    "rules": [
+      "Resolve create parameters before applying the overlay.",
+      "Extract only schema/boilerplate essentials; do not copy unrelated Project Root settings.",
+      "Use Build.complete or Start/Create scanned project evidence as write authority.",
+      "Do not create generated pseudo-scale variants.",
+      "Documentation entries must select exactly one PTB/WELMEC schema profile when PTB alignment is requested.",
+      "Testing entries must reuse existing test framework evidence or produce a manual gap.",
+      "Resource-reuse entries must inspect local candidates before creating new resources."
+    ],
+    "operator": {
+      "id": "feature_refactor_overlay_operator",
+      "label": "Feature/Refactor Overlay Operator",
+      "rules": [
+        "select one clean entry for the requested change type",
+        "keep overlay changed-files-only",
+        "preserve mapping and validation posture"
+      ]
+    }
+  }
+}

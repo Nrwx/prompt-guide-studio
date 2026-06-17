@@ -1,0 +1,47 @@
+{
+  "id": "patch_tab_target_modes",
+  "owner": "Patch Tab",
+  "purpose": "Allow Patch Tab to stage patches against either Create Temp Preview or the mapped Working/Project Tree.",
+  "target_modes": [
+    {
+      "id": "create_temp",
+      "label": "Create Temp Preview",
+      "write_boundary": "active Create temp preview root",
+      "default": true,
+      "guardrail": "Does not mutate the Start/Working Tree."
+    },
+    {
+      "id": "working_project_tree",
+      "label": "Working/Project Tree",
+      "write_boundary": "explicitly selected Start/Create project root",
+      "default": false,
+      "guardrail": "Only selected after deliberate user choice; stage remains external until Commit."
+    }
+  ],
+  "git_patch_control": {
+    "checkbox": "USE-GIT-TO-PATCH",
+    "requires": [
+      "git command available",
+      "repository root can be resolved for selected project reference"
+    ],
+    "engine": "git apply with detected -pN strip level",
+    "fallback": "patch command with detected -pN strip level, then safe review manifest when no engine applies cleanly",
+    "supported_patch_shapes": [
+      "git diff -- a/path b/path",
+      "diff -ruN /absolute/old/root /absolute/new/root",
+      "unified diffs with absolute or project-relative ---/+++ paths"
+    ]
+  },
+  "import_contract": {
+    "stage_only": true,
+    "commit_button_applies_stage_to_selected_target": true,
+    "denied_artifacts_filtered_from_stage": [
+      "EXPORT_MANIFEST.json",
+      "PROMPT_MANIFEST.json",
+      "USER_PROMPT.txt",
+      "PROCESS_LOG.md",
+      "SUMMARY.md"
+    ],
+    "traceability": "PATCH_IMPORT_MANIFEST.json is written to the Patch branch metadata root when a diff applies."
+  }
+}

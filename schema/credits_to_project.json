@@ -1,0 +1,472 @@
+{
+  "project_credit_infoboxes": [
+    {
+      "id": "project_credit_infobox_js",
+      "label": "Credits to Project / JavaScript",
+      "applies_to_file_types": [
+        "js"
+      ],
+      "extensions": [
+        ".js",
+        ".mjs"
+      ],
+      "comment_style": "jsdoc_block",
+      "insertion_policy": "top_of_file_after_shebang_or_license",
+      "duplicate_policy": "update_existing_block_matching_project_credit_marker",
+      "marker": "@project-credit",
+      "tokens": [
+        "{$credit_project}",
+        "{$credit_owner}",
+        "{$credit_year}",
+        "{$credit_license}",
+        "{$credit_meta_summary}"
+      ],
+      "editable_fields": [
+        {
+          "id": "credit_project",
+          "type": "text",
+          "required": true,
+          "description": "Projektname im Credit-Block"
+        },
+        {
+          "id": "credit_owner",
+          "type": "text",
+          "required": true,
+          "description": "Owner/author/organization; do not invent"
+        },
+        {
+          "id": "credit_year",
+          "type": "text",
+          "required": false,
+          "default": "{$current_year}"
+        },
+        {
+          "id": "credit_license",
+          "type": "text",
+          "required": false,
+          "default": "UNSPECIFIED"
+        },
+        {
+          "id": "credit_meta_summary",
+          "type": "text",
+          "required": false,
+          "default": "Generated or maintained by the project prompt pipeline."
+        }
+      ],
+      "template": "/**\n * @project-credit\n * @project {$credit_project}\n * @copyright Copyright (c) {$credit_year} {$credit_owner}\n * @license {$credit_license}\n * @meta {$credit_meta_summary}\n */",
+      "validation_focus": [
+        "valid JavaScript comment syntax",
+        "no duplicate credit blocks",
+        "existing shebang remains first line"
+      ]
+    },
+    {
+      "id": "project_credit_infobox_txt",
+      "label": "Credits to Project / Text",
+      "applies_to_file_types": [
+        "txt"
+      ],
+      "extensions": [
+        ".txt"
+      ],
+      "comment_style": "plain_text_box",
+      "insertion_policy": "top_of_file_or_first_nonempty_header_boundary",
+      "duplicate_policy": "update_existing_box_matching_project_credit_marker",
+      "marker": "PROJECT-CREDIT",
+      "tokens": [
+        "{$credit_project}",
+        "{$credit_owner}",
+        "{$credit_year}",
+        "{$credit_license}",
+        "{$credit_meta_summary}"
+      ],
+      "editable_fields": [
+        {
+          "id": "credit_project",
+          "type": "text",
+          "required": true
+        },
+        {
+          "id": "credit_owner",
+          "type": "text",
+          "required": true
+        },
+        {
+          "id": "credit_year",
+          "type": "text",
+          "required": false,
+          "default": "{$current_year}"
+        },
+        {
+          "id": "credit_license",
+          "type": "text",
+          "required": false,
+          "default": "UNSPECIFIED"
+        },
+        {
+          "id": "credit_meta_summary",
+          "type": "text",
+          "required": false
+        }
+      ],
+      "template": "========================================\nPROJECT-CREDIT\nProject: {$credit_project}\nCopyright: (c) {$credit_year} {$credit_owner}\nLicense: {$credit_license}\nMeta: {$credit_meta_summary}\n========================================",
+      "validation_focus": [
+        "plain text remains readable",
+        "no duplicate PROJECT-CREDIT block",
+        "line endings preserved"
+      ]
+    },
+    {
+      "id": "project_credit_infobox_vue",
+      "label": "Credits to Project / Vue SFC",
+      "applies_to_file_types": [
+        "vue"
+      ],
+      "extensions": [
+        ".vue"
+      ],
+      "comment_style": "html_comment_block",
+      "insertion_policy": "top_of_sfc_before_template_script_or_style",
+      "duplicate_policy": "update_existing_block_matching_project_credit_marker",
+      "marker": "@project-credit",
+      "tokens": [
+        "{$credit_project}",
+        "{$credit_owner}",
+        "{$credit_year}",
+        "{$credit_license}",
+        "{$credit_meta_summary}"
+      ],
+      "editable_fields": [
+        {
+          "id": "credit_project",
+          "type": "text",
+          "required": true
+        },
+        {
+          "id": "credit_owner",
+          "type": "text",
+          "required": true
+        },
+        {
+          "id": "credit_year",
+          "type": "text",
+          "required": false,
+          "default": "{$current_year}"
+        },
+        {
+          "id": "credit_license",
+          "type": "text",
+          "required": false,
+          "default": "UNSPECIFIED"
+        },
+        {
+          "id": "credit_meta_summary",
+          "type": "text",
+          "required": false
+        }
+      ],
+      "template": "<!--\n  @project-credit\n  @project {$credit_project}\n  @copyright Copyright (c) {$credit_year} {$credit_owner}\n  @license {$credit_license}\n  @meta {$credit_meta_summary}\n-->",
+      "validation_focus": [
+        "valid Vue SFC / HTML comment syntax",
+        "template/script/style order preserved",
+        "no duplicate credit block"
+      ]
+    }
+  ],
+  "project_credit_rules": [
+    {
+      "id": "project_credit_no_invented_legal_claims",
+      "label": "No invented legal claims",
+      "rules": [
+        "Use user-provided owner/license when available.",
+        "When owner or license is unknown, keep token placeholders or UNSPECIFIED rather than inventing facts."
+      ]
+    },
+    {
+      "id": "project_credit_file_type_first",
+      "label": "File type first",
+      "rules": [
+        "Select the infobox by file type or extension.",
+        "Skip unsupported files unless an explicit schema is added."
+      ]
+    }
+  ],
+  "create_chain_boilerplates": [
+    {
+      "id": "feature_credits_to_project_infobox",
+      "label": "Add Credits-to-Project Infobox",
+      "display_name": "Add Credits-to-Project Infobox",
+      "modes": [
+        "feature_for_existing_project"
+      ],
+      "group": "Feature / Credits",
+      "order": 41,
+      "schema_family": "credits_to_project",
+      "specialization": "credits_to_project",
+      "context_hint": "Adds schema-backed copyright/meta infoboxes for .js, .txt and .vue.",
+      "intent": "Add or update an editable project credit infobox in supported files.",
+      "fields": [
+        {
+          "id": "target_path",
+          "type": "path",
+          "default": "@wrapper",
+          "description": "Goal root or file from mapping"
+        },
+        {
+          "id": "outcome",
+          "type": "text",
+          "required": true,
+          "description": "Done condition for the credit extension"
+        },
+        {
+          "id": "credit_project",
+          "type": "text",
+          "required": true
+        },
+        {
+          "id": "credit_owner",
+          "type": "text",
+          "required": true
+        },
+        {
+          "id": "credit_year",
+          "type": "text",
+          "required": false,
+          "default": "{$current_year}"
+        },
+        {
+          "id": "credit_license",
+          "type": "text",
+          "required": false,
+          "default": "UNSPECIFIED"
+        },
+        {
+          "id": "credit_meta_summary",
+          "type": "text",
+          "required": false
+        },
+        {
+          "id": "credit_file_type",
+          "type": "enum",
+          "options": [
+            "auto",
+            "js",
+            "txt",
+            "vue"
+          ],
+          "default": "auto"
+        },
+        {
+          "id": "credit_apply_policy",
+          "type": "enum",
+          "options": [
+            "insert_if_missing",
+            "update_existing",
+            "report_only"
+          ],
+          "default": "insert_if_missing"
+        }
+      ],
+      "tokens": [
+        "{$credit_project}",
+        "{$credit_owner}",
+        "{$credit_year}",
+        "{$credit_license}",
+        "{$credit_meta_summary}",
+        "{$credit_file_type:auto|js|txt|vue}",
+        "{$credit_apply_policy:insert_if_missing|update_existing|report_only}"
+      ],
+      "template": "Develop the Credits to Project feature for {$target_path}. Outcome: {$outcome}. Use project_credit_infoboxes as the only formatting authority. Apply for {$credit_file_type:auto|js|txt|vue} the appropriate comment syntax: JS=JSDoc-Block, TXT=Plain-Text-Box, Vue=HTML-Kommentar vor <template>/<script>/<style>. Policy: {$credit_apply_policy:insert_if_missing|update_existing|report_only}. Do not invent owner/license; leave missing values as token/UNSPECIFIED. Output: changed files, validated affected file types, rollback note.",
+      "timeline_tokens": [
+        "{$scan_project_scope}",
+        "{$write_project_mapping}",
+        "{$write_export_manifest}"
+      ],
+      "references": [
+        "project_credit_infobox_reference",
+        "schema_structured_output_reference"
+      ],
+      "roles": [
+        "project_credit_infobox_operator",
+        "create_export_boundary_operator"
+      ],
+      "weights": [
+        "project_credit_infobox_standard",
+        "changed_files_only"
+      ],
+      "validation_focus": [
+        "file-type-correct comment syntax",
+        "duplicate prevention",
+        "no invented legal facts",
+        "changed files only"
+      ],
+      "rules": [
+        "Credit blocks are editable boilerplates, not hard-coded prose.",
+        "Use extension-specific schema and report skipped unsupported files."
+      ],
+      "non_goals": [
+        "Refactor-Alignment",
+        "Lizenztext erfinden",
+        "create duplicate credit blocks"
+      ],
+      "source_policy": "Credits are feature-only; owner/license values must come from user input or project evidence."
+    }
+  ],
+  "reference_domains": [
+    {
+      "id": "project_credit_infobox_reference",
+      "label": "Project Credit Infobox Reference",
+      "category": "metadata_governance",
+      "applies_to_file_types": [
+        "js",
+        "txt",
+        "vue"
+      ],
+      "rules": [
+        "Credit metadata is schema-backed and editable.",
+        "File comments must be valid for the target file type.",
+        "Unknown owner/license values stay explicit placeholders or UNSPECIFIED."
+      ],
+      "guardrails": [
+        "Do not invent copyright ownership or license terms.",
+        "Do not duplicate existing credit blocks.",
+        "Do not apply unsupported syntax to a file extension."
+      ],
+      "source_refs": [
+        {
+          "label": "Local schema/project_credit_infoboxes",
+          "url": "schema/credits_to_project.json",
+          "authority": "project_schema"
+        }
+      ]
+    }
+  ],
+  "operation_roles": [
+    {
+      "id": "project_credit_infobox_operator",
+      "label": "Project Credit Infobox Operator",
+      "category": "metadata_governance",
+      "reference_domains": [
+        "project_credit_infobox_reference"
+      ],
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "applies_to_file_types": [
+        "js",
+        "txt",
+        "vue"
+      ],
+      "rules": [
+        "Resolve the target file type before inserting a credit block.",
+        "Use existing schema entries and editable fields; do not hard-code one-off comment bodies.",
+        "Prefer update_existing over duplicate insertion when a marker is present."
+      ],
+      "validation_focus": [
+        "comment syntax",
+        "duplicate marker scan",
+        "legal-fact honesty",
+        "rollback note"
+      ]
+    }
+  ],
+  "hooks": [
+    {
+      "id": "create_project_credit_infobox_gate",
+      "label": "Create Project Credit Infobox Gate",
+      "lifecycle_phase": "before_export",
+      "target_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated"
+      ],
+      "inject_into": [
+        "PROMPT_MANIFEST.json",
+        "EXPORT_MANIFEST.json",
+        "USER_PROMPT.txt"
+      ],
+      "rules": [
+        "Export project_credit_contract when Credits-to-Project entries are available.",
+        "Validate file-type mapping before applying infobox templates."
+      ],
+      "tokens": [
+        "{$credit_project}",
+        "{$credit_owner}",
+        "{$credit_license}"
+      ]
+    }
+  ],
+  "weight_operators": [
+    {
+      "id": "project_credit_infobox_standard",
+      "label": "Project Credit Infobox Standard",
+      "category": "metadata_governance",
+      "weight": 6,
+      "rules": [
+        "Prioritize correctness and editability over broad automatic insertion.",
+        "Keep the patch bounded to header blocks and schema/prompt contracts."
+      ],
+      "validation_focus": [
+        "schema exists",
+        "template tokens remain editable",
+        "target file syntax is valid"
+      ]
+    }
+  ],
+  "weight_table": [
+    {
+      "id": "project_credit_infobox_standard",
+      "label": "Credits-to-Project standard",
+      "weight": 6,
+      "description": "Moderate feature weight for metadata infobox insertion and alignment."
+    }
+  ],
+  "boilerplate_profiles": [
+    {
+      "id": "ProjectCredits",
+      "label": "Project Credits",
+      "description": "Editable copyright/meta infobox boilerplates for project files."
+    }
+  ],
+  "create_micro_tasks": [
+    {
+      "id": "06_project_credit_infobox",
+      "label": "Project credit infobox contract",
+      "tokens": [
+        "{$credit_project}",
+        "{$credit_owner}",
+        "{$write_export_manifest}"
+      ],
+      "steps": [
+        "resolve target file types",
+        "select credit infobox schema",
+        "insert/update/report credit block",
+        "record validation and rollback"
+      ]
+    }
+  ],
+  "dependency_groups": [
+    {
+      "id": "dep_wrapper_project_credit_infobox_schema__manual_validation_required_none_none",
+      "label": "wrapper project credit infobox schema",
+      "target": "wrapper",
+      "ecosystem": "metadata_governance",
+      "manifest_files": [
+        "schema/credits_to_project.json",
+        "EXPORT_MANIFEST.json"
+      ],
+      "dependencies": [
+        "project_credit_infoboxes",
+        "project_credit_infobox_operator",
+        "project_credit_infobox_reference"
+      ],
+      "install_token": "{$resolve_dependency_manifest}",
+      "validation_token": "manual_validation_required"
+    }
+  ]
+}

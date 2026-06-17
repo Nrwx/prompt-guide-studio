@@ -1,0 +1,177 @@
+{
+  "create_feature_refactor_specializations": {
+    "schema_version": "2026.feature_refactor.specializations.v3.documentation_testing_reuse",
+    "purpose": "Clean change-type specialization catalog with PTB-aligned documentation, update planning, unit-test planning and local resource reuse.",
+    "point_of_truth": "Create Prompt tab entry inserted by Add selected entry; Build.complete, Start-tab target match, selected scope and mapping provide write authority.",
+    "specializations": [
+      {
+        "id": "feature",
+        "label": "Feature",
+        "mode": "feature_for_existing_project",
+        "description": "User-requested behavior addition or improvement."
+      },
+      {
+        "id": "fix",
+        "label": "Fix",
+        "mode": "feature_for_existing_project",
+        "description": "Minimal defect repair from evidence."
+      },
+      {
+        "id": "documentation",
+        "label": "Software Documentation",
+        "mode": "feature_for_existing_project",
+        "description": "Feature-only documentation/update plan, optionally aligned to one PTB/WELMEC schema profile."
+      },
+      {
+        "id": "testing",
+        "label": "Unit Test Plan",
+        "mode": "feature_for_existing_project",
+        "description": "Project-native unit test plan or small test patch from existing framework evidence."
+      },
+      {
+        "id": "resource_reuse_feature",
+        "label": "Resource Reuse Feature",
+        "mode": "feature_for_existing_project",
+        "description": "Develop a feature by reusing local utilities, docs, fixtures, components or schema resources."
+      },
+      {
+        "id": "context_discovery",
+        "label": "Context Discovery",
+        "mode": "feature_for_existing_project",
+        "description": "Evidence-ranked feature proposal from project context."
+      },
+      {
+        "id": "autonomous_feature_slice",
+        "label": "Autonomous Feature Slice",
+        "mode": "feature_for_existing_project",
+        "description": "One bounded feature patch selected from context evidence and validation feasibility."
+      },
+      {
+        "id": "refactor",
+        "label": "Behavior-Preserving Refactor",
+        "mode": "refactor_existing_stack",
+        "description": "Internal restructuring only, no behavior/docs/fix work."
+      },
+      {
+        "id": "resource_reuse_refactor",
+        "label": "Resource Reuse Refactor",
+        "mode": "refactor_existing_stack",
+        "description": "Replace duplication/parallel code with local resources while preserving behavior."
+      },
+      {
+        "id": "testability_refactor",
+        "label": "Testability Refactor",
+        "mode": "refactor_existing_stack",
+        "description": "Introduce small seams/extractions that make unit tests possible without behavior change."
+      },
+      {
+        "id": "last_git_commit_feature",
+        "label": "Last-Git-Commit Feature",
+        "mode": "feature_for_existing_project",
+        "description": "Read-only last commit reference injected into Prompt Builder, USER_PROMPT and manifests when selected or enabled."
+      },
+      {
+        "id": "system_plan_expansion",
+        "label": "System Plan Expansion",
+        "mode": "feature_for_existing_project",
+        "description": "Adds more plan-first feature/refactor slice types and larger system planning entries."
+      },
+      {
+        "id": "last_git_commit_hardening",
+        "label": "Last-Git-Commit Hardening",
+        "mode": "refactor_existing_stack",
+        "description": "Behavior-preserving hardening of scan cache, error handling and manifest alignment for the Git reference."
+      },
+      {
+        "id": "slice_catalog_consolidation",
+        "label": "Slice Catalog Consolidation",
+        "mode": "refactor_existing_stack",
+        "description": "Keeps built-in plans, chain boilerplates, specializations and target modules aligned without duplicate pseudo-plans."
+      },
+      {
+        "id": "prompt_pipeline_boundary_hardening",
+        "label": "Prompt Pipeline Boundary Hardening",
+        "mode": "refactor_existing_stack",
+        "description": "Keeps Prompt Builder, USER_PROMPT, export hooks and command manifest boundaries consistent without changing behavior."
+      }
+    ],
+    "scale_values": [
+      {
+        "id": "bounded_change",
+        "label": "Begrenzte change",
+        "rule": "Scope is determined by evidence and validation, not by catalog multiplication."
+      }
+    ],
+    "resolution_order": [
+      "classify change type",
+      "resolve PTB/test/reuse schema only when selected",
+      "resolve mapping/build evidence",
+      "identify reusable local resources",
+      "select one matching catalog entry",
+      "patch changed files only",
+      "validate or state manual gap",
+      "export manifest delta",
+      "select LAST-GIT-COMMIT plan before prompt compile",
+      "run Patch-tab read-only Git scan once per selection signature",
+      "embed Reference D only when selected plan or checkbox enables it",
+      "write TASKS.TXT sidecar when Prompt Builder left input is present"
+    ],
+    "non_goals": [
+      "No cartesian scale variants.",
+      "No documentation refactor.",
+      "No bugfix refactor.",
+      "No arbitrary random feature implementation.",
+      "No autonomous multi-feature patch.",
+      "No unit-test framework installation without evidence.",
+      "No PTB/WELMEC compliance or certification claim."
+    ],
+    "autonomous_feature_rule": "Autonomous entries must rank candidates from observed context and select at most one low-risk, validation-ready feature slice.",
+    "documentation_rule": "Software documentation is feature-only and chooses exactly one PTB/WELMEC schema profile when PTB alignment is requested.",
+    "resource_reuse_rule": "Feature and refactor plans inspect selected scope/import graph/project tree/dependency layer before creating parallel resources.",
+    "last_git_commit_reference_rule": {
+      "feature_entry_id": "feature_last_git_commit_reference",
+      "refactor_entry_id": "refactor_last_git_commit_hardening",
+      "scan_before_prompt_builder_compile": true,
+      "source": "Patch-tab Git status/repository detection routine",
+      "output": "Reference D in Prompt Builder, USER_PROMPT and manifests when enabled/selected"
+    },
+    "prompt_builder_export_hooks_rule": {
+      "tasks_txt": "TASKS.TXT is an automatic Prompt Builder sidecar hook, not a Create Feature/Refactor specialization.",
+      "shortcut_commands": "USER_PROMPT shortcut commands are an export hook mirrored into CMD.json; they are not selectable catalog specializations.",
+      "last_git_commit": "Last-Git-Commit remains a selectable Feature/Refactor plan because selecting that plan triggers a read-only Git scan before Prompt Builder compilation.",
+      "tasks_sidecar": "TASKS.TXT remains a Prompt Builder sidecar and never becomes a Create catalog specialization."
+    },
+    "feature_refactor_mode_boundary_rule": {
+      "summary": "Feature and Refactor specializations must not model create_new_abstraction itself. New project abstractions live in create_new_abstraction schemas; Feature/Refactor work starts from verified existing-project evidence.",
+      "new_abstraction_schema": "schema/create_abstraction_pipeline_extensions.json"
+    }
+  },
+  "create_chain_boilerplates": [],
+  "feature_modules": [],
+  "refactor_modules": [],
+  "reference_domains": [
+    {
+      "id": "clean_feature_refactor_catalog_reference",
+      "label": "Clean Feature/Refactor Catalog Reference",
+      "category": "prompt_engineering",
+      "rules": [
+        "classify feature, fix, docs and refactor as separate change types",
+        "do not multiply plans by artificial scale"
+      ]
+    }
+  ],
+  "operation_roles": [
+    {
+      "id": "clean_feature_refactor_catalog_operator",
+      "label": "Clean Feature/Refactor Catalog Operator",
+      "category": "create_project",
+      "rules": [
+        "select exactly one catalog entry per requested change type",
+        "keep documentation feature-only",
+        "keep refactor behavior-preserving"
+      ]
+    }
+  ],
+  "weight_operators": [],
+  "hooks": []
+}

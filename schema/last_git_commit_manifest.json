@@ -1,0 +1,60 @@
+{
+  "schema_id": "last_git_commit_manifest",
+  "artifact": "LAST_GIT_COMMIT.json",
+  "owner": "Create Export / Prompt Builder",
+  "purpose": "Read-only Last-Git-Commit reference manifest for high export-intelligence Create prompts.",
+  "trigger_policy": {
+    "checkbox": "LAST-GIT-COMMIT in USER_PROMPT + Manifest",
+    "plan_triggers": [
+      "feature_last_git_commit_reference",
+      "refactor_last_git_commit_hardening",
+      "last_git_commit_feature_slice",
+      "last_git_commit_hardening_slice"
+    ],
+    "detail_rule": "Export-Intelligenz Hoch includes changed-file title and description rows in the prompt intro and stores the full payload in LAST_GIT_COMMIT.json."
+  },
+  "required_fields": [
+    "artifact",
+    "created_at",
+    "source",
+    "read_only",
+    "enabled",
+    "export_intelligence",
+    "path_policy",
+    "repository",
+    "last_commit",
+    "changed_files",
+    "guardrails"
+  ],
+  "last_commit_fields": [
+    "hash",
+    "short_hash",
+    "author_name",
+    "author_email",
+    "author_date_iso",
+    "committer_name",
+    "committer_date_iso",
+    "subject",
+    "body",
+    "changed_file_count",
+    "changed_files",
+    "name_status",
+    "stat_summary"
+  ],
+  "changed_file_fields": [
+    "status",
+    "change_type",
+    "path",
+    "relative_path",
+    "old_path",
+    "relative_old_path",
+    "title",
+    "description"
+  ],
+  "guardrails": [
+    "Manifest is read-only context and never grants Git write access.",
+    "Commit metadata is not proof that current working files still match the commit.",
+    "When absolute_project_paths is enabled, relative originals are preserved in relative_* fields.",
+    "ZIP member names remain project-relative even when manifest paths are absolute."
+  ]
+}

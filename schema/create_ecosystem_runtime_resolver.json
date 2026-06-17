@@ -1,0 +1,151 @@
+{
+  "id": "create_ecosystem_runtime_resolver",
+  "label": "Create Ecosystem Runtime Resolver",
+  "purpose": "Resolve runtime versions and only necessary local/stageable paths from the selected project scope. Docker is resolved from Dockerfile/Compose evidence, not a docker executable path.",
+  "rules": [
+    "Use the existing Start/Create project-tree scan as source of truth; do not add a broad second crawler.",
+    "Inspect runtime markers only within the bounded two-level project structure, with known wrapper exceptions such as gradle/wrapper/gradle-wrapper.properties.",
+    "Show a runtime control only when the chosen schema/boilerplate or scanned project evidence indicates that ecosystem.",
+    "Persist paths only when they are needed and evidence-backed, for example a project-local Python interpreter in .venv/venv.",
+    "Expose resolved values to Create config, dependency abstraction, compiler rows and timeline runtime setup.",
+    "After Start-tab or Create-tab project read, run bounded version probes for detected ecosystems; stack/category changes alone must not trigger probes.",
+    "Prompt Builder operator-flow changes must regenerate the generated operator prompt because the Remember block is part of the exported operator-flow contract.",
+    "Stageable runtimes such as Python/Conda, Node/NVM, Gradle wrappers, Flutter SDKs, Java and CMake may expose path overrides; global-only tools do not need stored executable paths.",
+    "Docker uses dockerfile_path / Compose file evidence. Do not store or require a docker executable path.",
+    "Runtime path Browse controls accept both files and folders; folder selections are resolved to the matching runtime executable or Dockerfile/Compose file when possible."
+  ],
+  "ecosystems": [
+    {
+      "id": "node",
+      "markers": [
+        "package.json",
+        ".nvmrc",
+        ".node-version"
+      ],
+      "runtime_fields": [
+        "nvm_version",
+        "nvm_root_path"
+      ],
+      "setup": "Node/NVM setup command"
+    },
+    {
+      "id": "gradle",
+      "markers": [
+        "settings.gradle",
+        "build.gradle",
+        "gradlew",
+        "gradle-wrapper.properties"
+      ],
+      "runtime_fields": [
+        "gradle_version",
+        "gradle_path"
+      ],
+      "setup": "Gradle wrapper/CLI optional build"
+    },
+    {
+      "id": "python",
+      "markers": [
+        "pyproject.toml",
+        "requirements.txt",
+        ".python-version",
+        "runtime.txt",
+        "Pipfile",
+        "environment.yml"
+      ],
+      "runtime_fields": [
+        "python_version",
+        "python_path"
+      ],
+      "setup": "Immediate marker detection plus bounded Python version probe; Python path is always overridable for Anaconda/venv/custom staged interpreters."
+    },
+    {
+      "id": "flutter",
+      "markers": [
+        "pubspec.yaml"
+      ],
+      "runtime_fields": [
+        "flutter_version",
+        "flutter_path"
+      ],
+      "setup": "bounded version probe plus optional selected executable path"
+    },
+    {
+      "id": "dotnet",
+      "markers": [
+        "global.json",
+        "*.csproj",
+        "*.sln"
+      ],
+      "runtime_fields": [
+        "dotnet_version",
+        "dotnet_path"
+      ],
+      "setup": "bounded version probe plus optional selected executable path"
+    },
+    {
+      "id": "go",
+      "markers": [
+        "go.mod"
+      ],
+      "runtime_fields": [
+        "go_version",
+        "go_path"
+      ],
+      "setup": "bounded version probe plus optional selected executable path"
+    },
+    {
+      "id": "rust",
+      "markers": [
+        "Cargo.toml",
+        "rust-toolchain"
+      ],
+      "runtime_fields": [
+        "rust_version",
+        "rust_path"
+      ],
+      "setup": "bounded version probe plus optional selected executable path"
+    },
+    {
+      "id": "java",
+      "markers": [
+        "pom.xml",
+        "mvnw",
+        ".java-version"
+      ],
+      "runtime_fields": [
+        "java_version",
+        "java_path"
+      ],
+      "setup": "bounded version probe plus optional selected executable path"
+    },
+    {
+      "id": "native",
+      "markers": [
+        "CMakeLists.txt",
+        "Makefile",
+        "meson.build"
+      ],
+      "runtime_fields": [
+        "cmake_path"
+      ],
+      "setup": "bounded version probe plus optional selected executable path"
+    },
+    {
+      "id": "docker",
+      "markers": [
+        "Dockerfile",
+        "docker-compose.yml",
+        "compose.yaml"
+      ],
+      "runtime_fields": [
+        "dockerfile_path"
+      ],
+      "setup": "Dockerfile/Compose marker resolution; docker executable stays system/global and is not stored as a path."
+    }
+  ],
+  "operator_role": {
+    "id": "create_ecosystem_runtime_operator",
+    "label": "Create Ecosystem Runtime Operator",
+    "responsibility": "Keep runtime detection bounded, evidence-backed and connected to Create timeline execution without using editor-only selections as authority."
+  }
+}

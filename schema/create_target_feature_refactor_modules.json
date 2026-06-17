@@ -1,0 +1,439 @@
+{
+  "feature_modules": [
+    {
+      "id": "generic_feature_module",
+      "label": "Generic Feature Module",
+      "stack_node_id": "generic",
+      "modes": [
+        "feature_for_existing_project"
+      ],
+      "context_alignment": [
+        "Use Build.complete/Start-tab/mapping as write authority.",
+        "Reuse local resources before creating new code/docs/tests.",
+        "Documentation/testing/reuse plans stay feature-only unless behavior-preserving refactor is selected."
+      ],
+      "steps": [
+        "Resolve selected chain entry.",
+        "Identify local resources and dependencies.",
+        "Patch smallest validated slice or produce plan/manual gap."
+      ],
+      "acceptance_criteria": [
+        "Changed-files-only patch or explicit plan-only output.",
+        "Validation or manual gap.",
+        "Rollback and export manifest delta."
+      ],
+      "match_rules": [
+        "generic fallback for all feature entries"
+      ]
+    },
+    {
+      "id": "last_git_commit_feature_module",
+      "label": "Last Git Commit Feature Module",
+      "stack_node_id": "generic",
+      "modes": [
+        "feature_for_existing_project"
+      ],
+      "context_alignment": [
+        "Use Patch-tab Git repository detection as read-only source.",
+        "Scan when Last-Git-Commit plan is selected before Prompt Builder compilation.",
+        "Expose Reference D in Prompt Builder, USER_PROMPT and manifests when enabled."
+      ],
+      "steps": [
+        "Resolve selected Last-Git-Commit plan.",
+        "Run read-only git status/last-commit scan once per signature.",
+        "Embed structured reference and Known Gap state."
+      ],
+      "acceptance_criteria": [
+        "Prompt Builder shows the reference.",
+        "No Git writes, diffs, remote URLs or secrets are exported.",
+        "Manifest has last_git_commit_reference enabled/available/reason fields."
+      ],
+      "match_rules": [
+        "feature_last_git_commit_reference",
+        "LAST-GIT-COMMIT"
+      ]
+    },
+    {
+      "id": "feature_system_plan_expansion_module",
+      "label": "System Plan Expansion Module",
+      "stack_node_id": "generic",
+      "modes": [
+        "feature_for_existing_project"
+      ],
+      "context_alignment": [
+        "Large plans are plan-first and decomposed into slices.",
+        "Catalog growth must not create generated scale variants."
+      ],
+      "steps": [
+        "Add plan-first entries.",
+        "Declare acceptance, validation, rollback and non-goals."
+      ],
+      "acceptance_criteria": [
+        "More slice types are available.",
+        "Big system plans do not become Big-Bang patches."
+      ],
+      "match_rules": [
+        "feature_system_plan_expansion",
+        "system plan"
+      ]
+    },
+    {
+      "id": "feature_project_packaging_windows_module",
+      "label": "Project Packaging Windows Module",
+      "stack_node_id": "generic",
+      "modes": [
+        "feature_for_existing_project"
+      ],
+      "context_alignment": [
+        "Existing-project evidence is required before patching.",
+        "Reuse local build/components/resources before adding new tooling.",
+        "Keep output rollback-ready and changed-files-only."
+      ],
+      "steps": [
+        "Resolve selected feature plan and target path.",
+        "Check existing manifests, components and commands.",
+        "Patch the smallest safe slice or return plan-only Known Gap."
+      ],
+      "acceptance_criteria": [
+        "Feature target is bound to verified project evidence.",
+        "Validation or manual test is explicit.",
+        "No broad project migration is hidden inside the slice."
+      ],
+      "match_rules": [
+        "feature_package_project_windows_exe"
+      ],
+      "output_contract": [
+        "changed_files",
+        "feature_delta",
+        "validation_or_manual_test",
+        "rollback_note",
+        "known_gaps"
+      ]
+    },
+    {
+      "id": "feature_project_packaging_linux_module",
+      "label": "Project Packaging Linux Module",
+      "stack_node_id": "generic",
+      "modes": [
+        "feature_for_existing_project"
+      ],
+      "context_alignment": [
+        "Existing-project evidence is required before patching.",
+        "Reuse local build/components/resources before adding new tooling.",
+        "Keep output rollback-ready and changed-files-only."
+      ],
+      "steps": [
+        "Resolve selected feature plan and target path.",
+        "Check existing manifests, components and commands.",
+        "Patch the smallest safe slice or return plan-only Known Gap."
+      ],
+      "acceptance_criteria": [
+        "Feature target is bound to verified project evidence.",
+        "Validation or manual test is explicit.",
+        "No broad project migration is hidden inside the slice."
+      ],
+      "match_rules": [
+        "feature_package_project_linux_debian_pkg"
+      ],
+      "output_contract": [
+        "changed_files",
+        "feature_delta",
+        "validation_or_manual_test",
+        "rollback_note",
+        "known_gaps"
+      ]
+    },
+    {
+      "id": "feature_project_packaging_mobile_module",
+      "label": "Project Packaging Mobile Module",
+      "stack_node_id": "generic",
+      "modes": [
+        "feature_for_existing_project"
+      ],
+      "context_alignment": [
+        "Existing-project evidence is required before patching.",
+        "Reuse local build/components/resources before adding new tooling.",
+        "Keep output rollback-ready and changed-files-only."
+      ],
+      "steps": [
+        "Resolve selected feature plan and target path.",
+        "Check existing manifests, components and commands.",
+        "Patch the smallest safe slice or return plan-only Known Gap."
+      ],
+      "acceptance_criteria": [
+        "Feature target is bound to verified project evidence.",
+        "Validation or manual test is explicit.",
+        "No broad project migration is hidden inside the slice."
+      ],
+      "match_rules": [
+        "feature_package_project_ios_android"
+      ],
+      "output_contract": [
+        "changed_files",
+        "feature_delta",
+        "validation_or_manual_test",
+        "rollback_note",
+        "known_gaps"
+      ]
+    },
+    {
+      "id": "feature_i18n_language_switcher_module",
+      "label": "I18n Language Switcher Module",
+      "stack_node_id": "generic",
+      "modes": [
+        "feature_for_existing_project"
+      ],
+      "context_alignment": [
+        "Existing-project evidence is required before patching.",
+        "Reuse local build/components/resources before adding new tooling.",
+        "Keep output rollback-ready and changed-files-only."
+      ],
+      "steps": [
+        "Resolve selected feature plan and target path.",
+        "Check existing manifests, components and commands.",
+        "Patch the smallest safe slice or return plan-only Known Gap."
+      ],
+      "acceptance_criteria": [
+        "Feature target is bound to verified project evidence.",
+        "Validation or manual test is explicit.",
+        "No broad project migration is hidden inside the slice."
+      ],
+      "match_rules": [
+        "feature_i18n_multilanguage_language_switcher"
+      ],
+      "output_contract": [
+        "changed_files",
+        "feature_delta",
+        "validation_or_manual_test",
+        "rollback_note",
+        "known_gaps"
+      ]
+    },
+    {
+      "id": "feature_math_utils_library_module",
+      "label": "Math Utils Library Module",
+      "stack_node_id": "generic",
+      "modes": [
+        "feature_for_existing_project"
+      ],
+      "context_alignment": [
+        "Existing-project evidence is required before patching.",
+        "Reuse local build/components/resources before adding new tooling.",
+        "Keep output rollback-ready and changed-files-only."
+      ],
+      "steps": [
+        "Resolve selected feature plan and target path.",
+        "Check existing manifests, components and commands.",
+        "Patch the smallest safe slice or return plan-only Known Gap."
+      ],
+      "acceptance_criteria": [
+        "Feature target is bound to verified project evidence.",
+        "Validation or manual test is explicit.",
+        "No broad project migration is hidden inside the slice."
+      ],
+      "match_rules": [
+        "feature_math_utils_library"
+      ],
+      "output_contract": [
+        "changed_files",
+        "feature_delta",
+        "validation_or_manual_test",
+        "rollback_note",
+        "known_gaps"
+      ]
+    },
+    {
+      "id": "feature_material_design_redesign_module",
+      "label": "Material Design Redesign Module",
+      "stack_node_id": "generic",
+      "modes": [
+        "feature_for_existing_project"
+      ],
+      "context_alignment": [
+        "Existing-project evidence is required before patching.",
+        "Reuse local build/components/resources before adding new tooling.",
+        "Keep output rollback-ready and changed-files-only."
+      ],
+      "steps": [
+        "Resolve selected feature plan and target path.",
+        "Check existing manifests, components and commands.",
+        "Patch the smallest safe slice or return plan-only Known Gap."
+      ],
+      "acceptance_criteria": [
+        "Feature target is bound to verified project evidence.",
+        "Validation or manual test is explicit.",
+        "No broad project migration is hidden inside the slice."
+      ],
+      "match_rules": [
+        "feature_redesign_material_design"
+      ],
+      "output_contract": [
+        "changed_files",
+        "feature_delta",
+        "validation_or_manual_test",
+        "rollback_note",
+        "known_gaps"
+      ]
+    }
+  ],
+  "refactor_modules": [
+    {
+      "id": "generic_refactor_module",
+      "label": "Generic Behavior-Preserving Refactor Module",
+      "stack_node_id": "generic",
+      "modes": [
+        "refactor_existing_stack"
+      ],
+      "context_alignment": [
+        "Refactor preserves observable behavior.",
+        "Reuse local resources when it reduces duplication without changing behavior.",
+        "Testability seams are allowed only as small internal structure changes."
+      ],
+      "steps": [
+        "State preserved behavior before patch.",
+        "Identify reusable local resources or test seams.",
+        "Patch smallest reversible structure change.",
+        "Validate behavior or document manual gap."
+      ],
+      "acceptance_criteria": [
+        "No feature/fix/docs work hidden as refactor.",
+        "Behavior-preservation evidence or manual gap.",
+        "Rollback note and changed-files-only manifest delta."
+      ],
+      "match_rules": [
+        "generic fallback for all refactor entries"
+      ]
+    },
+    {
+      "id": "last_git_commit_hardening_module",
+      "label": "Last Git Commit Hardening Module",
+      "stack_node_id": "generic",
+      "modes": [
+        "refactor_existing_stack"
+      ],
+      "context_alignment": [
+        "Behavior-preserving hardening of Git reference flow.",
+        "Reuse Patch-tab Git routine and same manifest payload."
+      ],
+      "steps": [
+        "Check scan cache/signature.",
+        "Harden missing repo and timeout states.",
+        "Keep Prompt Builder and export manifests synchronized."
+      ],
+      "acceptance_criteria": [
+        "No duplicate Git utility.",
+        "Plan selection scans before Prompt Builder compile.",
+        "Known Gaps are explicit."
+      ],
+      "match_rules": [
+        "refactor_last_git_commit_hardening",
+        "LAST-GIT-COMMIT"
+      ]
+    },
+    {
+      "id": "slice_catalog_consolidation_module",
+      "label": "Slice Catalog Consolidation Module",
+      "stack_node_id": "generic",
+      "modes": [
+        "refactor_existing_stack"
+      ],
+      "context_alignment": [
+        "Built-in plans, chain boilerplates, specializations and modules share IDs.",
+        "Unknown JSON fields are preserved."
+      ],
+      "steps": [
+        "Align IDs.",
+        "Remove/avoid duplicated pseudo-plan semantics."
+      ],
+      "acceptance_criteria": [
+        "One entry per change type.",
+        "Prompt Builder and export use the selected ID."
+      ],
+      "match_rules": [
+        "refactor_slice_catalog_consolidation",
+        "catalog consolidation"
+      ]
+    },
+    {
+      "id": "prompt_pipeline_boundary_hardening_module",
+      "label": "Prompt Pipeline Boundary Hardening Module",
+      "stack_node_id": "generic",
+      "modes": [
+        "refactor_existing_stack"
+      ],
+      "context_alignment": [
+        "USER_PROMPT, Prompt Builder preview, Create Preview and manifests must expose the same command and validation boundaries.",
+        "CMD.json is an export artifact, not a refactor plan.",
+        "TASKS.TXT remains a sidecar hook."
+      ],
+      "steps": [
+        "Check command definitions and human prompt lines for equivalence.",
+        "Mirror commands into CMD.json.",
+        "Verify guardrails: no access, safety, scope or validation expansion."
+      ],
+      "acceptance_criteria": [
+        "All shortcut commands are machine-readable and human-readable.",
+        "Shortcut hooks are not user-selectable catalog entries.",
+        "STATUS cannot invent unavailable session history."
+      ],
+      "match_rules": [
+        "refactor_prompt_pipeline_boundary_hardening"
+      ],
+      "output_contract": [
+        "changed_files",
+        "cmd_manifest_delta",
+        "validation_result",
+        "known_gaps"
+      ]
+    },
+    {
+      "id": "refactor_search_destroy_manual_savepoint_module",
+      "label": "Search & Destroy Manual Savepoint Module",
+      "stack_node_id": "generic",
+      "modes": [
+        "refactor_existing_stack"
+      ],
+      "context_alignment": [
+        "Search broadly, patch narrowly.",
+        "Stop at a logical manual-test/save point.",
+        "Preserve public behavior and rollback capability."
+      ],
+      "steps": [
+        "Scan syntax/reference/schema/lint/performance/security risks.",
+        "Prioritize evidenced defects and remove false positives.",
+        "Patch safe findings until the next manual-test/save point."
+      ],
+      "acceptance_criteria": [
+        "Findings are traceable and prioritized.",
+        "Behavior-preserving fixes stay small.",
+        "Manual save point, validation and rollback are documented."
+      ],
+      "match_rules": [
+        "refactor_search_destroy_manual_savepoint"
+      ],
+      "output_contract": [
+        "findings",
+        "changed_files",
+        "validation_result",
+        "manual_save_point",
+        "rollback_note",
+        "known_gaps"
+      ]
+    }
+  ],
+  "reference_domains": [],
+  "operation_roles": [],
+  "weight_operators": [],
+  "hooks": [],
+  "prompt_builder_export_hooks_rule": {
+    "tasks_txt": "Automatic Prompt Builder sidecar hook only; never a target feature module.",
+    "shortcut_commands": "Automatic USER_PROMPT export hook mirrored to CMD.json; never a target feature/refactor module.",
+    "surfaces": [
+      "Prompt Builder tab",
+      "USER_PROMPT.txt",
+      "Create Preview pipeline config"
+    ],
+    "tasks_sidecar": "TASKS.TXT is a sidecar hook, not a module.",
+    "feature_refactor_boundary": "create_new_abstraction entries are not Feature/Refactor modules; they are declared in create_abstraction_pipeline_extensions and chain boilerplates with mode new_project_abstraction."
+  }
+}

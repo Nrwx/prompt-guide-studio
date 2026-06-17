@@ -1,0 +1,784 @@
+{
+  "file_types": [
+    {
+      "id": "js",
+      "label": "JavaScript",
+      "extensions": [
+        ".js",
+        ".mjs"
+      ],
+      "standard": "ES6+ / ECMAScript Modules",
+      "category": "frontend",
+      "keywords": [
+        "javascript",
+        "js",
+        "es6",
+        "esm",
+        "module",
+        "import",
+        "export"
+      ],
+      "rules": [
+        "Use ES modules with import/export.",
+        "Prefer named exports for reusable utilities.",
+        "Avoid global state and hidden side effects.",
+        "Keep browser-facing code build-compatible with the existing bundler."
+      ],
+      "quality_commands": [
+        "npm run lint",
+        "npm run build"
+      ],
+      "weight_operator": "frontend_es_module_operator"
+    },
+    {
+      "id": "vue",
+      "label": "Vue Single File Component",
+      "extensions": [
+        ".vue"
+      ],
+      "standard": "Vue 3 SFC",
+      "category": "frontend",
+      "keywords": [
+        "vue",
+        "sfc",
+        "component",
+        "template",
+        "script",
+        "vuetify"
+      ],
+      "rules": [
+        "Respect existing Vue 3 and Vuetify conventions.",
+        "Do not assume npm run serve or npm run dev.",
+        "Keep API calls out of visual components when a shared service exists.",
+        "Keep component state explicit and easy to debug."
+      ],
+      "quality_commands": [
+        "npm run lint",
+        "npm run build"
+      ],
+      "weight_operator": "frontend_vue_operator"
+    },
+    {
+      "id": "scss",
+      "label": "SCSS",
+      "extensions": [
+        ".scss",
+        ".sass"
+      ],
+      "standard": "Dart Sass module system",
+      "category": "design",
+      "keywords": [
+        "scss",
+        "sass",
+        "style",
+        "design",
+        "theme",
+        "layout"
+      ],
+      "rules": [
+        "Write SCSS, not scattered ad-hoc global CSS.",
+        "Use shared partials/modules for variables, mixins, tokens and functions.",
+        "Prefer @use and @forward over legacy @import.",
+        "Avoid random one-off class sprawl; create reusable semantic structure.",
+        "Keep design tokens centralized."
+      ],
+      "quality_commands": [
+        "npm run lint",
+        "npm run build"
+      ],
+      "weight_operator": "design_scss_operator"
+    },
+    {
+      "id": "py",
+      "label": "Python",
+      "extensions": [
+        ".py"
+      ],
+      "standard": "Python 3.11+ typed backend style",
+      "category": "backend",
+      "keywords": [
+        "python",
+        "py",
+        "flask",
+        "backend",
+        "controller",
+        "model",
+        "service"
+      ],
+      "rules": [
+        "Use type hints for new functions.",
+        "Prefer pathlib for filesystem paths.",
+        "Keep Flask routes thin and push business logic into model/service layers.",
+        "Validate JSON, form, query, path and upload inputs.",
+        "Never log secrets or user binary payloads."
+      ],
+      "quality_commands": [
+        "python -m compileall .",
+        "pytest"
+      ],
+      "weight_operator": "backend_python_operator"
+    },
+    {
+      "id": "json",
+      "label": "JSON",
+      "extensions": [
+        ".json"
+      ],
+      "standard": "Strict JSON configuration",
+      "category": "config",
+      "keywords": [
+        "json",
+        "schema",
+        "config",
+        "package",
+        "build",
+        "rules"
+      ],
+      "rules": [
+        "Keep JSON valid and machine-readable.",
+        "Keep AI-readable configuration in English.",
+        "Do not store secrets in JSON.",
+        "Prefer flat extendable arrays with id fields over deeply nested objects."
+      ],
+      "quality_commands": [],
+      "weight_operator": "config_json_operator"
+    },
+    {
+      "id": "md",
+      "label": "Markdown",
+      "extensions": [
+        ".md"
+      ],
+      "standard": "Project documentation",
+      "category": "docs",
+      "keywords": [
+        "markdown",
+        "readme",
+        "docs",
+        "documentation"
+      ],
+      "rules": [
+        "Document what changed, why it changed and how to validate it.",
+        "Avoid outdated instructions.",
+        "Keep command examples copy-pasteable."
+      ],
+      "quality_commands": [],
+      "weight_operator": "documentation_operator"
+    },
+    {
+      "id": "shader",
+      "label": "Shader",
+      "extensions": [
+        ".glsl",
+        ".wgsl",
+        ".hlsl",
+        ".shader"
+      ],
+      "standard": "Real-time rendering shader code",
+      "category": "game_rendering",
+      "keywords": [
+        "shader",
+        "glsl",
+        "wgsl",
+        "hlsl",
+        "material",
+        "render",
+        "gpu"
+      ],
+      "rules": [
+        "Keep shader code deterministic and performance-aware.",
+        "Avoid expensive branches in hot fragment paths unless justified.",
+        "Preserve material input compatibility.",
+        "Document coordinate space and texture map assumptions."
+      ],
+      "quality_commands": [],
+      "weight_operator": "game_shader_operator"
+    },
+    {
+      "id": "asset_image",
+      "label": "Image Asset",
+      "extensions": [
+        ".png",
+        ".jpg",
+        ".jpeg",
+        ".webp",
+        ".tga",
+        ".exr",
+        ".hdr"
+      ],
+      "standard": "Texture and image asset metadata",
+      "category": "assets",
+      "keywords": [
+        "image",
+        "texture",
+        "albedo",
+        "normal",
+        "roughness",
+        "metallic",
+        "height"
+      ],
+      "rules": [
+        "Do not overwrite source assets unless explicitly requested.",
+        "Preserve alpha, dimensions, color space and map purpose.",
+        "Write metadata for generated assets.",
+        "Keep generated assets out of source control unless explicitly intended."
+      ],
+      "quality_commands": [],
+      "weight_operator": "asset_texture_operator"
+    },
+    {
+      "id": "ts",
+      "label": "TypeScript",
+      "extensions": [
+        ".ts",
+        ".tsx"
+      ],
+      "standard": "TypeScript / ES modules",
+      "category": "frontend",
+      "keywords": [
+        "typescript",
+        "ts",
+        "tsx",
+        "types",
+        "interface"
+      ],
+      "rules": [
+        "Prefer explicit types at public boundaries.",
+        "Do not introduce TypeScript migration unless the project already uses it or the user asks.",
+        "Keep Vue/ThreeJS types aligned with installed versions."
+      ],
+      "quality_commands": [
+        "npm run typecheck",
+        "npm run build"
+      ],
+      "weight_operator": "frontend_es_module_operator"
+    },
+    {
+      "id": "scene_3d",
+      "label": "3D Scene / Model Asset",
+      "extensions": [
+        ".blend",
+        ".fbx",
+        ".obj",
+        ".gltf",
+        ".glb",
+        ".usd",
+        ".usda",
+        ".usdc"
+      ],
+      "standard": "3D scene/model asset reference",
+      "category": "assets_3d",
+      "keywords": [
+        "blend",
+        "blender",
+        "fbx",
+        "obj",
+        "gltf",
+        "glb",
+        "usd",
+        "usda",
+        "usdc",
+        "mesh",
+        "scene",
+        "material"
+      ],
+      "rules": [
+        "Do not overwrite original scene assets.",
+        "Preserve scale, units, material slots and texture links.",
+        "Use sidecar metadata for generated or converted assets."
+      ],
+      "quality_commands": [],
+      "weight_operator": "blender_material_operator"
+    },
+    {
+      "id": "psd",
+      "label": "Photoshop Document",
+      "extensions": [
+        ".psd",
+        ".psb"
+      ],
+      "standard": "Layered Photoshop source document",
+      "category": "assets_2d",
+      "keywords": [
+        "photoshop",
+        "psd",
+        "psb",
+        "layer",
+        "layers",
+        "smart object",
+        "mask"
+      ],
+      "rules": [
+        "Treat PSD/PSB as source assets.",
+        "Preserve layer/group naming and non-destructive edit intent.",
+        "Export derivatives beside sources unless explicitly asked to overwrite."
+      ],
+      "quality_commands": [],
+      "weight_operator": "photoshop_layer_operator"
+    },
+    {
+      "id": "data_table",
+      "label": "Data Table",
+      "extensions": [
+        ".csv",
+        ".tsv",
+        ".xlsx"
+      ],
+      "standard": "Business/math data table",
+      "category": "data",
+      "keywords": [
+        "csv",
+        "spreadsheet",
+        "xlsx",
+        "table",
+        "revenue",
+        "sales",
+        "metrics",
+        "calculation"
+      ],
+      "rules": [
+        "Preserve headers and units.",
+        "Do not silently coerce currency, decimals or dates.",
+        "Document formulas used for derived values."
+      ],
+      "quality_commands": [],
+      "weight_operator": "math_business_data_operator"
+    },
+    {
+      "id": "i18n",
+      "label": "Localization / Translation",
+      "extensions": [
+        ".po",
+        ".pot",
+        ".mo",
+        ".json",
+        ".yaml",
+        ".yml"
+      ],
+      "standard": "Localization resources",
+      "category": "translation",
+      "keywords": [
+        "i18n",
+        "locale",
+        "translation",
+        "gettext",
+        "messages",
+        "lang"
+      ],
+      "rules": [
+        "Preserve message ids, keys and placeholders.",
+        "Translate values only when keys are code-facing identifiers.",
+        "Keep pluralization and interpolation syntax intact."
+      ],
+      "quality_commands": [],
+      "weight_operator": "translation_scope_operator"
+    },
+    {
+      "id": "cs",
+      "label": "C# / Unity",
+      "extensions": [
+        ".cs"
+      ],
+      "keywords": [
+        "c#",
+        "csharp",
+        "unity",
+        "mono behaviour",
+        "scriptableobject"
+      ],
+      "rules": [
+        "Respect Unity assembly and folder conventions when evidence exists.",
+        "Do not invent Unity package dependencies without selected stack context."
+      ]
+    },
+    {
+      "id": "cpp",
+      "label": "C++ Source",
+      "extensions": [
+        ".cpp",
+        ".cc",
+        ".cxx"
+      ],
+      "keywords": [
+        "c++",
+        "cpp",
+        "source",
+        "systems",
+        "native"
+      ],
+      "rules": [
+        "Keep headers, source files and build configuration separated.",
+        "Prefer standard library facilities before adding dependencies."
+      ]
+    },
+    {
+      "id": "h",
+      "label": "C/C++ Header",
+      "extensions": [
+        ".h",
+        ".hpp",
+        ".hh",
+        ".hxx"
+      ],
+      "keywords": [
+        "header",
+        "hpp",
+        "include",
+        "api boundary"
+      ],
+      "rules": [
+        "Keep public API boundaries small and explicit.",
+        "Avoid leaking implementation details through headers."
+      ]
+    },
+    {
+      "id": "html",
+      "label": "HTML",
+      "extensions": [
+        ".html"
+      ],
+      "standard": "HTML5 document structure",
+      "category": "frontend",
+      "keywords": [
+        "html",
+        "document",
+        "template",
+        "web"
+      ],
+      "rules": [
+        "Keep HTML semantic and accessible.",
+        "Do not inline large scripts or styles when project structure exists."
+      ],
+      "quality_commands": [
+        "npm run build"
+      ]
+    },
+    {
+      "id": "css",
+      "label": "CSS",
+      "extensions": [
+        ".css"
+      ],
+      "standard": "Modern CSS",
+      "category": "design",
+      "keywords": [
+        "css",
+        "style",
+        "layout",
+        "tokens"
+      ],
+      "rules": [
+        "Prefer shared tokens and component-scoped CSS where the framework supports it.",
+        "Avoid unrelated global class sprawl."
+      ],
+      "quality_commands": [
+        "npm run build"
+      ]
+    },
+    {
+      "id": "svg",
+      "label": "SVG",
+      "extensions": [
+        ".svg"
+      ],
+      "standard": "Scalable Vector Graphics",
+      "category": "asset",
+      "keywords": [
+        "svg",
+        "illustration",
+        "vector",
+        "icon"
+      ],
+      "rules": [
+        "Keep SVGs readable and metadata-light.",
+        "Preserve viewBox and semantic grouping when editing existing assets."
+      ],
+      "quality_commands": []
+    },
+    {
+      "id": "shell",
+      "label": "Shell Script",
+      "extensions": [
+        ".sh",
+        ".bash"
+      ],
+      "standard": "POSIX/Bash project script",
+      "category": "ops",
+      "keywords": [
+        "shell",
+        "bash",
+        "script",
+        "watch",
+        "setup"
+      ],
+      "rules": [
+        "Keep scripts target-scoped and reversible.",
+        "Use set -euo pipefail only when the script is compatible with it.",
+        "Do not embed secrets."
+      ],
+      "quality_commands": [
+        "bash -n <script>"
+      ]
+    },
+    {
+      "id": "dockerfile",
+      "label": "Dockerfile",
+      "extensions": [
+        "Dockerfile",
+        ".dockerfile"
+      ],
+      "standard": "Container build recipe",
+      "category": "ops",
+      "keywords": [
+        "docker",
+        "container",
+        "image",
+        "build"
+      ],
+      "rules": [
+        "Keep images minimal and target-specific.",
+        "Do not copy dependency caches unless explicitly required."
+      ],
+      "quality_commands": []
+    },
+    {
+      "id": "yaml",
+      "label": "YAML",
+      "extensions": [
+        ".yaml",
+        ".yml"
+      ],
+      "standard": "YAML configuration",
+      "category": "config",
+      "keywords": [
+        "yaml",
+        "yml",
+        "config",
+        "environment",
+        "pubspec"
+      ],
+      "rules": [
+        "Preserve indentation and key order where humans maintain the file.",
+        "Do not store secrets in YAML."
+      ],
+      "quality_commands": []
+    },
+    {
+      "id": "dart",
+      "label": "Dart",
+      "extensions": [
+        ".dart"
+      ],
+      "standard": "Dart / Flutter source",
+      "category": "mobile",
+      "keywords": [
+        "dart",
+        "flutter",
+        "widget",
+        "mobile"
+      ],
+      "rules": [
+        "Keep widgets small and state ownership explicit.",
+        "Do not assume Flutter SDK commands unless the selected stack or project evidence provides them."
+      ],
+      "quality_commands": [
+        "flutter test"
+      ]
+    },
+    {
+      "id": "c",
+      "label": "C Source",
+      "extensions": [
+        ".c"
+      ],
+      "standard": "C source file",
+      "category": "native",
+      "keywords": [
+        "c",
+        "native",
+        "source",
+        "systems"
+      ],
+      "rules": [
+        "Keep headers and source files separated.",
+        "Avoid undefined behavior and document ownership/lifetime rules."
+      ],
+      "quality_commands": [
+        "cmake --build build"
+      ]
+    },
+    {
+      "id": "toml",
+      "label": "TOML config",
+      "extensions": [
+        ".toml"
+      ],
+      "rules": [
+        "Use for pyproject.toml and tool configuration manifests."
+      ]
+    },
+    {
+      "id": "env",
+      "label": "Environment template",
+      "extensions": [
+        ".env",
+        ".env.example"
+      ],
+      "rules": [
+        "Never store real secrets; use placeholders only."
+      ]
+    },
+    {
+      "id": "sql",
+      "label": "SQL schema/query",
+      "extensions": [
+        ".sql"
+      ],
+      "rules": [
+        "Keep migrations, seed data and ad-hoc queries separated."
+      ]
+    },
+    {
+      "id": "cmake",
+      "label": "CMake config",
+      "extensions": [
+        "CMakeLists.txt",
+        ".cmake"
+      ],
+      "rules": [
+        "Keep build options explicit and platform-neutral where possible."
+      ]
+    },
+    {
+      "id": "make",
+      "label": "Makefile",
+      "extensions": [
+        "Makefile",
+        ".mk"
+      ],
+      "rules": [
+        "Use target-scoped commands and document side effects."
+      ]
+    },
+    {
+      "id": "go",
+      "label": "Go source",
+      "extensions": [
+        ".go"
+      ],
+      "rules": [
+        "Respect module boundaries and go.mod ownership."
+      ]
+    },
+    {
+      "id": "rs",
+      "label": "Rust source",
+      "extensions": [
+        ".rs"
+      ],
+      "rules": [
+        "Respect Cargo manifest and crate boundaries."
+      ]
+    },
+    {
+      "id": "php",
+      "label": "PHP source",
+      "extensions": [
+        ".php"
+      ],
+      "rules": [
+        "Respect composer.json dependency ownership."
+      ]
+    },
+    {
+      "id": "rb",
+      "label": "Ruby source",
+      "extensions": [
+        ".rb"
+      ],
+      "rules": [
+        "Respect Gemfile dependency ownership."
+      ]
+    },
+    {
+      "id": "csproj",
+      "label": "C# project file",
+      "extensions": [
+        ".csproj",
+        ".sln"
+      ],
+      "rules": [
+        "Treat project references and package references as manifest evidence."
+      ]
+    },
+    {
+      "id": "ipynb",
+      "label": "Jupyter notebook",
+      "extensions": [
+        ".ipynb"
+      ],
+      "rules": [
+        "Keep notebooks reproducible; mirror dependencies in environment.yml or requirements.txt."
+      ]
+    },
+    {
+      "id": "r",
+      "label": "R source",
+      "extensions": [
+        ".R",
+        ".r"
+      ],
+      "rules": [
+        "Document package setup and data provenance."
+      ]
+    },
+    {
+      "id": "proto",
+      "label": "Protocol Buffer",
+      "extensions": [
+        ".proto"
+      ],
+      "rules": [
+        "Keep generated code separate from source schema."
+      ]
+    },
+    {
+      "id": "lock",
+      "label": "Dependency lock file",
+      "extensions": [
+        "package-lock.json",
+        "pnpm-lock.yaml",
+        "yarn.lock",
+        "poetry.lock",
+        "uv.lock",
+        "Cargo.lock"
+      ],
+      "rules": [
+        "Treat lock files as generated/pinned dependency evidence."
+      ]
+    },
+    {
+      "id": "txt",
+      "label": "Plain text",
+      "extensions": [
+        ".txt"
+      ],
+      "standard": "UTF-8 plain text",
+      "category": "documentation",
+      "keywords": [
+        "text",
+        "txt",
+        "plain",
+        "credits",
+        "metadata"
+      ],
+      "rules": [
+        "Keep text readable and line-ending stable.",
+        "Use plain text boxes for metadata; do not insert language-specific comment syntax."
+      ],
+      "quality_commands": [],
+      "weight_operator": "documentation_operator"
+    }
+  ],
+  "file_type_selection_rule": "Targets may select multiple file_types. Active rules, hooks, weights and boilerplates must be reduced to the selected file types."
+}

@@ -1,0 +1,83 @@
+{
+  "ai_targets": [
+    {
+      "id": "ChatGPT",
+      "label": "ChatGPT",
+      "purpose": "Conversation, analysis, human-facing explanation, planning and patch guidance.",
+      "access_model": "conversation_context_only",
+      "can_directly_edit_repo": false,
+      "can_browse_project_files": false,
+      "can_browse_web": false,
+      "mindset": "Be human, clear, schema-grounded and honest about missing evidence.",
+      "keywords": [
+        "chatgpt",
+        "assistant",
+        "conversation",
+        "explain",
+        "review",
+        "plan"
+      ],
+      "rules": [
+        "Use AI_LANGUAGE for user-facing output.",
+        "Keep generated JSON and internal rules in English.",
+        "Do not claim direct repository access.",
+        "Do not invent inspected files or paths.",
+        "Ask one short clarification only if delegation cannot be decided safely."
+      ]
+    },
+    {
+      "id": "WebAgent",
+      "label": "WebAgent",
+      "purpose": "External verification, documentation lookup, evidence checks and repository inspection when available.",
+      "access_model": "browser_and_evidence_driven",
+      "can_directly_edit_repo": false,
+      "can_browse_project_files": true,
+      "can_browse_web": true,
+      "mindset": "Verify first, cite evidence, avoid stale assumptions.",
+      "keywords": [
+        "webagent",
+        "browser",
+        "inspect",
+        "search",
+        "verify",
+        "docs",
+        "evidence"
+      ],
+      "rules": [
+        "Verify project evidence before recommending changes.",
+        "Check .gitignore before creating generated files.",
+        "Do not write code as if direct repo editing is available.",
+        "Report uncertainty clearly."
+      ]
+    },
+    {
+      "id": "Codex",
+      "label": "Codex",
+      "purpose": "Repository code editing, precise patching, boilerplate generation, tests and validation.",
+      "access_model": "direct_repository_access",
+      "can_directly_edit_repo": true,
+      "can_browse_project_files": true,
+      "can_browse_web": false,
+      "mindset": "Act as the heir of a serious IT company: never touch a running system, preserve behavior, make minimal reversible changes.",
+      "keywords": [
+        "codex",
+        "code",
+        "patch",
+        "edit",
+        "implement",
+        "refactor",
+        "test",
+        "boilerplate"
+      ],
+      "rules": [
+        "Use minimal diffs.",
+        "Prefer existing files.",
+        "Never touch a running system without evidence and validation.",
+        "Do not duplicate modules.",
+        "Do not hardcode secrets.",
+        "Run or report validation commands."
+      ]
+    }
+  ],
+  "ai_target_selection_rule": "Exactly one AI target must be selected per WRITE_AI_RULES_TO target. Never select multiple AI targets for one target path."
+}

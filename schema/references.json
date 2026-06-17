@@ -1,0 +1,4381 @@
+{
+  "reference_domains": [
+    {
+      "id": "visual_3d_reference",
+      "label": "3D Visual Reference",
+      "category": "3d",
+      "applies_to_path_types": [
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "applies_to_file_types": [
+        "scene_3d",
+        "shader",
+        "asset_image",
+        "json",
+        "md",
+        "vue",
+        "js",
+        "ts"
+      ],
+      "applies_to_profiles": [
+        "Visual3D",
+        "Design",
+        "Programming"
+      ],
+      "trigger_keywords": [
+        "3d",
+        "mesh",
+        "scene",
+        "model",
+        "material",
+        "pbr",
+        "gltf",
+        "glb",
+        "usd",
+        "blender",
+        "threejs",
+        "webgl"
+      ],
+      "source_refs": [
+        {
+          "label": "Blender Manual",
+          "url": "https://docs.blender.org/manual/en/latest/index.html",
+          "authority": "official"
+        },
+        {
+          "label": "OpenUSD for Developers",
+          "url": "https://developer.nvidia.com/openusd",
+          "authority": "official"
+        }
+      ],
+      "rules": [
+        "Preserve source scene files; write generated or converted files as derivatives unless the user explicitly requests overwrite.",
+        "Keep geometry, material, texture and renderer concerns separate.",
+        "State scale, unit, color-space and material-channel assumptions when they matter.",
+        "For 3D UI work, isolate renderer lifecycle from app state/UI lifecycle."
+      ],
+      "guardrails": [
+        "Do not silently relink textures or change material slots.",
+        "Do not assume a target renderer without project evidence."
+      ]
+    },
+    {
+      "id": "visual_2d_illustration_reference",
+      "label": "2D / Illustration Reference",
+      "category": "2d",
+      "applies_to_path_types": [
+        "frontend",
+        "assets"
+      ],
+      "applies_to_file_types": [
+        "asset_image",
+        "psd",
+        "scss",
+        "vue",
+        "md",
+        "json"
+      ],
+      "applies_to_profiles": [
+        "Visual2D",
+        "Design"
+      ],
+      "trigger_keywords": [
+        "2d",
+        "illustration",
+        "photoshop",
+        "layer",
+        "layers",
+        "style reference",
+        "redesign",
+        "image",
+        "poster",
+        "banner"
+      ],
+      "source_refs": [
+        {
+          "label": "Photoshop layers overview",
+          "url": "https://helpx.adobe.com/photoshop/desktop/create-manage-layers/get-started-layers/layers-overview.html",
+          "authority": "official"
+        }
+      ],
+      "rules": [
+        "Treat source artwork, PSD/PSB files and layer structure as design evidence.",
+        "Preserve masks, adjustment layers, smart objects and group naming when referencing Photoshop work.",
+        "Keep exported derivatives separate from source files.",
+        "When asked to keep a style, reference concrete visual tokens: spacing, typography, contrast, border radius, density and composition."
+      ],
+      "guardrails": [
+        "Do not flatten source intent into vague 'make it modern' instructions.",
+        "Do not invent brand assets or licensed imagery."
+      ]
+    },
+    {
+      "id": "vue_component_reference",
+      "label": "Vue Component Reference",
+      "category": "frontend_visual",
+      "applies_to_path_types": [
+        "frontend"
+      ],
+      "applies_to_file_types": [
+        "vue",
+        "js",
+        "ts",
+        "scss",
+        "json"
+      ],
+      "applies_to_profiles": [
+        "Design",
+        "Programming",
+        "Refactor",
+        "Visual2D",
+        "Visual3D"
+      ],
+      "trigger_keywords": [
+        "vue",
+        "component",
+        "sfc",
+        "single file component",
+        "template",
+        "script setup",
+        "props",
+        "emits",
+        "redesign"
+      ],
+      "source_refs": [
+        {
+          "label": "Vue Single-File Components",
+          "url": "https://vuejs.org/guide/scaling-up/sfc.html",
+          "authority": "official"
+        },
+        {
+          "label": "Vue SFC Syntax Specification",
+          "url": "https://vuejs.org/api/sfc-spec",
+          "authority": "official"
+        }
+      ],
+      "rules": [
+        "Respect Vue SFC boundaries: template, logic and style should stay clear and maintainable.",
+        "Use existing component conventions before introducing new patterns.",
+        "No duplicate component if props/slots/composition can extend the existing one safely.",
+        "Keep visual components separate from API/service logic when shared services exist."
+      ],
+      "guardrails": [
+        "Do not migrate Options API to Composition API unless requested or already standard in the scope.",
+        "Do not assume Vue version beyond project metadata."
+      ]
+    },
+    {
+      "id": "redesign_reference",
+      "label": "Scoped Redesign Reference",
+      "category": "frontend_visual",
+      "applies_to_path_types": [
+        "frontend",
+        "assets"
+      ],
+      "applies_to_file_types": [
+        "vue",
+        "scss",
+        "asset_image",
+        "psd",
+        "md",
+        "json"
+      ],
+      "applies_to_profiles": [
+        "Design",
+        "Visual2D",
+        "Visual3D",
+        "Refactor"
+      ],
+      "trigger_keywords": [
+        "redesign",
+        "make it look",
+        "keep this style",
+        "style reference",
+        "ui",
+        "ux",
+        "scss reference",
+        "component"
+      ],
+      "source_refs": [
+        {
+          "label": "Windows design principles",
+          "url": "https://learn.microsoft.com/en-us/windows/apps/design/design-principles",
+          "authority": "official"
+        }
+      ],
+      "rules": [
+        "Redesign must be scoped to selected files and existing design system constraints.",
+        "Extract style reference into concrete tokens before changing code.",
+        "Prefer small, reversible UI changes over broad rewrites.",
+        "Keep accessibility, contrast, density and responsive behavior visible in the decision."
+      ],
+      "guardrails": [
+        "Do not duplicate the UI tree just to change appearance.",
+        "Do not remove existing behavior for visual cleanliness."
+      ]
+    },
+    {
+      "id": "no_code_duplicate",
+      "label": "No Code Duplicated",
+      "category": "quality",
+      "always_on": true,
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "applies_to_file_types": [
+        "py",
+        "js",
+        "ts",
+        "vue",
+        "scss",
+        "json",
+        "md",
+        "shader",
+        "asset_image",
+        "scene_3d",
+        "psd",
+        "data_table",
+        "i18n"
+      ],
+      "applies_to_profiles": [
+        "Programming",
+        "Refactor",
+        "Design",
+        "Debugging",
+        "Visual2D",
+        "Visual3D",
+        "Marketing",
+        "Mathematics",
+        "Business",
+        "Translation",
+        "Compliance"
+      ],
+      "trigger_keywords": [
+        "duplicate",
+        "dublicated",
+        "no duplicate",
+        "refactor",
+        "component",
+        "module",
+        "existing"
+      ],
+      "source_refs": [],
+      "rules": [
+        "Search selected PROJECT_SCOPE for an existing module/component/rule before proposing a new one.",
+        "Prefer extending or parameterizing existing code over parallel implementation.",
+        "If duplication is unavoidable, state why and keep the duplicate deliberately named and bounded."
+      ],
+      "guardrails": [
+        "Do not create a second implementation because it is faster to generate."
+      ]
+    },
+    {
+      "id": "scss_style_reference",
+      "label": "SCSS Style Reference",
+      "category": "frontend_visual",
+      "applies_to_path_types": [
+        "frontend"
+      ],
+      "applies_to_file_types": [
+        "scss",
+        "vue",
+        "js",
+        "ts",
+        "md"
+      ],
+      "applies_to_profiles": [
+        "Design",
+        "Refactor",
+        "Visual2D",
+        "Visual3D"
+      ],
+      "trigger_keywords": [
+        "scss",
+        "sass",
+        "style reference",
+        "keep this style",
+        "design tokens",
+        "@use",
+        "@forward",
+        "theme"
+      ],
+      "source_refs": [],
+      "rules": [
+        "Represent style references as tokens, mixins, modules and component-level rules.",
+        "Prefer @use/@forward module structure over scattered global CSS.",
+        "Keep class names semantic and reuse existing naming conventions.",
+        "Do not introduce random one-off utility classes unless the project already uses that approach."
+      ],
+      "guardrails": [
+        "Do not rewrite all SCSS just to preserve a small style reference."
+      ]
+    },
+    {
+      "id": "keep_simple_reference",
+      "label": "Keep It Simple",
+      "category": "quality",
+      "always_on": true,
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "applies_to_file_types": [
+        "py",
+        "js",
+        "ts",
+        "vue",
+        "scss",
+        "json",
+        "md",
+        "shader",
+        "asset_image",
+        "scene_3d",
+        "psd",
+        "data_table",
+        "i18n"
+      ],
+      "applies_to_profiles": [
+        "Debugging",
+        "Design",
+        "Programming",
+        "Refactor",
+        "Visual2D",
+        "Visual3D",
+        "Marketing",
+        "Mathematics",
+        "Business",
+        "Translation",
+        "Compliance"
+      ],
+      "trigger_keywords": [
+        "simple",
+        "keep it simple",
+        "minimal",
+        "small",
+        "clear"
+      ],
+      "source_refs": [],
+      "rules": [
+        "Use the smallest structure that satisfies the selected scope and role.",
+        "Do not add abstractions, frameworks or dependencies without evidence.",
+        "Prefer readable, testable, reversible changes over clever generality."
+      ],
+      "guardrails": [
+        "Do not call an overbuilt solution 'future proof'."
+      ]
+    },
+    {
+      "id": "blender_principled_bsdf",
+      "label": "Blender / Principled BSDF",
+      "category": "3d",
+      "applies_to_path_types": [
+        "assets",
+        "frontend",
+        "generated"
+      ],
+      "applies_to_file_types": [
+        "scene_3d",
+        "shader",
+        "asset_image",
+        "json",
+        "md"
+      ],
+      "applies_to_profiles": [
+        "Visual3D",
+        "Design",
+        "Programming"
+      ],
+      "trigger_keywords": [
+        "blender",
+        "principled bsdf",
+        "bsdf",
+        "pbr",
+        "roughness",
+        "metallic",
+        "base color",
+        "normal map",
+        "alpha"
+      ],
+      "source_refs": [
+        {
+          "label": "Blender Principled BSDF manual",
+          "url": "https://docs.blender.org/manual/en/latest/render/shader_nodes/shader/principled.html",
+          "authority": "official"
+        }
+      ],
+      "rules": [
+        "Use Principled BSDF/PBR channel language precisely: base color, metallic, roughness, alpha, normal and transmission assumptions are not interchangeable.",
+        "Document whether values are source texture maps, constants or generated approximations.",
+        "Preserve material-layer intent when translating Blender materials to web/runtime shaders."
+      ],
+      "guardrails": [
+        "Do not claim physically correct rendering if the pipeline only approximates PBR."
+      ]
+    },
+    {
+      "id": "nvidia_omniverse_usd_rtx",
+      "label": "NVIDIA / Omniverse / OpenUSD / RTX",
+      "category": "3d",
+      "applies_to_path_types": [
+        "assets",
+        "generated",
+        "frontend"
+      ],
+      "applies_to_file_types": [
+        "scene_3d",
+        "shader",
+        "asset_image",
+        "json",
+        "md"
+      ],
+      "applies_to_profiles": [
+        "Visual3D",
+        "Programming"
+      ],
+      "trigger_keywords": [
+        "nvidia",
+        "omniverse",
+        "openusd",
+        "usd",
+        "rtx",
+        "simready",
+        "hydra",
+        "mdl",
+        "digital twin"
+      ],
+      "source_refs": [
+        {
+          "label": "NVIDIA Omniverse docs",
+          "url": "https://docs.nvidia.com/omniverse/index.html",
+          "authority": "official"
+        },
+        {
+          "label": "NVIDIA OpenUSD for Developers",
+          "url": "https://developer.nvidia.com/openusd",
+          "authority": "official"
+        },
+        {
+          "label": "Omniverse RTX Renderer",
+          "url": "https://docs.omniverse.nvidia.com/materials-and-rendering/latest/rtx-renderer.html",
+          "authority": "official"
+        }
+      ],
+      "rules": [
+        "Treat USD/OpenUSD as scene description and composition evidence, not as a generic 3D file blob.",
+        "Keep Windows/Linux and GPU/driver/runtime assumptions explicit for NVIDIA/RTX workflows.",
+        "Separate asset validation, material metadata and renderer-specific output."
+      ],
+      "guardrails": [
+        "Do not imply Omniverse or RTX availability from generic GPU wording."
+      ]
+    },
+    {
+      "id": "photoshop_layers",
+      "label": "Photoshop Layers",
+      "category": "2d",
+      "applies_to_path_types": [
+        "assets",
+        "frontend"
+      ],
+      "applies_to_file_types": [
+        "psd",
+        "asset_image",
+        "md",
+        "json",
+        "scss"
+      ],
+      "applies_to_profiles": [
+        "Visual2D",
+        "Design"
+      ],
+      "trigger_keywords": [
+        "photoshop",
+        "psd",
+        "psb",
+        "layer",
+        "layers",
+        "layer comp",
+        "mask",
+        "smart object"
+      ],
+      "source_refs": [
+        {
+          "label": "Adobe Photoshop layers overview",
+          "url": "https://helpx.adobe.com/photoshop/desktop/create-manage-layers/get-started-layers/layers-overview.html",
+          "authority": "official"
+        },
+        {
+          "label": "Manage layers and groups",
+          "url": "https://helpx.adobe.com/photoshop/using/layers.html",
+          "authority": "official"
+        }
+      ],
+      "rules": [
+        "Use layer/group structure as evidence for edit intent and visual hierarchy.",
+        "Preserve non-destructive editing concepts when writing export or documentation rules.",
+        "Map layer references to UI/design tokens only after naming the visual property being reused."
+      ],
+      "guardrails": [
+        "Do not flatten or overwrite a layered source by default."
+      ]
+    },
+    {
+      "id": "threejs_webgl_renderer",
+      "label": "ThreeJS WebGL Renderer",
+      "category": "rendering",
+      "applies_to_path_types": [
+        "frontend",
+        "generated"
+      ],
+      "applies_to_file_types": [
+        "js",
+        "ts",
+        "vue",
+        "shader",
+        "scene_3d",
+        "json"
+      ],
+      "applies_to_profiles": [
+        "Visual3D",
+        "Programming",
+        "Design"
+      ],
+      "trigger_keywords": [
+        "threejs",
+        "three.js",
+        "webglrenderer",
+        "renderer",
+        "canvas",
+        "scene",
+        "camera",
+        "mesh",
+        "material",
+        "texture"
+      ],
+      "source_refs": [
+        {
+          "label": "Three.js WebGLRenderer docs",
+          "url": "https://threejs.org/docs/pages/WebGLRenderer.html",
+          "authority": "official"
+        },
+        {
+          "label": "Three.js WebGL utility docs",
+          "url": "https://threejs.org/docs/pages/WebGL.html",
+          "authority": "official"
+        }
+      ],
+      "rules": [
+        "Isolate ThreeJS renderer lifecycle from Vue component re-rendering.",
+        "Create, resize, animate and dispose renderer resources deliberately.",
+        "Use capability checks before assuming WebGL2-only features.",
+        "Do not bind long-running render loops directly to reactive state changes."
+      ],
+      "guardrails": [
+        "Do not create multiple renderers/canvases for one scene unless explicitly designed."
+      ]
+    },
+    {
+      "id": "webgl2_browser_capabilities",
+      "label": "WebGL2 Browser Capabilities",
+      "category": "rendering",
+      "applies_to_path_types": [
+        "frontend",
+        "generated"
+      ],
+      "applies_to_file_types": [
+        "js",
+        "ts",
+        "vue",
+        "shader",
+        "json"
+      ],
+      "applies_to_profiles": [
+        "Visual3D",
+        "Programming"
+      ],
+      "trigger_keywords": [
+        "webgl2",
+        "webgl",
+        "canvas",
+        "glsl",
+        "shader",
+        "gpu",
+        "context",
+        "opengl es 3.0"
+      ],
+      "source_refs": [
+        {
+          "label": "MDN WebGL2RenderingContext",
+          "url": "https://developer.mozilla.org/en-US/docs/Web/API/WebGL2RenderingContext",
+          "authority": "official"
+        }
+      ],
+      "rules": [
+        "WebGL2-specific APIs require WebGL2 context/capability detection.",
+        "Document fallback behavior when WebGL2 is unavailable.",
+        "Keep shader version, precision and texture-format assumptions visible."
+      ],
+      "guardrails": [
+        "Do not silently assume WebGL2 because a library can sometimes use it."
+      ]
+    },
+    {
+      "id": "windows_linux_platform_reference",
+      "label": "Windows / Linux Platform Reference",
+      "category": "platform",
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated"
+      ],
+      "applies_to_file_types": [
+        "py",
+        "js",
+        "ts",
+        "json",
+        "md",
+        "scene_3d",
+        "shader"
+      ],
+      "applies_to_profiles": [
+        "Programming",
+        "Debugging",
+        "Refactor",
+        "Visual3D"
+      ],
+      "trigger_keywords": [
+        "windows",
+        "linux",
+        "path",
+        "driver",
+        "gpu",
+        "nvidia",
+        "platform",
+        "filesystem",
+        "desktop"
+      ],
+      "source_refs": [
+        {
+          "label": "Windows app design overview",
+          "url": "https://learn.microsoft.com/en-us/windows/apps/design/",
+          "authority": "official"
+        },
+        {
+          "label": "Linux kernel documentation",
+          "url": "https://docs.kernel.org/",
+          "authority": "official"
+        }
+      ],
+      "rules": [
+        "Do not hardcode platform-specific paths or shell commands unless target evidence says so.",
+        "For GPU/rendering workflows, state OS, driver and runtime assumptions.",
+        "Use cross-platform path handling in Python and clear platform notes in docs."
+      ],
+      "guardrails": [
+        "Do not treat Windows and Linux behavior as identical for filesystem, GPU or shell tasks."
+      ]
+    },
+    {
+      "id": "ptb_welmec_legal_metrology",
+      "label": "PTB / WELMEC Legal Metrology",
+      "category": "compliance",
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated",
+        "assets"
+      ],
+      "applies_to_file_types": [
+        "py",
+        "js",
+        "ts",
+        "json",
+        "md",
+        "data_table"
+      ],
+      "applies_to_profiles": [
+        "Compliance",
+        "Business",
+        "Mathematics"
+      ],
+      "trigger_keywords": [
+        "ptb",
+        "welmec",
+        "legal metrology",
+        "messwesen",
+        "risk class",
+        "software separation",
+        "conformity",
+        "measuring instrument",
+        "measurement"
+      ],
+      "source_refs": [
+        {
+          "label": "PTB Metrological Software working group",
+          "url": "https://www.ptb.de/cms/en/ptb/fachabteilungen/abt8/fb-85/ag-851.html",
+          "authority": "official"
+        },
+        {
+          "label": "WELMEC Guides",
+          "url": "https://www.welmec.org/guides-and-publications/guides",
+          "authority": "official"
+        },
+        {
+          "label": "PTB WELMEC page",
+          "url": "https://www.ptb.de/cms/internationales-netzwerke/metrologie-in-europa/welmec.html",
+          "authority": "official"
+        }
+      ],
+      "rules": [
+        "Generated rules may support documentation and review, but must not claim legal conformity or certification.",
+        "Separate legally relevant software and non-relevant software when the domain indicates legal metrology.",
+        "Require protected interfaces, version identification, auditability and explicit risk-class assumptions.",
+        "Use WELMEC/PTB references as administrative guardrails, not as automatic legal advice."
+      ],
+      "guardrails": [
+        "Do not state that software is WELMEC-compliant without formal assessment evidence."
+      ]
+    },
+    {
+      "id": "welmec_software_guide",
+      "label": "WELMEC Software Guide",
+      "category": "compliance",
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated"
+      ],
+      "applies_to_file_types": [
+        "py",
+        "js",
+        "ts",
+        "json",
+        "md",
+        "data_table"
+      ],
+      "applies_to_profiles": [
+        "Compliance"
+      ],
+      "trigger_keywords": [
+        "welmec 7.2",
+        "software guide",
+        "risk class",
+        "software guide 7.2",
+        "software separation",
+        "protective interface"
+      ],
+      "source_refs": [
+        {
+          "label": "WELMEC Guide 7.2 Software Guide",
+          "url": "https://www.welmec.org/guides-and-publications/guides",
+          "authority": "official"
+        },
+        {
+          "label": "PTB latest WELMEC software guide news",
+          "url": "https://www.ptb.de/cms/en/ptb/fachabteilungen/abt8/fb-85/latest-news.html",
+          "authority": "official"
+        }
+      ],
+      "rules": [
+        "Treat risk class as an input that must be known or explicitly assumed, not inferred casually.",
+        "For legal metrology software, require evidence for software separation, protected interfaces and update/download behavior.",
+        "Keep generic software quality separate from regulatory conformity claims."
+      ],
+      "guardrails": [
+        "Do not translate WELMEC-style requirements into implementation claims without review evidence."
+      ]
+    },
+    {
+      "id": "marketing_conversion_reference",
+      "label": "Marketing / Conversion Reference",
+      "category": "business",
+      "applies_to_path_types": [
+        "wrapper",
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "applies_to_file_types": [
+        "md",
+        "json",
+        "vue",
+        "js",
+        "ts",
+        "data_table"
+      ],
+      "applies_to_profiles": [
+        "Marketing",
+        "Business"
+      ],
+      "trigger_keywords": [
+        "marketing",
+        "conversion",
+        "cta",
+        "landing",
+        "campaign",
+        "sales",
+        "pricing",
+        "copy",
+        "lead",
+        "funnel"
+      ],
+      "source_refs": [],
+      "rules": [
+        "Separate verifiable facts, marketing hypotheses and subjective positioning.",
+        "Do not invent customer quotes, awards, revenue numbers, conversion uplift or market size.",
+        "Tie copy/UI recommendations to audience, offer, friction and measurable next step."
+      ],
+      "guardrails": [
+        "Do not make legal, medical, financial or performance claims without evidence."
+      ]
+    },
+    {
+      "id": "math_correctness_reference",
+      "label": "Mathematics Correctness Reference",
+      "category": "math",
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated"
+      ],
+      "applies_to_file_types": [
+        "py",
+        "js",
+        "ts",
+        "vue",
+        "json",
+        "md",
+        "data_table"
+      ],
+      "applies_to_profiles": [
+        "Mathematics",
+        "Business"
+      ],
+      "trigger_keywords": [
+        "math",
+        "formula",
+        "calculate",
+        "calculation",
+        "correctness",
+        "statistics",
+        "probability",
+        "rounding",
+        "unit"
+      ],
+      "source_refs": [],
+      "rules": [
+        "State formula, units, domain limits and rounding behavior.",
+        "Check at least one normal case and one edge case when producing or validating logic.",
+        "Mark estimates, approximations and assumptions explicitly."
+      ],
+      "guardrails": [
+        "Do not hide uncertain inputs inside precise-looking numbers."
+      ]
+    },
+    {
+      "id": "economics_revenue_reference",
+      "label": "Economics / Revenue Correctness Reference",
+      "category": "economics",
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated"
+      ],
+      "applies_to_file_types": [
+        "py",
+        "js",
+        "ts",
+        "vue",
+        "json",
+        "md",
+        "data_table"
+      ],
+      "applies_to_profiles": [
+        "Business",
+        "Marketing",
+        "Mathematics"
+      ],
+      "trigger_keywords": [
+        "economics",
+        "business",
+        "revenue",
+        "umsatz",
+        "profit",
+        "margin",
+        "pricing",
+        "tax",
+        "gross",
+        "net",
+        "forecast"
+      ],
+      "source_refs": [],
+      "rules": [
+        "Keep currency, period, gross/net, tax and rounding assumptions explicit.",
+        "Use auditable formulas for revenue, margin, price and forecast logic.",
+        "Never fabricate financial data; require source or mark placeholders clearly."
+      ],
+      "guardrails": [
+        "Do not turn a business estimate into an accounting fact."
+      ]
+    },
+    {
+      "id": "translation_project_tree_reference",
+      "label": "Scoped Project Tree Translation",
+      "category": "translation",
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "applies_to_file_types": [
+        "md",
+        "json",
+        "vue",
+        "js",
+        "ts",
+        "i18n"
+      ],
+      "applies_to_profiles": [
+        "Translation"
+      ],
+      "trigger_keywords": [
+        "translate",
+        "translation",
+        "translate",
+        "localization",
+        "i18n",
+        "locale",
+        "language",
+        "deutsch",
+        "english"
+      ],
+      "source_refs": [],
+      "rules": [
+        "Translate only selected PROJECT_SCOPE unless the user expands the scope.",
+        "Preserve paths, filenames, schema ids, JSON keys, import names, commands and placeholders.",
+        "For Vue/i18n files, preserve interpolation, pluralization and component syntax.",
+        "Do not translate generated machine-readable configuration values unless explicitly human-facing."
+      ],
+      "guardrails": [
+        "Do not bulk-translate a repository outside the selected tree scope."
+      ]
+    },
+    {
+      "id": "ptb_metrological_software_reference",
+      "label": "PTB 8.51 Metrological Software",
+      "category": "legal_metrology",
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated",
+        "assets"
+      ],
+      "applies_to_file_types": [
+        "py",
+        "js",
+        "ts",
+        "json",
+        "md",
+        "data_table"
+      ],
+      "applies_to_profiles": [
+        "Compliance",
+        "LegalMetrologySoftware",
+        "PTBDocumentation",
+        "PTBRisk",
+        "PTBSecurity",
+        "PTBUpdateLifecycle"
+      ],
+      "trigger_keywords": [
+        "ptb 8.51",
+        "metrological software",
+        "software test",
+        "conformity assessment",
+        "legal metrology",
+        "MID",
+        "MessEG",
+        "MessEV"
+      ],
+      "source_refs": [
+        {
+          "label": "PTB Working Group 8.51 Metrological Software",
+          "url": "https://www.ptb.de/cms/en/ptb/fachabteilungen/abt8/fb-85/ag-851.html",
+          "authority": "official"
+        }
+      ],
+      "rules": [
+        "Treat PTB 8.51 as an official evidence source for metrological software documentation and examination posture.",
+        "Model both product requirements and process requirements when the task concerns legal metrology software.",
+        "Keep conformity/certification claims out unless formal assessment evidence is provided."
+      ],
+      "guardrails": [
+        "Do not turn PTB leaflets into automatic certification decisions."
+      ]
+    },
+    {
+      "id": "ptb_software_documentation_reference",
+      "label": "PTB MB01 Software Documentation",
+      "category": "legal_metrology_documentation",
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated",
+        "assets"
+      ],
+      "applies_to_file_types": [
+        "md",
+        "json",
+        "data_table"
+      ],
+      "applies_to_profiles": [
+        "Compliance",
+        "PTBDocumentation",
+        "LegalMetrologySoftware"
+      ],
+      "trigger_keywords": [
+        "MB01",
+        "software documentation",
+        "documentation requirements",
+        "conformity assessment",
+        "document title",
+        "version number",
+        "operation manual"
+      ],
+      "source_refs": [
+        {
+          "label": "PTB MB01 Software Documentation Requirements",
+          "url": "https://www.ptb.de/cms/fileadmin/internet/fachabteilungen/abteilung_8/8.5_metrologische_informationstechnik/8.51/PTB-8.51-MB01-AnfDoku-EN-V12.pdf",
+          "authority": "official"
+        }
+      ],
+      "rules": [
+        "Require stable document identifiers, instrument type reference, version/issue date and page or section references.",
+        "User/operator/market-surveillance/verification-authority documents intended for those audiences must surface the German-language expectation.",
+        "Electronic documentation should avoid auto-updating content and stay searchable/viewable with common tools."
+      ],
+      "guardrails": [
+        "Do not invent missing document identifiers or validation evidence."
+      ]
+    },
+    {
+      "id": "ptb_executable_generation_reference",
+      "label": "PTB MB02/MB03 Executable Generation",
+      "category": "legal_metrology_build_traceability",
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated"
+      ],
+      "applies_to_file_types": [
+        "py",
+        "js",
+        "ts",
+        "json",
+        "md"
+      ],
+      "applies_to_profiles": [
+        "Compliance",
+        "PTBDocumentation",
+        "LegalMetrologySoftware"
+      ],
+      "trigger_keywords": [
+        "MB02",
+        "MB03",
+        "executable software modules",
+        "source files",
+        "build system",
+        "compiler",
+        "identifier",
+        "generation declaration"
+      ],
+      "source_refs": [
+        {
+          "label": "PTB MB02 Generation of Legally Relevant Executable Software Modules",
+          "url": "https://www.ptb.de/cms/fileadmin/internet/fachabteilungen/abteilung_8/8.5_metrologische_informationstechnik/8.51/PTB-8.51-MB02-BinCodeErzg-EN-V06.pdf",
+          "authority": "official"
+        },
+        {
+          "label": "PTB MB03 Technical Description for Generation",
+          "url": "https://www.ptb.de/cms/fileadmin/internet/fachabteilungen/abteilung_8/8.5_metrologische_informationstechnik/8.51/PTB-8.51-MB03-BinCodeErzgTB-EN-V05.pdf",
+          "authority": "official"
+        }
+      ],
+      "rules": [
+        "Map submitted source/accessory files to legally relevant executable modules with identifiers.",
+        "Record build date, data carrier, instrument type identifiers and statement of generation from submitted files where applicable.",
+        "Describe compilers, build systems, linkers, platform and settings when build reproducibility matters."
+      ],
+      "guardrails": [
+        "Do not claim reproducible generation if the build inputs or platform identifiers are missing."
+      ]
+    },
+    {
+      "id": "ptb_software_risk_assessment_reference",
+      "label": "PTB MB04 Software Risk Assessment",
+      "category": "legal_metrology_risk",
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated",
+        "assets"
+      ],
+      "applies_to_file_types": [
+        "py",
+        "js",
+        "ts",
+        "json",
+        "md",
+        "data_table"
+      ],
+      "applies_to_profiles": [
+        "Compliance",
+        "PTBRisk",
+        "LegalMetrologySoftware"
+      ],
+      "trigger_keywords": [
+        "MB04",
+        "risk assessment",
+        "WELMEC 7.6",
+        "risk class",
+        "assets",
+        "security properties",
+        "generic threats",
+        "type-specific threats"
+      ],
+      "source_refs": [
+        {
+          "label": "PTB MB04 Software Risk Assessment",
+          "url": "https://www.ptb.de/cms/fileadmin/internet/fachabteilungen/abteilung_8/8.5_metrologische_informationstechnik/PTB-8.51-MB04-RiskAnalyse-EN-V13.pdf",
+          "authority": "official"
+        }
+      ],
+      "rules": [
+        "Represent risk analysis as assets, security properties, threats, measures and evidence.",
+        "For all risk classes, require demonstration of how generic threats to assets are addressed.",
+        "For risk classes D to F, require separate identification of additional type-specific threats."
+      ],
+      "guardrails": [
+        "Do not infer risk class from file type or framework."
+      ]
+    },
+    {
+      "id": "ptb_os_configuration_reference",
+      "label": "PTB MB05 General-Purpose OS Configuration",
+      "category": "legal_metrology_security",
+      "applies_to_path_types": [
+        "backend",
+        "frontend",
+        "generated",
+        "wrapper"
+      ],
+      "applies_to_file_types": [
+        "py",
+        "js",
+        "ts",
+        "json",
+        "md"
+      ],
+      "applies_to_profiles": [
+        "Compliance",
+        "PTBSecurity",
+        "LegalMetrologySoftware"
+      ],
+      "trigger_keywords": [
+        "MB05",
+        "general-purpose operating system",
+        "chain of trust",
+        "boot configuration",
+        "access control",
+        "protective interface"
+      ],
+      "source_refs": [
+        {
+          "label": "PTB MB05 Configuration of General-Purpose Operating Systems",
+          "url": "https://www.ptb.de/cms/fileadmin/internet/fachabteilungen/abteilung_8/8.5_metrologische_informationstechnik/8.51/PTB-8.51-MB05-BS-EN-V12.pdf",
+          "authority": "official"
+        }
+      ],
+      "rules": [
+        "Document hardware protection, boot chain of trust, loaded components, access control and protective interfaces.",
+        "For risk classes E/F, surface the need for legally relevant OS configuration files where applicable.",
+        "Prefer minimal loaded components and state resource-availability evidence."
+      ],
+      "guardrails": [
+        "Do not claim an OS is protected without configuration evidence."
+      ]
+    },
+    {
+      "id": "ptb_software_update_reference",
+      "label": "PTB MB06 Software Updates",
+      "category": "legal_metrology_update",
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated",
+        "assets"
+      ],
+      "applies_to_file_types": [
+        "py",
+        "js",
+        "ts",
+        "json",
+        "md",
+        "data_table"
+      ],
+      "applies_to_profiles": [
+        "Compliance",
+        "PTBUpdateLifecycle",
+        "LegalMetrologySoftware"
+      ],
+      "trigger_keywords": [
+        "MB06",
+        "software update",
+        "§ 40 MessEV",
+        "conformity certificate",
+        "update recorded",
+        "verification authority"
+      ],
+      "source_refs": [
+        {
+          "label": "PTB MB06 Requirements for Software Updates",
+          "url": "https://www.ptb.de/cms/fileadmin/internet/fachabteilungen/abteilung_8/8.5_metrologische_informationstechnik/8.51/PTB-8.51-MB06-SWaktualisierung-EN-V03.pdf",
+          "authority": "official"
+        }
+      ],
+      "rules": [
+        "Treat software updates as an organizational and technical process, not just a patch action.",
+        "Record assumptions around certificates, permanent update logging and authority verification.",
+        "Separate update suitability evidence from post-update conformity evidence."
+      ],
+      "guardrails": [
+        "Do not recommend field updates of legally relevant software without checking update admissibility assumptions."
+      ]
+    },
+    {
+      "id": "ptb_software_separation_reference",
+      "label": "PTB MB07 Software Separation",
+      "category": "legal_metrology_architecture",
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated",
+        "assets"
+      ],
+      "applies_to_file_types": [
+        "py",
+        "js",
+        "ts",
+        "json",
+        "md",
+        "data_table"
+      ],
+      "applies_to_profiles": [
+        "Compliance",
+        "PTBUpdateLifecycle",
+        "LegalMetrologySoftware"
+      ],
+      "trigger_keywords": [
+        "MB07",
+        "software separation",
+        "legally relevant software",
+        "legally non-relevant software",
+        "protective interface",
+        "extension S"
+      ],
+      "source_refs": [
+        {
+          "label": "PTB MB07 Requirements for Software Separation",
+          "url": "https://www.ptb.de/cms/fileadmin/internet/fachabteilungen/abteilung_8/8.5_metrologische_informationstechnik/8.51/PTB-8.51-MB07-SWtrennung-EN-V04.pdf",
+          "authority": "official"
+        }
+      ],
+      "rules": [
+        "Explicitly classify modules as legally relevant or legally non-relevant only when evidence supports it.",
+        "Require physical or logical separation, distinguishable indications and protective interfaces when separation is claimed.",
+        "Changing non-relevant software must not be represented as safe unless its non-influence boundary is evidenced."
+      ],
+      "guardrails": [
+        "Do not introduce legally non-relevant software into a scope that was assessed as only legally relevant."
+      ]
+    },
+    {
+      "id": "ptb_live_media_reference",
+      "label": "PTB MB08 Live Media",
+      "category": "legal_metrology_security",
+      "applies_to_path_types": [
+        "backend",
+        "frontend",
+        "generated",
+        "wrapper"
+      ],
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "py",
+        "js",
+        "ts"
+      ],
+      "applies_to_profiles": [
+        "Compliance",
+        "PTBSecurity",
+        "LegalMetrologySoftware"
+      ],
+      "trigger_keywords": [
+        "MB08",
+        "live media",
+        "live system",
+        "ISO image",
+        "kiosk mode",
+        "integrity protection"
+      ],
+      "source_refs": [
+        {
+          "label": "PTB MB08 Setup of Live Media",
+          "url": "https://www.ptb.de/cms/fileadmin/internet/fachabteilungen/abteilung_8/8.5_metrologische_informationstechnik/8.51/PTB-8.51-MB08-BSLM-EN-V08.pdf",
+          "authority": "official"
+        }
+      ],
+      "rules": [
+        "Live-system output must document boot isolation, reproducibility, kiosk mode and integrity protection assumptions.",
+        "Integrity verification of live media and behavior on integrity loss must be visible.",
+        "Do not treat a live medium as a normal mutable runtime environment."
+      ],
+      "guardrails": [
+        "Do not hide host-computer interaction assumptions."
+      ]
+    },
+    {
+      "id": "ptb_time_management_reference",
+      "label": "PTB MB09 Time Management",
+      "category": "legal_metrology_time",
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated",
+        "assets"
+      ],
+      "applies_to_file_types": [
+        "py",
+        "js",
+        "ts",
+        "json",
+        "md",
+        "data_table"
+      ],
+      "applies_to_profiles": [
+        "Compliance",
+        "PTBSecurity",
+        "LegalMetrologySoftware"
+      ],
+      "trigger_keywords": [
+        "MB09",
+        "time management",
+        "legal time",
+        "NTP",
+        "NTS",
+        "PTB time server",
+        "UTC",
+        "time deviation",
+        "verification log"
+      ],
+      "source_refs": [
+        {
+          "label": "PTB MB09 Time Management",
+          "url": "https://www.ptb.de/cms/fileadmin/internet/fachabteilungen/abteilung_8/8.5_metrologische_informationstechnik/8.51/PTB-8.51-MB09-ZS-EN-V09.pdf",
+          "authority": "official"
+        }
+      ],
+      "rules": [
+        "Document connection to PTB time servers, protocol choice, authentication and certificate/root-CA handling when legal time matters.",
+        "State internal time format, UTC/CET/CEST conversion assumptions and deviation handling.",
+        "Represent redundancy and verification-log protection as evidence requirements."
+      ],
+      "guardrails": [
+        "Do not claim legal time traceability without time-source and synchronization evidence."
+      ]
+    },
+    {
+      "id": "ptb_cryptographic_modules_reference",
+      "label": "PTB MB10/AG03 Cryptographic Modules",
+      "category": "legal_metrology_crypto",
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated",
+        "assets"
+      ],
+      "applies_to_file_types": [
+        "py",
+        "js",
+        "ts",
+        "json",
+        "md",
+        "data_table"
+      ],
+      "applies_to_profiles": [
+        "Compliance",
+        "PTBSecurity",
+        "LegalMetrologySoftware"
+      ],
+      "trigger_keywords": [
+        "MB10",
+        "AG03",
+        "cryptographic module",
+        "signature",
+        "key generation",
+        "security certificate",
+        "risk class",
+        "protection level"
+      ],
+      "source_refs": [
+        {
+          "label": "PTB MB10 Cryptographic Modules",
+          "url": "https://www.ptb.de/cms/fileadmin/internet/fachabteilungen/abteilung_8/8.5_metrologische_informationstechnik/8.51/PTB-8.51-MB10-Krypto-EN-V20.pdf",
+          "authority": "official"
+        },
+        {
+          "label": "PTB AG03 Requirements: Cryptographic Modules",
+          "url": "https://www.ptb.de/cms/fileadmin/internet/fachabteilungen/abteilung_8/8.5_metrologische_informationstechnik/8.51/PTB-8.51-AG03-Krypto-EN-V02.pdf",
+          "authority": "official"
+        }
+      ],
+      "rules": [
+        "List cryptographic module name, manufacturer, functions, algorithms, key lengths, standards, components and access rules.",
+        "Treat medium/high protection level and risk class as explicit inputs.",
+        "Separate signature creation, verification, key generation/loading and public-key presentation behavior."
+      ],
+      "guardrails": [
+        "Do not claim cryptographic sufficiency from algorithm names alone."
+      ]
+    },
+    {
+      "id": "ptb_configurable_software_reference",
+      "label": "PTB MB11 Configurable Legally Relevant Software",
+      "category": "legal_metrology_configuration",
+      "applies_to_path_types": [
+        "backend",
+        "frontend",
+        "generated",
+        "wrapper"
+      ],
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "py",
+        "js",
+        "ts"
+      ],
+      "applies_to_profiles": [
+        "Compliance",
+        "PTBSecurity",
+        "LegalMetrologySoftware"
+      ],
+      "trigger_keywords": [
+        "MB11",
+        "configuration of legally relevant software",
+        "database management system",
+        "runtime environment",
+        "IPC",
+        "virtualization"
+      ],
+      "source_refs": [
+        {
+          "label": "PTB MB11 Configuration of Legally Relevant Software",
+          "url": "https://www.ptb.de/cms/fileadmin/internet/fachabteilungen/abteilung_8/8.5_metrologische_informationstechnik/8.51/PTB-8.51-MB11-KonfigSW-EN-V04.pdf",
+          "authority": "official"
+        }
+      ],
+      "rules": [
+        "For configurable legally relevant software, document configuration, protection measures, legally relevant function, identification and traceability of changes.",
+        "Apply separate checks for OS, DBMS, runtime environment, IPC and virtualization concerns when present.",
+        "For risk classes requiring configuration files, surface that as evidence demand rather than assumption."
+      ],
+      "guardrails": [
+        "Do not treat general-purpose third-party software as examined just because it is common."
+      ]
+    },
+    {
+      "id": "ptb_cra_impact_reference",
+      "label": "PTB MB12 CRA Impact",
+      "category": "legal_metrology_cyber_resilience",
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated",
+        "assets"
+      ],
+      "applies_to_file_types": [
+        "py",
+        "js",
+        "ts",
+        "json",
+        "md",
+        "data_table"
+      ],
+      "applies_to_profiles": [
+        "Compliance",
+        "PTBUpdateLifecycle",
+        "PTBSecurity",
+        "LegalMetrologySoftware"
+      ],
+      "trigger_keywords": [
+        "MB12",
+        "Cyber Resilience Act",
+        "CRA",
+        "security vulnerability",
+        "CVE",
+        "software difference check",
+        "certificate revision"
+      ],
+      "source_refs": [
+        {
+          "label": "PTB MB12 CRA Impact",
+          "url": "https://www.ptb.de/cms/fileadmin/internet/fachabteilungen/abteilung_8/8.5_metrologische_informationstechnik/8.51/PTB-8.51-MB12-CRA-EN-V02.pdf",
+          "authority": "official"
+        }
+      ],
+      "rules": [
+        "Classify whether a security update affects legally relevant or non-relevant software.",
+        "For legally relevant changes, record examination/revision assumptions before update recommendations.",
+        "Include CVE/security-vulnerability identifiers where available for difference checks or certificate revision context."
+      ],
+      "guardrails": [
+        "Do not equate CRA-driven security update pressure with automatic permission to change legally relevant software."
+      ]
+    },
+    {
+      "id": "ptb_embedded_metrological_systems_reference",
+      "label": "PTB 8.52 Embedded Metrological Systems",
+      "category": "legal_metrology_architecture",
+      "applies_to_path_types": [
+        "backend",
+        "frontend",
+        "generated",
+        "wrapper",
+        "assets"
+      ],
+      "applies_to_file_types": [
+        "py",
+        "js",
+        "ts",
+        "json",
+        "md",
+        "data_table"
+      ],
+      "applies_to_profiles": [
+        "Compliance",
+        "PTBSecurity",
+        "PTBUpdateLifecycle",
+        "LegalMetrologySoftware"
+      ],
+      "trigger_keywords": [
+        "PTB 8.52",
+        "embedded metrological systems",
+        "microkernel",
+        "secure GUI",
+        "download manager",
+        "storage manager",
+        "software validation",
+        "Windows systems",
+        "Welmec 7.2"
+      ],
+      "source_refs": [
+        {
+          "label": "PTB Working Group 8.52 Embedded Metrological Systems",
+          "url": "https://www.ptb.de/cms/en/ptb/fachabteilungen/abt8/fb-85/ag-852.html",
+          "authority": "official"
+        }
+      ],
+      "rules": [
+        "Use modular security architecture terms only as reference concepts unless the project evidences them.",
+        "Keep legally relevant measurement functions separated from non-relevant software and communication paths.",
+        "For Windows-based measuring instruments, treat WELMEC 7.2 protection as configuration/evidence posture, not assumed compliance."
+      ],
+      "guardrails": [
+        "Do not claim a reference architecture is implemented without project evidence."
+      ]
+    },
+    {
+      "id": "create_stack_reference",
+      "label": "Create Stack Reference",
+      "category": "create_project",
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "py",
+        "js",
+        "ts",
+        "vue",
+        "scss",
+        "cs",
+        "cpp",
+        "h",
+        "shader",
+        "scene_3d"
+      ],
+      "applies_to_profiles": [
+        "Create",
+        "Programming",
+        "ProfessionalSolutionEngineering"
+      ],
+      "trigger_keywords": [
+        "create",
+        "boilerplate",
+        "stack",
+        "new project",
+        "dependencies",
+        "feature",
+        "setup hooks"
+      ],
+      "source_refs": [],
+      "rules": [
+        "Treat Create as a contract: mode, outcome, non-goals, target path, dependencies, references, weights, validation and rollback.",
+        "Use selected Project Tree evidence and detected manifests before selecting stack defaults.",
+        "Dependencies must be explicit, swappable and traceable.",
+        "A full Context Build must include an editable output timeline and project tree blueprint.",
+        "Dependency options are allowed, but selected dependencies must remain traceable to the chosen stack and manifest."
+      ],
+      "guardrails": [
+        "Do not scaffold broad projects without a stop condition.",
+        "Do not invent build commands or framework versions without evidence."
+      ]
+    },
+    {
+      "id": "blender_manual_reference",
+      "label": "Blender Manual / Python API",
+      "category": "3d_create",
+      "applies_to_path_types": [
+        "assets",
+        "generated",
+        "backend",
+        "wrapper"
+      ],
+      "applies_to_file_types": [
+        "py",
+        "json",
+        "md",
+        "scene_3d",
+        "shader"
+      ],
+      "applies_to_profiles": [
+        "BlenderManuals",
+        "Visual3D",
+        "Create"
+      ],
+      "trigger_keywords": [
+        "blender",
+        "bpy",
+        "addon",
+        "mesh",
+        "material",
+        "geometry nodes",
+        "principled",
+        "shader"
+      ],
+      "source_refs": [
+        {
+          "label": "Blender Manual",
+          "url": "https://docs.blender.org/manual/en/latest/index.html",
+          "authority": "official"
+        },
+        {
+          "label": "Blender Python API",
+          "url": "https://docs.blender.org/api/current/index.html",
+          "authority": "official"
+        }
+      ],
+      "rules": [
+        "Use the Blender Manual/API as source truth for bpy, mesh, materials and asset pipeline behavior.",
+        "State Blender version, unit scale, coordinate and color-space assumptions.",
+        "Separate source .blend/assets from generated derivatives."
+      ],
+      "guardrails": [
+        "Do not silently relink assets or change material slots.",
+        "Do not assume renderer or Blender version without evidence."
+      ]
+    },
+    {
+      "id": "unity_manual_reference",
+      "label": "Unity Manual / C# Stack",
+      "category": "unity_create",
+      "applies_to_path_types": [
+        "frontend",
+        "assets",
+        "generated",
+        "backend",
+        "wrapper"
+      ],
+      "applies_to_file_types": [
+        "cs",
+        "json",
+        "md",
+        "shader",
+        "scene_3d"
+      ],
+      "applies_to_profiles": [
+        "UnityManuals",
+        "Visual3D",
+        "Create"
+      ],
+      "trigger_keywords": [
+        "unity",
+        "c#",
+        "csharp",
+        "monobehaviour",
+        "gameobject",
+        "scriptableobject",
+        "urp",
+        "hdrp"
+      ],
+      "source_refs": [
+        {
+          "label": "Unity User Manual",
+          "url": "https://docs.unity3d.com/Manual/",
+          "authority": "official"
+        },
+        {
+          "label": "Unity 6 User Manual",
+          "url": "https://docs.unity3d.com/6000.4/Documentation/Manual/UnityManual.html",
+          "authority": "official"
+        }
+      ],
+      "rules": [
+        "Respect Unity project, package, assembly and asset-folder conventions when evidence exists.",
+        "Keep gameplay code, editor tooling, assets and packages separated.",
+        "Document selected render pipeline/package assumptions."
+      ],
+      "guardrails": [
+        "Do not invent Unity packages or migration steps without explicit stack selection.",
+        "Do not mix runtime and editor-only code."
+      ]
+    },
+    {
+      "id": "cpp_reference_manual",
+      "label": "C++ Manual / Standard Library Reference",
+      "category": "cpp_create",
+      "applies_to_path_types": [
+        "backend",
+        "generated",
+        "wrapper"
+      ],
+      "applies_to_file_types": [
+        "cpp",
+        "h",
+        "json",
+        "md"
+      ],
+      "applies_to_profiles": [
+        "CppManuals",
+        "Create",
+        "ProfessionalSolutionEngineering"
+      ],
+      "trigger_keywords": [
+        "c++",
+        "cpp",
+        "cmake",
+        "standard library",
+        "container",
+        "algorithm",
+        "header",
+        "source"
+      ],
+      "source_refs": [
+        {
+          "label": "cppreference C++ Standard Library",
+          "url": "https://en.cppreference.com/cpp/standard_library",
+          "authority": "community_reference"
+        },
+        {
+          "label": "cppreference Algorithms Library",
+          "url": "https://en.cppreference.com/cpp/algorithm",
+          "authority": "community_reference"
+        }
+      ],
+      "rules": [
+        "Prefer standard-library containers, algorithms and RAII before adding dependencies.",
+        "Keep public headers small and implementation details in source files.",
+        "Define compiler/build/test assumptions explicitly."
+      ],
+      "guardrails": [
+        "Do not rely on undefined behavior.",
+        "Do not add non-standard dependencies without a dependency seam."
+      ]
+    },
+    {
+      "id": "math_functions_boilerplate_reference",
+      "label": "Math Functions Boilerplate Reference",
+      "category": "math",
+      "applies_to_path_types": [
+        "backend",
+        "generated",
+        "assets",
+        "wrapper"
+      ],
+      "applies_to_file_types": [
+        "py",
+        "cpp",
+        "h",
+        "json",
+        "md",
+        "shader"
+      ],
+      "applies_to_profiles": [
+        "Mathematics",
+        "TechnicalPhysics3D",
+        "Create"
+      ],
+      "trigger_keywords": [
+        "math",
+        "formula",
+        "function",
+        "matrix",
+        "vector",
+        "physics",
+        "unit",
+        "geometry"
+      ],
+      "source_refs": [
+        {
+          "label": "cppreference numerics library",
+          "url": "https://en.cppreference.com/cpp/numeric",
+          "authority": "community_reference"
+        }
+      ],
+      "rules": [
+        "State domain, units, numerical stability and precision assumptions.",
+        "Separate pure math functions from IO, UI and framework code.",
+        "Prefer deterministic tests with edge cases and tolerances."
+      ],
+      "guardrails": [
+        "Do not normalize units silently.",
+        "Do not hide approximations or empirical constants."
+      ]
+    },
+    {
+      "id": "germany_government_law_reference",
+      "label": "Germany Government Law Reference",
+      "category": "government_law",
+      "applies_to_path_types": [
+        "generated",
+        "backend",
+        "wrapper"
+      ],
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "py"
+      ],
+      "applies_to_profiles": [
+        "GovernmentGermany",
+        "Compliance",
+        "DoNotNormalize",
+        "Create"
+      ],
+      "trigger_keywords": [
+        "germany",
+        "law",
+        "gesetz",
+        "gesetze",
+        "bundesgesetzblatt",
+        "regulation",
+        "compliance"
+      ],
+      "source_refs": [
+        {
+          "label": "Gesetze im Internet",
+          "url": "https://www.gesetze-im-internet.de/",
+          "authority": "official"
+        },
+        {
+          "label": "Bundesgesetzblatt / recht.bund.de",
+          "url": "https://www.recht.bund.de/de/home/home_node.html",
+          "authority": "official"
+        }
+      ],
+      "rules": [
+        "Use official current German law sources where possible.",
+        "Preserve statute names, section numbers and legal wording; do not normalize legal text into generic terms.",
+        "Clearly separate legal source facts from implementation recommendations."
+      ],
+      "guardrails": [
+        "Do not provide legal advice or claim legal completeness.",
+        "Do not cite unofficial summaries as source truth when official text is available."
+      ]
+    },
+    {
+      "id": "germany_economics_reference",
+      "label": "Germany Economics / Destatis Reference",
+      "category": "economics",
+      "applies_to_path_types": [
+        "generated",
+        "backend",
+        "wrapper"
+      ],
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "py",
+        "data_table"
+      ],
+      "applies_to_profiles": [
+        "GovernmentGermany",
+        "Business",
+        "Create"
+      ],
+      "trigger_keywords": [
+        "economics",
+        "wirtschaft",
+        "destatis",
+        "genesis",
+        "statistics",
+        "revenue",
+        "kpi"
+      ],
+      "source_refs": [
+        {
+          "label": "Destatis GENESIS API",
+          "url": "https://www.destatis.de/EN/Service/OpenData/api-webservice.html",
+          "authority": "official"
+        }
+      ],
+      "rules": [
+        "Use official statistics/data APIs when economic data must be grounded.",
+        "Preserve data source, date, units, table IDs and license context.",
+        "Separate estimates from official measurements."
+      ],
+      "guardrails": [
+        "Do not invent current economic figures.",
+        "Do not mix nominal/real values without labeling."
+      ]
+    },
+    {
+      "id": "germany_technical_rules_reference",
+      "label": "Germany Technical Rules Reference",
+      "category": "technical",
+      "applies_to_path_types": [
+        "generated",
+        "backend",
+        "assets",
+        "wrapper"
+      ],
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "py",
+        "cpp",
+        "h"
+      ],
+      "applies_to_profiles": [
+        "GovernmentGermany",
+        "TechnicalPhysics3D",
+        "Compliance",
+        "Create"
+      ],
+      "trigger_keywords": [
+        "technical rules",
+        "trgs",
+        "trbs",
+        "baua",
+        "safety",
+        "engineering",
+        "technical"
+      ],
+      "source_refs": [
+        {
+          "label": "BAuA Technical Rules",
+          "url": "https://www.baua.de/EN/Service/Technical-rules",
+          "authority": "official"
+        },
+        {
+          "label": "BAuA TRGS",
+          "url": "https://www.baua.de/EN/Service/Technical-rules/TRGS/TRGS",
+          "authority": "official"
+        }
+      ],
+      "rules": [
+        "Route German technical-rule work to official BAuA/TRGS/TRBS style sources where applicable.",
+        "Preserve rule IDs, scope and applicability conditions.",
+        "Separate occupational-safety/technical rule evidence from product implementation choices."
+      ],
+      "guardrails": [
+        "Do not claim compliance without validation evidence.",
+        "Do not flatten technical rule categories."
+      ]
+    },
+    {
+      "id": "welmec_create_reference",
+      "label": "WELMEC Create / Legal Metrology Reference",
+      "category": "legal_metrology",
+      "applies_to_path_types": [
+        "generated",
+        "backend",
+        "wrapper"
+      ],
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "py"
+      ],
+      "applies_to_profiles": [
+        "LegalMetrologySoftware",
+        "Compliance",
+        "Create",
+        "DoNotNormalize"
+      ],
+      "trigger_keywords": [
+        "welmec",
+        "legal metrology",
+        "measuring instrument",
+        "metrological software",
+        "mid"
+      ],
+      "source_refs": [
+        {
+          "label": "WELMEC Guide 7.2 Software Guide 2025",
+          "url": "https://www.welmec.org/welmec/documents/guides/7.2/2025/WELMEC_Guide_7.2_2025.pdf",
+          "authority": "official"
+        },
+        {
+          "label": "WELMEC Guide 7.3 Reference Architectures",
+          "url": "https://www.welmec.org/welmec/documents/guides/7.3/2020/WELMEC_Guide_7.3_v2020.pdf",
+          "authority": "official"
+        }
+      ],
+      "rules": [
+        "For legal metrology software, define legally relevant vs non-relevant parts, evidence artifacts, risk and update lifecycle.",
+        "Preserve WELMEC/PTB terms and guide references without normalization.",
+        "Require audit-friendly traceability for generated artifacts."
+      ],
+      "guardrails": [
+        "Do not claim conformity assessment completion.",
+        "Do not replace formal notified-body/legal review."
+      ]
+    },
+    {
+      "id": "professional_solution_engineering_reference",
+      "label": "Professional Solution Engineering Reference",
+      "category": "solution_engineering",
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "py",
+        "js",
+        "ts",
+        "vue",
+        "scss",
+        "cs",
+        "cpp",
+        "h"
+      ],
+      "applies_to_profiles": [
+        "ProfessionalSolutionEngineering",
+        "Create",
+        "Programming",
+        "Refactor"
+      ],
+      "trigger_keywords": [
+        "professional",
+        "solution",
+        "engineering",
+        "architecture",
+        "best practice",
+        "production",
+        "setup"
+      ],
+      "source_refs": [],
+      "rules": [
+        "Outcome first: define success, changed files, artifacts, validation, rollback and stop condition.",
+        "Prefer explicit interfaces, dependency seams and tests over hidden coupling.",
+        "Use the smallest professional slice that can be validated."
+      ],
+      "guardrails": [
+        "Do not over-abstract.",
+        "Do not add dependencies without a reason and rollback path."
+      ]
+    },
+    {
+      "id": "clean_project_reference",
+      "label": "Clean Project Reference",
+      "category": "quality",
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "py",
+        "js",
+        "ts",
+        "vue",
+        "scss",
+        "cs",
+        "cpp",
+        "h",
+        "shader",
+        "scene_3d"
+      ],
+      "applies_to_profiles": [
+        "CleanProject",
+        "Create",
+        "Refactor"
+      ],
+      "trigger_keywords": [
+        "clean project",
+        "cleanup",
+        "noise",
+        "cache",
+        "build artifacts",
+        "export"
+      ],
+      "source_refs": [],
+      "rules": [
+        "Prune dependency/build/cache/export noise from evidence and exports unless explicitly included.",
+        "Keep generated artifacts discoverable via EXPORT_MANIFEST.json.",
+        "Do not delete source files without a named rollback point."
+      ],
+      "guardrails": [
+        "Clean does not mean destructive.",
+        "Never hide validation gaps."
+      ]
+    },
+    {
+      "id": "do_not_normalize_reference",
+      "label": "Do Not Normalize Reference",
+      "category": "quality",
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "py",
+        "js",
+        "ts",
+        "vue",
+        "scss",
+        "cs",
+        "cpp",
+        "h",
+        "shader",
+        "scene_3d",
+        "data_table"
+      ],
+      "applies_to_profiles": [
+        "DoNotNormalize",
+        "Compliance",
+        "LegalMetrologySoftware",
+        "Mathematics",
+        "TechnicalPhysics3D"
+      ],
+      "trigger_keywords": [
+        "do not normalize",
+        "do not normalize",
+        "source truth",
+        "legal wording",
+        "units",
+        "identifiers"
+      ],
+      "source_refs": [],
+      "rules": [
+        "Preserve authoritative labels, legal terms, physical units, constants, IDs and user-provided naming.",
+        "If mapping to code names is unavoidable, include a reversible mapping table.",
+        "Do not collapse similar-looking domain concepts into one generic concept."
+      ],
+      "guardrails": [
+        "Do not simplify source truth to make a prompt shorter.",
+        "Do not rename legal/metrological variables silently."
+      ]
+    },
+    {
+      "id": "create_context_build_timeline_reference",
+      "label": "Create Context Build Timeline Reference",
+      "category": "create_project",
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "py",
+        "js",
+        "ts",
+        "vue",
+        "scss",
+        "shader",
+        "scene_3d",
+        "kt",
+        "gradle",
+        "swift",
+        "java",
+        "xml",
+        "mobile_config",
+        "dart",
+        "yaml",
+        "c",
+        "cpp",
+        "h",
+        "shell",
+        "dockerfile",
+        "svg"
+      ],
+      "applies_to_profiles": [
+        "Create",
+        "ProfessionalSolutionEngineering",
+        "DependencyManifestExport",
+        "ImportAwareExport"
+      ],
+      "trigger_keywords": [
+        "output timeline",
+        "build hook",
+        "create tab",
+        "context build",
+        "project tree",
+        "zip export",
+        "dependency manifest"
+      ],
+      "source_refs": [],
+      "rules": [
+        "Model Create work as a context build contract before implementation.",
+        "Keep editable timeline steps, project tree blueprint, dependency groups and artifact manifest aligned.",
+        "Inject commands only through target-scoped placeholders until the implementation target resolves them."
+      ],
+      "guardrails": [
+        "Do not execute generated commands from the prompt builder.",
+        "Do not claim a generated project tree already exists before files are written.",
+        "Do not invent exact LTS/package versions without selected manifest evidence or user input."
+      ]
+    },
+    {
+      "id": "schema_structured_output_reference",
+      "label": "JSON Schema / Structured Output Reference",
+      "category": "schema_quality",
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated"
+      ],
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "py",
+        "ts",
+        "js"
+      ],
+      "applies_to_profiles": [
+        "PromptEngineering",
+        "PromptEvaluation",
+        "Create",
+        "Programming",
+        "ProfessionalSolutionEngineering"
+      ],
+      "trigger_keywords": [
+        "json schema",
+        "structured output",
+        "schema validation",
+        "strict json",
+        "function calling"
+      ],
+      "source_refs": [
+        {
+          "label": "JSON Schema specification 2020-12",
+          "url": "https://json-schema.org/specification",
+          "authority": "official_spec"
+        },
+        {
+          "label": "OpenAI Structured Outputs",
+          "url": "https://developers.openai.com/api/docs/guides/structured-outputs",
+          "authority": "official_vendor_doc"
+        },
+        {
+          "label": "OpenAI Function Calling",
+          "url": "https://developers.openai.com/api/docs/guides/function-calling",
+          "authority": "official_vendor_doc"
+        }
+      ],
+      "rules": [
+        "Use JSON Schema as a validation and documentation contract, not as decorative metadata.",
+        "Keep function/tool parameters explicit, named and format-constrained.",
+        "Generated JSON must remain valid and preserve unknown fields unless migration is explicit."
+      ],
+      "guardrails": [
+        "Do not invent schema fields without a consumer or validation reason.",
+        "Do not use JSON mode/structured outputs language as proof that downstream code validates it."
+      ]
+    },
+    {
+      "id": "create_micro_tasks_reference",
+      "label": "Create Micro Tasks Reference",
+      "category": "create_project",
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "py",
+        "shell"
+      ],
+      "applies_to_profiles": [
+        "MicroTasks",
+        "Create",
+        "CreatePipeline",
+        "RepositoryManagement"
+      ],
+      "trigger_keywords": [
+        "micro task",
+        "mikro task",
+        "project to markdown",
+        "small operation",
+        "project tree markdown"
+      ],
+      "source_refs": [
+        {
+          "label": "Project schema create_micro_tasks",
+          "url": "schema/create_node_catalog.json#create_micro_tasks",
+          "authority": "project_schema"
+        }
+      ],
+      "rules": [
+        "A micro task is a bounded operation with phase, timeline tokens, output artifacts and validation.",
+        "Micro tasks may inspect project scope, write small artifacts and update manifests; they must not silently perform broad rewrites."
+      ],
+      "guardrails": [
+        "No destructive filesystem operations without explicit rollback.",
+        "No dependency installation as a side effect of Project to Markdown or inspection tasks."
+      ]
+    },
+    {
+      "id": "create_terminal_timeline_reference",
+      "label": "Create Terminal Timeline Reference",
+      "category": "create_project",
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated"
+      ],
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "py",
+        "shell",
+        "yaml",
+        "dockerfile"
+      ],
+      "applies_to_profiles": [
+        "TerminalTimeline",
+        "CreatePipeline",
+        "Create",
+        "Programming"
+      ],
+      "trigger_keywords": [
+        "terminal",
+        "compile timeline",
+        "run timeline",
+        "windows linux",
+        "compile run button"
+      ],
+      "source_refs": [
+        {
+          "label": "The Twelve-Factor App: Build, release, run",
+          "url": "https://12factor.net/build-release-run",
+          "authority": "methodology"
+        }
+      ],
+      "rules": [
+        "Separate build, release/export and run stages in the timeline.",
+        "Compile commands from explicit tokens or reviewed user entries before execution.",
+        "Run commands only in the Create working path.",
+        "A Terminal tab may cast a controlled local shell session, but it must still show cwd, generated script path and command plan before execution.",
+        "Windows execution should route through cmd-compatible scripts; Linux/macOS execution should route through sh-compatible scripts."
+      ],
+      "guardrails": [
+        "Do not execute unresolved placeholder descriptions.",
+        "Do not mix Create-only export artifacts into the normal Generator export unless the user explicitly switches export paths."
+      ]
+    },
+    {
+      "id": "create_isolated_export_reference",
+      "label": "Create Isolated Export Reference",
+      "category": "export",
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "zip",
+        "shell"
+      ],
+      "applies_to_profiles": [
+        "CreatePipeline",
+        "Create",
+        "CleanProject",
+        "DependencyManifestExport",
+        "RepositoryManagement"
+      ],
+      "trigger_keywords": [
+        "create export",
+        "isolated export",
+        "zip export",
+        "working path",
+        "export manifest"
+      ],
+      "source_refs": [
+        {
+          "label": "Project EXPORT_MANIFEST contract",
+          "url": "EXPORT_MANIFEST.json",
+          "authority": "project_schema"
+        }
+      ],
+      "rules": [
+        "Create export has a separate path and artifact contract from normal project export.",
+        "Every Create artifact must appear in the Create contract and final manifest if generated.",
+        "Existing references remain selectable for Create, but Create output must not be implicitly included by other tabs."
+      ],
+      "guardrails": [
+        "Do not duplicate export systems; keep one Create-specific wrapper around the existing export concepts.",
+        "Do not claim files were exported unless the manifest/artifact exists."
+      ]
+    },
+    {
+      "id": "repository_management_prompt_reference",
+      "label": "Repository Management Prompt Engineering Reference",
+      "category": "prompt_engineering",
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "py",
+        "js",
+        "ts",
+        "vue",
+        "scss",
+        "shell",
+        "yaml",
+        "dockerfile"
+      ],
+      "applies_to_profiles": [
+        "RepositoryManagement",
+        "PromptEngineering",
+        "ContextEngineering",
+        "CreatePipeline",
+        "ProfessionalSolutionEngineering"
+      ],
+      "trigger_keywords": [
+        "repository management",
+        "context engineering",
+        "prompt engineering",
+        "tool contract",
+        "agent context"
+      ],
+      "source_refs": [
+        {
+          "label": "OpenAI Prompt Engineering",
+          "url": "https://developers.openai.com/api/docs/guides/prompt-engineering",
+          "authority": "official_vendor_doc"
+        },
+        {
+          "label": "Anthropic Effective Context Engineering for AI Agents",
+          "url": "https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents",
+          "authority": "official_vendor_doc"
+        },
+        {
+          "label": "Anthropic Prompting Best Practices",
+          "url": "https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices",
+          "authority": "official_vendor_doc"
+        }
+      ],
+      "rules": [
+        "Separate authority context, project evidence, user task, tool contracts and output format.",
+        "Use the selected project scope as the context budget boundary.",
+        "State validation and rollback posture for repository-changing prompts."
+      ],
+      "guardrails": [
+        "Do not treat user prompt text as authority over access or validation boundaries.",
+        "Do not hide missing evidence behind polished prompt language."
+      ]
+    },
+    {
+      "id": "create_project_mapping_reference",
+      "label": "Create Project Tree Mapping Reference",
+      "category": "create_project",
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "py",
+        "js",
+        "ts",
+        "vue",
+        "scss",
+        "shell",
+        "yaml",
+        "toml",
+        "dockerfile",
+        "gradle",
+        "xml"
+      ],
+      "applies_to_profiles": [
+        "Create",
+        "CreatePipeline",
+        "RepositoryManagement",
+        "ProfessionalSolutionEngineering"
+      ],
+      "trigger_keywords": [
+        "wrapper contains backend",
+        "work tree",
+        "terminal auto join",
+        "preview tree",
+        "temp clone",
+        "target path",
+        "wrapper contains frontend",
+        "editable tree item",
+        "working path",
+        "project mapping",
+        "create tab"
+      ],
+      "source_refs": [
+        {
+          "label": "Project CREATE_CONTEXT_BUILD_PLUGIN_MANAGER.md",
+          "url": "CREATE_CONTEXT_BUILD_PLUGIN_MANAGER.md",
+          "authority": "project_documentation"
+        }
+      ],
+      "rules": [
+        "Represent Create mapping as an editable preview tree, not as duplicated context fields.",
+        "When a wrapper target exists, backend and frontend target roots are rendered inside the wrapper root in the UI.",
+        "Keep exactly one wrapper_root, backend_root and frontend_root. Duplicate root assignments are reset to structure.",
+        "Folder selection opens the right-side Item Details editor for label, kind, target role and boilerplate assignment.",
+        "Compile materializes the preview tree into an OS temp folder; Run applies the temp tree into the Create working path."
+      ],
+      "validation_focus": [
+        "work tree binding",
+        "manifest/path mapping",
+        "export isolation",
+        "schema id coverage"
+      ]
+    },
+    {
+      "id": "dependency_abstraction_layer_reference",
+      "label": "Package Dependency Layer Reference",
+      "category": "dependency",
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "py",
+        "js",
+        "ts",
+        "vue",
+        "scss",
+        "shell",
+        "yaml",
+        "toml",
+        "dockerfile",
+        "gradle",
+        "xml"
+      ],
+      "applies_to_profiles": [
+        "Create",
+        "CreatePipeline",
+        "DependencyManifestExport",
+        "ProfessionalSolutionEngineering"
+      ],
+      "trigger_keywords": [
+        "package dependencies",
+        "dependency packages",
+        "manifest packages",
+        "package version",
+        "dependency crud",
+        "target package list"
+      ],
+      "source_refs": [
+        {
+          "label": "Project schema/create_node_catalog.json dependency_groups",
+          "url": "schema/create_node_catalog.json",
+          "authority": "project_schema"
+        }
+      ],
+      "rules": [
+        "Represent dependencies as package entries with target, ecosystem, manifest, package name, version, install token and validation token.",
+        "Filter package rows by the selected target holder in the Project Mapping tree.",
+        "Support add, edit, delete and order operations without modifying source schema files until export/run writes artifacts.",
+        "Derive dependency tokens from package rows and their ecosystem-specific manifest policy.",
+        "Never show a generic Swappable Dependencies text field in Create; packages are managed through the CRUD list."
+      ],
+      "validation_focus": [
+        "manifest correctness",
+        "dependency swap seam",
+        "version evidence",
+        "validation command routing"
+      ]
+    },
+    {
+      "id": "create_project_tree_preview_reference",
+      "label": "Create Project Tree Preview Reference",
+      "category": "create_project",
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "py",
+        "js",
+        "ts",
+        "vue",
+        "scss",
+        "shell"
+      ],
+      "applies_to_profiles": [
+        "Create",
+        "ProjectTreePreview",
+        "CreatePipeline",
+        "Programming"
+      ],
+      "trigger_keywords": [
+        "project tree",
+        "preview tree",
+        "temp clone",
+        "target root",
+        "monorepo mapping"
+      ],
+      "source_refs": [
+        {
+          "label": "Local Create Tab Project Mapping Contract",
+          "url": "prompt.py",
+          "authority": "project"
+        }
+      ],
+      "rules": [
+        "Generate the project tree preview into a temp folder before modifying the working path.",
+        "Allow exactly one wrapper_root, backend_root and frontend_root in a Create mapping.",
+        "Ignore structures that are not descendants of a target-root node when applying to the working path.",
+        "Allow per-node boilerplate assignment while keeping target-root uniqueness."
+      ],
+      "guardrails": [
+        "Do not write preview nodes to the working path during compile.",
+        "Do not allow duplicate backend/frontend/wrapper root folders."
+      ]
+    },
+    {
+      "id": "boilerplate_dependency_crud_reference",
+      "label": "Boilerplate Dependency CRUD Reference",
+      "category": "create_project",
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated"
+      ],
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "py",
+        "js",
+        "ts",
+        "vue",
+        "scss",
+        "shell"
+      ],
+      "applies_to_profiles": [
+        "Create",
+        "BoilerplateDependencyCRUD",
+        "DependencyManifestExport",
+        "Programming"
+      ],
+      "trigger_keywords": [
+        "dependency crud",
+        "swappable dependency",
+        "manifest row",
+        "boilerplate dependency list"
+      ],
+      "source_refs": [
+        {
+          "label": "Local Create Dependency Layer Contract",
+          "url": "prompt.py",
+          "authority": "project"
+        }
+      ],
+      "rules": [
+        "Represent dependencies as editable rows: target, ecosystem, manifest, dependency, install token and validation token.",
+        "Assign dependency rows to backend/frontend/wrapper/generated targets based on stack and ecosystem.",
+        "CRUD edits affect the current Create abstraction only unless explicitly exported to schema."
+      ],
+      "guardrails": [
+        "Do not install dependencies globally by default.",
+        "Do not invent exact package versions without manifest evidence or user input."
+      ]
+    },
+    {
+      "id": "create_timeline_checkbox_reference",
+      "label": "Create Timeline Checkbox Reference",
+      "category": "create_project",
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated"
+      ],
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "py",
+        "js",
+        "ts",
+        "vue",
+        "scss",
+        "shell"
+      ],
+      "applies_to_profiles": [
+        "Create",
+        "TimelineCheckboxControl",
+        "CreatePipeline",
+        "Programming"
+      ],
+      "trigger_keywords": [
+        "timeline checkbox",
+        "compile timeline",
+        "checked steps",
+        "run selected"
+      ],
+      "source_refs": [
+        {
+          "label": "Local Create Terminal Timeline Contract",
+          "url": "prompt.py",
+          "authority": "project"
+        }
+      ],
+      "rules": [
+        "Compile refreshes available timeline steps from selected stack and dependency rows.",
+        "Run executes only checked timeline steps in the live Create terminal session.",
+        "Timeline tokens stay explicit and unresolved commands are skipped instead of guessed."
+      ],
+      "guardrails": [
+        "Do not execute unchecked timeline steps.",
+        "Do not silently convert descriptive tokens into shell commands."
+      ]
+    },
+    {
+      "id": "create_project_first_mapping_reference",
+      "label": "Create Project-First Mapping Reference",
+      "category": "create_project",
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated"
+      ],
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "py",
+        "js",
+        "ts",
+        "vue"
+      ],
+      "applies_to_profiles": [
+        "Create",
+        "CreatePipeline",
+        "ProjectTreePreview",
+        "DevelopFeatures"
+      ],
+      "trigger_keywords": [
+        "feature existing project",
+        "project tree",
+        "backend frontend detection",
+        "temp preview",
+        "project-first"
+      ],
+      "source_refs": [
+        {
+          "label": "Selected Start working tree",
+          "url": "local-project-scope",
+          "authority": "project_evidence"
+        }
+      ],
+      "rules": [
+        "After Start Project Tree scan, derive Create targets from real paths and manifests before catalog defaults.",
+        "Use simple stage pattern matching: root, backend folder, frontend folder, root-level package.json and Python manifests.",
+        "Keep Start working tree as evidence/source and Create terminal work inside the temp preview until Run.",
+        "If a detected backend/frontend target is missing from WRITE_AI_RULES_TO, create it automatically."
+      ],
+      "guardrails": [
+        "Do not invent hidden stacks without path or manifest evidence.",
+        "Do not write to the real project during compile."
+      ]
+    },
+    {
+      "id": "create_timeline_stop_progress_reference",
+      "label": "Create Timeline Stop / Progress Reference",
+      "category": "create_runtime",
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated"
+      ],
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "py",
+        "js",
+        "ts",
+        "vue"
+      ],
+      "applies_to_profiles": [
+        "Create",
+        "Programming",
+        "Debugging"
+      ],
+      "trigger_keywords": [
+        "create",
+        "timeline",
+        "stop",
+        "progress",
+        "terminal",
+        "runtime"
+      ],
+      "source_refs": [],
+      "rules": [
+        "Timeline checkboxes represent completed steps, not selected execution steps.",
+        "Stopping a running timeline must not mark the current unfinished step as complete.",
+        "Global progress must react to compile, terminal join, task start, task completion, stop and failure events."
+      ],
+      "guardrails": [
+        "Do not hide failed or stopped steps.",
+        "Do not mutate the real working path before the apply step succeeds."
+      ]
+    },
+    {
+      "id": "create_structured_crud_dialog_reference",
+      "label": "Create Structured CRUD Dialog Reference",
+      "category": "create_ui",
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated"
+      ],
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "py"
+      ],
+      "applies_to_profiles": [
+        "Create",
+        "Programming",
+        "Refactor"
+      ],
+      "trigger_keywords": [
+        "dependency",
+        "compiler",
+        "add",
+        "edit",
+        "crud",
+        "dialog"
+      ],
+      "source_refs": [],
+      "rules": [
+        "Compiler and dependency CRUD entries must use explicit fields instead of pipe-delimited free text.",
+        "Package and compiler rows must remain target-scoped and orderable."
+      ],
+      "guardrails": [
+        "Do not create ambiguous package rows without package name.",
+        "Do not create compiler rows without command."
+      ]
+    },
+    {
+      "id": "create_node_nvm_version_reference",
+      "label": "Create Node NVM Version Reference",
+      "category": "create_runtime",
+      "applies_to_path_types": [
+        "frontend",
+        "backend",
+        "wrapper",
+        "generated"
+      ],
+      "applies_to_file_types": [
+        "js",
+        "ts",
+        "vue",
+        "scss",
+        "json",
+        "md"
+      ],
+      "applies_to_profiles": [
+        "Create",
+        "Programming",
+        "CreatePipeline"
+      ],
+      "trigger_keywords": [
+        "nvm",
+        "node version",
+        "node runtime",
+        "npm",
+        "yarn",
+        "pnpm"
+      ],
+      "source_refs": [
+        {
+          "label": "Project package manifests and Create dependency rows",
+          "url": "local:create_dependency_layer",
+          "authority": "project"
+        }
+      ],
+      "rules": [
+        "NVM version defaults to None.",
+        "On stack/category change, if the selected boilerplate contains Node runtime evidence, probe NVM immediately and write the returned current version into the Create NVM field; if NVM/current is unavailable, keep None.",
+        "If a row, target or boilerplate sets nvm_version, compile Windows PATH selection or Linux/macOS nvm shell activation before node/npm/pnpm/yarn commands.",
+        "Keep runtime selection target-scoped and visible in package/compiler editors."
+      ],
+      "guardrails": [
+        "Do not guess Node versions.",
+        "Do not run nvm for non-node ecosystems.",
+        "Do not modify real working path before temp preview succeeds.",
+        "Do not run nvm install/use during stack selection; stack switching only probes and declares the current NVM version."
+      ]
+    }
+  ],
+  "operation_roles": [
+    {
+      "id": "visual_3d_operator",
+      "label": "3D / Rendering Operator",
+      "category": "visual",
+      "reference_domains": [
+        "visual_3d_reference",
+        "blender_principled_bsdf",
+        "nvidia_omniverse_usd_rtx",
+        "threejs_webgl_renderer",
+        "webgl2_browser_capabilities"
+      ],
+      "applies_to_path_types": [
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "applies_to_file_types": [
+        "scene_3d",
+        "shader",
+        "asset_image",
+        "vue",
+        "js",
+        "ts",
+        "json",
+        "md"
+      ],
+      "applies_to_profiles": [
+        "Visual3D",
+        "Design",
+        "Programming"
+      ],
+      "rules": [
+        "Preserve source assets and material semantics.",
+        "Keep renderer lifecycle, material pipeline and UI controls separate.",
+        "Validate platform/GPU/WebGL assumptions before recommending implementation."
+      ],
+      "validation_focus": [
+        "asset source vs derivative",
+        "material channel assumptions",
+        "renderer capability",
+        "platform dependency"
+      ]
+    },
+    {
+      "id": "visual_2d_redesign_operator",
+      "label": "2D / Illustration / Redesign Operator",
+      "category": "visual",
+      "reference_domains": [
+        "visual_2d_illustration_reference",
+        "photoshop_layers",
+        "redesign_reference",
+        "scss_style_reference",
+        "vue_component_reference"
+      ],
+      "applies_to_path_types": [
+        "frontend",
+        "assets"
+      ],
+      "applies_to_file_types": [
+        "psd",
+        "asset_image",
+        "scss",
+        "vue",
+        "md",
+        "json"
+      ],
+      "applies_to_profiles": [
+        "Visual2D",
+        "Design",
+        "Refactor"
+      ],
+      "rules": [
+        "Convert style references into concrete design tokens.",
+        "Avoid duplicate components and random class sprawl.",
+        "Keep source artwork and exported derivatives separate."
+      ],
+      "validation_focus": [
+        "style token extraction",
+        "component reuse",
+        "layer/source preservation",
+        "accessibility"
+      ]
+    },
+    {
+      "id": "frontend_vue_component_operator",
+      "label": "Vue Component Operator",
+      "category": "frontend",
+      "reference_domains": [
+        "vue_component_reference",
+        "scss_style_reference",
+        "no_code_duplicate",
+        "keep_simple_reference"
+      ],
+      "applies_to_path_types": [
+        "frontend"
+      ],
+      "applies_to_file_types": [
+        "vue",
+        "js",
+        "ts",
+        "scss",
+        "json"
+      ],
+      "applies_to_profiles": [
+        "Design",
+        "Programming",
+        "Refactor"
+      ],
+      "rules": [
+        "Use existing Vue conventions before creating new components.",
+        "Keep visual, data and service concerns separated.",
+        "Prefer simple props/slots/composables over duplicate implementations."
+      ],
+      "validation_focus": [
+        "component reuse",
+        "SFC boundaries",
+        "build/lint commands",
+        "style scope"
+      ]
+    },
+    {
+      "id": "marketing_operator",
+      "label": "Marketing / Conversion Operator",
+      "category": "business",
+      "reference_domains": [
+        "marketing_conversion_reference",
+        "economics_revenue_reference"
+      ],
+      "applies_to_path_types": [
+        "wrapper",
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "applies_to_file_types": [
+        "md",
+        "json",
+        "vue",
+        "js",
+        "ts",
+        "data_table"
+      ],
+      "applies_to_profiles": [
+        "Marketing",
+        "Business"
+      ],
+      "rules": [
+        "Do not invent claims, testimonials or conversion numbers.",
+        "Separate facts from positioning and test hypotheses.",
+        "Tie recommendations to audience, offer, CTA and measurable validation."
+      ],
+      "validation_focus": [
+        "claim evidence",
+        "audience/offer fit",
+        "conversion hypothesis",
+        "metric source"
+      ]
+    },
+    {
+      "id": "math_correctness_operator",
+      "label": "Mathematics Correctness Operator",
+      "category": "math",
+      "reference_domains": [
+        "math_correctness_reference"
+      ],
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated"
+      ],
+      "applies_to_file_types": [
+        "py",
+        "js",
+        "ts",
+        "vue",
+        "json",
+        "md",
+        "data_table"
+      ],
+      "applies_to_profiles": [
+        "Mathematics"
+      ],
+      "rules": [
+        "State formulas, units and assumptions.",
+        "Validate edge cases and rounding behavior.",
+        "Reject fake precision."
+      ],
+      "validation_focus": [
+        "formula",
+        "units",
+        "rounding",
+        "edge cases"
+      ]
+    },
+    {
+      "id": "economics_revenue_operator",
+      "label": "Economics / Umsatz Correctness Operator",
+      "category": "economics",
+      "reference_domains": [
+        "economics_revenue_reference",
+        "math_correctness_reference"
+      ],
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated"
+      ],
+      "applies_to_file_types": [
+        "py",
+        "js",
+        "ts",
+        "vue",
+        "json",
+        "md",
+        "data_table"
+      ],
+      "applies_to_profiles": [
+        "Business",
+        "Marketing",
+        "Mathematics"
+      ],
+      "rules": [
+        "Keep currency, time period, gross/net, tax and margin assumptions explicit.",
+        "Never invent revenue data.",
+        "Use auditable formulas and cite/source data when available."
+      ],
+      "validation_focus": [
+        "currency",
+        "period",
+        "gross/net",
+        "formula auditability"
+      ]
+    },
+    {
+      "id": "translation_operator",
+      "label": "Scoped Project Tree Translation Operator",
+      "category": "translation",
+      "reference_domains": [
+        "translation_project_tree_reference"
+      ],
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "applies_to_file_types": [
+        "md",
+        "json",
+        "vue",
+        "js",
+        "ts",
+        "i18n"
+      ],
+      "applies_to_profiles": [
+        "Translation"
+      ],
+      "rules": [
+        "Translate only selected project-tree scope.",
+        "Preserve identifiers, keys, commands, placeholders and syntax.",
+        "Keep machine-readable schema values stable unless explicitly human-facing."
+      ],
+      "validation_focus": [
+        "scope boundary",
+        "placeholder preservation",
+        "JSON validity",
+        "syntax preservation"
+      ]
+    },
+    {
+      "id": "welmec_admin_operator",
+      "label": "WELMEC / PTB Administrator Operator",
+      "category": "compliance",
+      "reference_domains": [
+        "ptb_welmec_legal_metrology",
+        "welmec_software_guide"
+      ],
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated",
+        "assets"
+      ],
+      "applies_to_file_types": [
+        "py",
+        "js",
+        "ts",
+        "json",
+        "md",
+        "data_table"
+      ],
+      "applies_to_profiles": [
+        "Compliance"
+      ],
+      "rules": [
+        "Do not claim certification or compliance.",
+        "Create traceability, separation and validation guardrails.",
+        "Keep risk-class assumptions explicit and reviewable."
+      ],
+      "validation_focus": [
+        "legally relevant software boundary",
+        "protected interface",
+        "software identification",
+        "audit evidence"
+      ]
+    },
+    {
+      "id": "ptb_legal_metrology_operator",
+      "label": "PTB Legal Metrology Software Operator",
+      "category": "legal_metrology",
+      "reference_domains": [
+        "ptb_metrological_software_reference",
+        "ptb_welmec_legal_metrology",
+        "welmec_software_guide"
+      ],
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated",
+        "assets"
+      ],
+      "applies_to_file_types": [
+        "py",
+        "js",
+        "ts",
+        "json",
+        "md",
+        "data_table"
+      ],
+      "applies_to_profiles": [
+        "Compliance",
+        "LegalMetrologySoftware"
+      ],
+      "rules": [
+        "Separate legal-metrology posture from implementation advice.",
+        "Require evidence for software identification, validation and legally relevant boundaries.",
+        "Never claim formal conformity, certification or type approval."
+      ],
+      "validation_focus": [
+        "software identification",
+        "legally relevant boundary",
+        "validation evidence",
+        "certification claim avoidance"
+      ]
+    },
+    {
+      "id": "ptb_documentation_evidence_operator",
+      "label": "PTB Documentation Evidence Operator",
+      "category": "legal_metrology_documentation",
+      "reference_domains": [
+        "ptb_software_documentation_reference",
+        "ptb_executable_generation_reference"
+      ],
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated",
+        "assets"
+      ],
+      "applies_to_file_types": [
+        "md",
+        "json",
+        "data_table"
+      ],
+      "applies_to_profiles": [
+        "PTBDocumentation",
+        "Compliance"
+      ],
+      "rules": [
+        "Check document identifiers, versions, instrument type references and stable section references.",
+        "Keep documentation gaps explicit and traceable.",
+        "Do not generate fake evidence."
+      ],
+      "validation_focus": [
+        "document metadata",
+        "traceability matrix",
+        "stable references",
+        "missing evidence"
+      ]
+    },
+    {
+      "id": "ptb_risk_assessment_operator",
+      "label": "PTB Risk Assessment Operator",
+      "category": "legal_metrology_risk",
+      "reference_domains": [
+        "ptb_software_risk_assessment_reference"
+      ],
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated",
+        "assets"
+      ],
+      "applies_to_file_types": [
+        "py",
+        "js",
+        "ts",
+        "json",
+        "md",
+        "data_table"
+      ],
+      "applies_to_profiles": [
+        "PTBRisk",
+        "Compliance"
+      ],
+      "rules": [
+        "Map assets, security properties, generic threats, type-specific threats and mitigations.",
+        "Keep risk class explicit.",
+        "Use risk analysis as review scaffolding, not certification proof."
+      ],
+      "validation_focus": [
+        "risk class",
+        "assets",
+        "threat table",
+        "mitigation evidence"
+      ]
+    },
+    {
+      "id": "ptb_software_separation_operator",
+      "label": "PTB Software Separation Operator",
+      "category": "legal_metrology_architecture",
+      "reference_domains": [
+        "ptb_software_separation_reference",
+        "ptb_embedded_metrological_systems_reference"
+      ],
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated",
+        "assets"
+      ],
+      "applies_to_file_types": [
+        "py",
+        "js",
+        "ts",
+        "json",
+        "md",
+        "data_table"
+      ],
+      "applies_to_profiles": [
+        "PTBUpdateLifecycle",
+        "LegalMetrologySoftware",
+        "Compliance"
+      ],
+      "rules": [
+        "Classify legally relevant and non-relevant modules only from evidence.",
+        "Require physical/logical separation, distinguishable indications and protective interfaces when separation is claimed.",
+        "Prefer boundary tables over vague architecture prose."
+      ],
+      "validation_focus": [
+        "module classification",
+        "protective interface",
+        "non-influence evidence",
+        "update boundary"
+      ]
+    },
+    {
+      "id": "ptb_update_lifecycle_operator",
+      "label": "PTB Update Lifecycle Operator",
+      "category": "legal_metrology_update",
+      "reference_domains": [
+        "ptb_software_update_reference",
+        "ptb_cra_impact_reference",
+        "ptb_software_separation_reference"
+      ],
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated",
+        "assets"
+      ],
+      "applies_to_file_types": [
+        "py",
+        "js",
+        "ts",
+        "json",
+        "md",
+        "data_table"
+      ],
+      "applies_to_profiles": [
+        "PTBUpdateLifecycle",
+        "Compliance"
+      ],
+      "rules": [
+        "Classify update impact before proposing changes.",
+        "Separate legally relevant update path from non-relevant update path.",
+        "Record certificates, approval assumptions, permanent logging and CVE context."
+      ],
+      "validation_focus": [
+        "update admissibility",
+        "permanent update record",
+        "certificate assumptions",
+        "CVE/security context"
+      ]
+    },
+    {
+      "id": "ptb_security_configuration_operator",
+      "label": "PTB Security Configuration Operator",
+      "category": "legal_metrology_security",
+      "reference_domains": [
+        "ptb_os_configuration_reference",
+        "ptb_live_media_reference",
+        "ptb_configurable_software_reference"
+      ],
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated",
+        "assets"
+      ],
+      "applies_to_file_types": [
+        "py",
+        "js",
+        "ts",
+        "json",
+        "md",
+        "data_table"
+      ],
+      "applies_to_profiles": [
+        "PTBSecurity",
+        "Compliance"
+      ],
+      "rules": [
+        "Document chain of trust, loaded components, access control and protective interfaces.",
+        "Keep configuration evidence separate from claimed protection state.",
+        "Use state-of-the-art wording cautiously and evidence-backed."
+      ],
+      "validation_focus": [
+        "OS configuration",
+        "chain of trust",
+        "component inventory",
+        "protective interfaces"
+      ]
+    },
+    {
+      "id": "ptb_crypto_time_operator",
+      "label": "PTB Crypto / Time Operator",
+      "category": "legal_metrology_security",
+      "reference_domains": [
+        "ptb_cryptographic_modules_reference",
+        "ptb_time_management_reference"
+      ],
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated",
+        "assets"
+      ],
+      "applies_to_file_types": [
+        "py",
+        "js",
+        "ts",
+        "json",
+        "md",
+        "data_table"
+      ],
+      "applies_to_profiles": [
+        "PTBSecurity",
+        "Compliance"
+      ],
+      "rules": [
+        "Require explicit algorithms, key lengths, standards, key handling and module identification.",
+        "Require explicit time-source, authentication, certificate and UTC/deviation handling evidence.",
+        "Do not claim cryptographic or legal-time sufficiency without support."
+      ],
+      "validation_focus": [
+        "crypto module identity",
+        "key lifecycle",
+        "time synchronization",
+        "certificate/root CA evidence"
+      ]
+    },
+    {
+      "id": "create_stack_operator",
+      "label": "Create Stack Operator",
+      "category": "create_project",
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "py",
+        "js",
+        "ts",
+        "vue",
+        "scss",
+        "cs",
+        "cpp",
+        "h",
+        "shader",
+        "scene_3d"
+      ],
+      "applies_to_profiles": [
+        "Create",
+        "ProfessionalSolutionEngineering"
+      ],
+      "reference_domains": [
+        "create_stack_reference",
+        "professional_solution_engineering_reference",
+        "create_context_build_timeline_reference"
+      ],
+      "rules": [
+        "Convert the Create form into an outcome-first implementation contract.",
+        "Resolve dependencies, target path, file types, references, weights and validation before implementation.",
+        "Prefer existing project conventions over generic boilerplate.",
+        "Resolve the Create output timeline, dependency groups and project tree blueprint before implementation.",
+        "Keep generated artifacts discoverable through EXPORT_MANIFEST.json when ZIP export is selected."
+      ],
+      "validation_focus": [
+        "target path and scope explicit",
+        "dependencies swappable",
+        "changed files/artifacts listed",
+        "validation/rollback stated"
+      ]
+    },
+    {
+      "id": "blender_stack_operator",
+      "label": "Blender Stack Operator",
+      "category": "3d_create",
+      "applies_to_path_types": [
+        "assets",
+        "generated",
+        "backend",
+        "wrapper"
+      ],
+      "applies_to_file_types": [
+        "py",
+        "json",
+        "md",
+        "scene_3d",
+        "shader"
+      ],
+      "applies_to_profiles": [
+        "BlenderManuals",
+        "Visual3D",
+        "Create"
+      ],
+      "reference_domains": [
+        "blender_manual_reference",
+        "visual_3d_reference"
+      ],
+      "rules": [
+        "Route Blender work through official Manual/API evidence.",
+        "Preserve unit, coordinate, material and asset assumptions."
+      ],
+      "validation_focus": [
+        "Blender version assumptions",
+        "asset/source separation",
+        "material/geometry boundaries"
+      ]
+    },
+    {
+      "id": "unity_stack_operator",
+      "label": "Unity Stack Operator",
+      "category": "unity_create",
+      "applies_to_path_types": [
+        "frontend",
+        "assets",
+        "generated",
+        "backend",
+        "wrapper"
+      ],
+      "applies_to_file_types": [
+        "cs",
+        "json",
+        "md",
+        "shader",
+        "scene_3d"
+      ],
+      "applies_to_profiles": [
+        "UnityManuals",
+        "Visual3D",
+        "Create"
+      ],
+      "reference_domains": [
+        "unity_manual_reference"
+      ],
+      "rules": [
+        "Separate Unity runtime, editor tooling, assets and packages.",
+        "Respect existing assembly/package conventions."
+      ],
+      "validation_focus": [
+        "Unity version assumptions",
+        "runtime vs editor code",
+        "package/dependency seams"
+      ]
+    },
+    {
+      "id": "cpp_stack_operator",
+      "label": "C++ Stack Operator",
+      "category": "cpp_create",
+      "applies_to_path_types": [
+        "backend",
+        "generated",
+        "wrapper"
+      ],
+      "applies_to_file_types": [
+        "cpp",
+        "h",
+        "json",
+        "md"
+      ],
+      "applies_to_profiles": [
+        "CppManuals",
+        "Create"
+      ],
+      "reference_domains": [
+        "cpp_reference_manual"
+      ],
+      "rules": [
+        "Keep headers/source/build/tests explicit.",
+        "Prefer standard library and RAII before dependencies."
+      ],
+      "validation_focus": [
+        "compiler/build assumptions",
+        "header boundaries",
+        "test/benchmark posture"
+      ]
+    },
+    {
+      "id": "german_government_reference_operator",
+      "label": "German Government Reference Operator",
+      "category": "government_law",
+      "applies_to_path_types": [
+        "generated",
+        "backend",
+        "wrapper"
+      ],
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "py",
+        "data_table"
+      ],
+      "applies_to_profiles": [
+        "GovernmentGermany",
+        "Compliance",
+        "Create"
+      ],
+      "reference_domains": [
+        "germany_government_law_reference",
+        "germany_economics_reference",
+        "germany_technical_rules_reference"
+      ],
+      "rules": [
+        "Use official German government/public authority sources as source truth.",
+        "Preserve legal/technical wording and IDs.",
+        "Separate source facts from implementation recommendations."
+      ],
+      "validation_focus": [
+        "official source recorded",
+        "date/version/source ID preserved",
+        "no legal advice claim"
+      ]
+    },
+    {
+      "id": "professional_solution_engineering_operator",
+      "label": "Professional Solution Engineering Operator",
+      "category": "solution_engineering",
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "py",
+        "js",
+        "ts",
+        "vue",
+        "scss",
+        "cs",
+        "cpp",
+        "h"
+      ],
+      "applies_to_profiles": [
+        "ProfessionalSolutionEngineering",
+        "Create"
+      ],
+      "reference_domains": [
+        "professional_solution_engineering_reference",
+        "clean_project_reference"
+      ],
+      "rules": [
+        "Define a small professional implementation slice with interfaces, validation, artifacts and rollback.",
+        "Reject over-abstraction and hidden dependencies."
+      ],
+      "validation_focus": [
+        "small slice",
+        "interface seams",
+        "validation commands/evidence",
+        "rollback point"
+      ]
+    },
+    {
+      "id": "create_context_build_operator",
+      "label": "Create Context Build Operator",
+      "category": "create_project",
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "py",
+        "js",
+        "ts",
+        "vue",
+        "scss",
+        "shader",
+        "scene_3d",
+        "kt",
+        "gradle",
+        "swift",
+        "java",
+        "xml",
+        "mobile_config",
+        "dart",
+        "yaml",
+        "c",
+        "cpp",
+        "h",
+        "shell",
+        "dockerfile",
+        "svg"
+      ],
+      "applies_to_profiles": [
+        "Create",
+        "ProfessionalSolutionEngineering",
+        "DependencyManifestExport",
+        "ImportAwareExport"
+      ],
+      "reference_domains": [
+        "create_stack_reference",
+        "create_context_build_timeline_reference",
+        "dependency_manifest_export_reference"
+      ],
+      "rules": [
+        "Translate Create Tab inputs into a target-scoped context build contract.",
+        "Keep timeline tokens editable and unresolved until evidence or user-pinned versions resolve them.",
+        "Check that the project tree blueprint, dependency manifests, generated artifacts and ZIP manifest agree."
+      ],
+      "validation_focus": [
+        "timeline steps are ordered and target-scoped",
+        "dependency manifests are named explicitly",
+        "EXPORT_MANIFEST.json and USER_PROMPT.txt remain compatible with ZIP export",
+        "known version/evidence gaps are stated"
+      ]
+    },
+    {
+      "id": "micro_task_operator",
+      "label": "Micro Task Operator",
+      "category": "create_project",
+      "reference_domains": [
+        "create_micro_tasks_reference",
+        "readme_tree_reference",
+        "process_log_reference",
+        "summary_documentation_reference"
+      ],
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "py",
+        "shell"
+      ],
+      "applies_to_profiles": [
+        "MicroTasks",
+        "Create",
+        "CreatePipeline"
+      ],
+      "rules": [
+        "Run one bounded operation at a time.",
+        "Name the output artifact before writing it.",
+        "Keep validation and rollback notes beside the artifact."
+      ],
+      "validation_focus": [
+        "single artifact output",
+        "project scope evidence",
+        "rollback clarity"
+      ]
+    },
+    {
+      "id": "create_terminal_timeline_operator",
+      "label": "Create Terminal Timeline Operator",
+      "category": "create_project",
+      "reference_domains": [
+        "create_terminal_timeline_reference",
+        "windows_linux_platform_reference",
+        "create_context_build_timeline_reference"
+      ],
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated"
+      ],
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "shell",
+        "py",
+        "js",
+        "ts"
+      ],
+      "applies_to_profiles": [
+        "TerminalTimeline",
+        "CreatePipeline",
+        "Create"
+      ],
+      "rules": [
+        "Compile known tokens into reviewable commands.",
+        "Skip unresolved/descriptive tokens.",
+        "Execute only from the Create working path after explicit confirmation.",
+        "Route Run Timeline through the live Terminal tab session, not through hidden background subprocess output.",
+        "Generate create_timeline_run.cmd or create_timeline_run.sh inside the Create-only export folder."
+      ],
+      "validation_focus": [
+        "compiled command review",
+        "working path isolation",
+        "build/run separation",
+        "terminal session lifecycle",
+        "generated script path visible"
+      ]
+    },
+    {
+      "id": "create_export_boundary_operator",
+      "label": "Create Export Boundary Operator",
+      "category": "export",
+      "reference_domains": [
+        "create_isolated_export_reference",
+        "clean_project_reference",
+        "dependency_manifest_export_reference"
+      ],
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "zip",
+        "shell"
+      ],
+      "applies_to_profiles": [
+        "CreatePipeline",
+        "Create",
+        "CleanProject",
+        "DependencyManifestExport"
+      ],
+      "rules": [
+        "Keep Create export separate from the normal Generator export.",
+        "Track every exported artifact in a manifest.",
+        "Do not leak Create-only artifacts into other tabs by default."
+      ],
+      "validation_focus": [
+        "export manifest integrity",
+        "artifact isolation",
+        "reversible output path"
+      ]
+    },
+    {
+      "id": "repository_management_prompt_operator",
+      "label": "Repository Management Prompt Operator",
+      "category": "prompt_engineering",
+      "reference_domains": [
+        "repository_management_prompt_reference",
+        "schema_structured_output_reference",
+        "tool_wide_prompt_engineering_reference"
+      ],
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "py",
+        "js",
+        "ts",
+        "vue",
+        "scss",
+        "shell"
+      ],
+      "applies_to_profiles": [
+        "RepositoryManagement",
+        "PromptEngineering",
+        "ContextEngineering",
+        "ProfessionalSolutionEngineering"
+      ],
+      "rules": [
+        "Produce outcome-first repository prompts with evidence, non-goals, validation and rollback.",
+        "Keep tool/function contracts explicit and JSON-safe.",
+        "Separate observed project facts from assumptions."
+      ],
+      "validation_focus": [
+        "prompt authority separation",
+        "schema validity",
+        "project evidence traceability"
+      ]
+    },
+    {
+      "id": "create_project_mapping_operator",
+      "label": "Create Tree Mapping Operator",
+      "category": "create_project",
+      "reference_domains": [
+        "create_project_mapping_reference",
+        "create_stack_reference",
+        "create_isolated_export_reference"
+      ],
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "py",
+        "js",
+        "ts",
+        "vue",
+        "scss",
+        "shell",
+        "yaml",
+        "toml",
+        "dockerfile",
+        "gradle",
+        "xml"
+      ],
+      "applies_to_profiles": [
+        "Create",
+        "CreatePipeline",
+        "RepositoryManagement"
+      ],
+      "rules": [
+        "Build a clear target tree where wrapper visually contains backend/frontend targets when present.",
+        "Route tree-node selection into the right-side Item Details editor.",
+        "Preserve temp-preview-first behavior so no default source modification happens before Run.",
+        "Ignore structures without a target-root ancestor during apply."
+      ],
+      "validation_focus": [
+        "mapping completeness",
+        "worktree refresh",
+        "terminal cwd binding",
+        "manifest evidence"
+      ]
+    },
+    {
+      "id": "dependency_abstraction_layer_operator",
+      "label": "Package Dependency Layer Operator",
+      "category": "dependency",
+      "reference_domains": [
+        "dependency_abstraction_layer_reference",
+        "dependency_manifest_export_reference"
+      ],
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "py",
+        "js",
+        "ts",
+        "vue",
+        "scss",
+        "shell",
+        "yaml",
+        "toml",
+        "dockerfile",
+        "gradle",
+        "xml"
+      ],
+      "applies_to_profiles": [
+        "Create",
+        "CreatePipeline",
+        "DependencyManifestExport"
+      ],
+      "rules": [
+        "Manage dependency rows as package entries, not as a single swappable free-text field.",
+        "Keep package name and version separated for controlled boilerplate/token assignment.",
+        "Filter package entries by selected wrapper/backend/frontend target holder.",
+        "Keep install and validation tokens ecosystem-specific and manifest-bound."
+      ],
+      "validation_focus": [
+        "dependency group coverage",
+        "manifest routing",
+        "install-token safety",
+        "version policy"
+      ]
+    },
+    {
+      "id": "create_project_tree_preview_operator",
+      "label": "Create Project Tree Preview Operator",
+      "category": "create_project",
+      "reference_domains": [
+        "create_project_tree_preview_reference",
+        "create_project_mapping_reference"
+      ],
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "py",
+        "js",
+        "ts",
+        "vue",
+        "scss",
+        "shell"
+      ],
+      "applies_to_profiles": [
+        "Create",
+        "ProjectTreePreview",
+        "CreatePipeline"
+      ],
+      "rules": [
+        "Build and validate temp preview tree before Run.",
+        "Keep wrapper/backend/frontend root uniqueness strict.",
+        "Apply only target-root descendants to the working path."
+      ],
+      "validation_focus": [
+        "target-root uniqueness",
+        "ignored orphan structures",
+        "temp preview cleanup",
+        "apply-on-run boundary"
+      ]
+    },
+    {
+      "id": "boilerplate_dependency_crud_operator",
+      "label": "Boilerplate Dependency CRUD Operator",
+      "category": "create_project",
+      "reference_domains": [
+        "boilerplate_dependency_crud_reference",
+        "dependency_abstraction_layer_reference"
+      ],
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated"
+      ],
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "py",
+        "js",
+        "ts",
+        "vue",
+        "scss",
+        "shell"
+      ],
+      "applies_to_profiles": [
+        "Create",
+        "BoilerplateDependencyCRUD",
+        "DependencyManifestExport"
+      ],
+      "rules": [
+        "Keep dependency rows target-scoped.",
+        "Map each row to a manifest and validation token.",
+        "Treat CRUD edits as Create-session abstraction unless exported."
+      ],
+      "validation_focus": [
+        "manifest assignment",
+        "target assignment",
+        "install token",
+        "validation token"
+      ]
+    },
+    {
+      "id": "create_timeline_checkbox_operator",
+      "label": "Create Timeline Checkbox Operator",
+      "category": "create_project",
+      "reference_domains": [
+        "create_timeline_checkbox_reference",
+        "create_terminal_timeline_reference"
+      ],
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated"
+      ],
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "shell"
+      ],
+      "applies_to_profiles": [
+        "Create",
+        "TimelineCheckboxControl",
+        "CreatePipeline"
+      ],
+      "rules": [
+        "Refresh checkbox steps on compile.",
+        "Run checked steps only.",
+        "Keep unresolved tokens visible and non-executable."
+      ],
+      "validation_focus": [
+        "checked-step execution",
+        "unchecked-step skip",
+        "token visibility",
+        "terminal session cwd"
+      ]
+    },
+    {
+      "id": "create_project_first_mapping_operator",
+      "label": "Create Project-First Mapping Operator",
+      "category": "create_project",
+      "reference_domains": [
+        "create_project_first_mapping_reference",
+        "create_project_tree_preview_reference",
+        "boilerplate_dependency_crud_reference"
+      ],
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated"
+      ],
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "py",
+        "js",
+        "ts",
+        "vue"
+      ],
+      "applies_to_profiles": [
+        "Create",
+        "CreatePipeline",
+        "DevelopFeatures"
+      ],
+      "rules": [
+        "Project evidence overrides selected catalog defaults for existing-project feature mode.",
+        "Wrapper is an orchestrator and may contain backend/frontend targets without generating default folders.",
+        "Dependency package rows come from target manifests first, then boilerplate fallback with --latest version layer.",
+        "Terminal, mapping, details and packages must rejoin the refreshed temp preview after project or catalog changes."
+      ],
+      "validation_focus": [
+        "target detection",
+        "manifest dependency rows",
+        "temp-only compile",
+        "unique wrapper/backend/frontend roots"
+      ]
+    },
+    {
+      "id": "create_timeline_runtime_operator",
+      "label": "Create Timeline Runtime Operator",
+      "applies_to_references": [
+        "create_timeline_stop_progress_reference"
+      ],
+      "rules": [
+        "Keep terminal, timeline and progress state in sync.",
+        "Stop must abort the live process and keep unfinished steps pending."
+      ]
+    },
+    {
+      "id": "create_structured_crud_operator",
+      "label": "Create Structured CRUD Operator",
+      "applies_to_references": [
+        "create_structured_crud_dialog_reference"
+      ],
+      "rules": [
+        "Use structured add/edit dialogs for compiler and package entries.",
+        "Preserve order and target assignment on edit."
+      ]
+    },
+    {
+      "id": "create_node_nvm_version_operator",
+      "label": "Create Node NVM Version Operator",
+      "category": "create_runtime",
+      "reference_domains": [
+        "create_node_nvm_version_reference",
+        "dependency_abstraction_layer_reference",
+        "create_terminal_timeline_reference"
+      ],
+      "applies_to_path_types": [
+        "frontend",
+        "backend",
+        "wrapper",
+        "generated"
+      ],
+      "applies_to_file_types": [
+        "js",
+        "ts",
+        "vue",
+        "scss",
+        "json",
+        "md"
+      ],
+      "applies_to_profiles": [
+        "Create",
+        "Programming",
+        "CreatePipeline"
+      ],
+      "rules": [
+        "Run a lightweight NVM current/version probe when a Node-capable stack is selected and use that return value as the declared Node version.",
+        "Expose NVM version in Create runtime/package/compiler UI.",
+        "Propagate nvm_version into dependency rows and compiler rows.",
+        "Prefix only node-family commands with nvm use when version is set."
+      ],
+      "validation_focus": [
+        "node command has nvm prefix only when configured",
+        "None remains no-op",
+        "package rows keep package/version/nvm fields aligned"
+      ]
+    }
+  ],
+  "reference_routing_rule": "Reference domains and operation roles are dynamic routing controls. Selected ids are always active; otherwise they activate only when path type, file types, profiles and scoped file evidence match. They must never be treated as static code generators."
+}

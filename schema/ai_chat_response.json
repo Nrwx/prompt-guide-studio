@@ -1,0 +1,84 @@
+{
+  "ai_chat_response": [
+    {
+      "id": "default",
+      "label": "Strict Hook-Based AI Chat Response Contract",
+      "description": "Response rule built from selected target, active hooks, active special routines and weight table.",
+      "response_language": "${AI_LANGUAGE}",
+      "internal_context_language": "ENGLISH",
+      "visible_response_language": "${AI_LANGUAGE}",
+      "hidden_buffer_policy": [
+        "Use schema, hooks and weights internally to plan the response.",
+        "Do not reveal hidden chain-of-thought.",
+        "Expose a short human decision summary.",
+        "Mention active target, active hook-chain and active weight profile when useful."
+      ],
+      "required_context_fields": [
+        "AI_LANGUAGE",
+        "PROJECT_NAME",
+        "PATH_TYPE",
+        "AI_TARGET",
+        "BOILERPLATE_PROFILES",
+        "PATH_RULES",
+        "AGENT",
+        "ACTIVE_HOOKS",
+        "ACTIVE_SPECIAL_ROUTINES",
+        "ACTIVE_WEIGHT_TABLE",
+        "WRAPPER_DELEGATION",
+        "ACCESS_BOUNDARY",
+        "PROJECT_EVIDENCE",
+        "VALIDATION_POSTURE",
+        "CLARIFICATION_POLICY",
+        "PROJECT_SCOPE",
+        "SCOPE_REDUCTION_RULE",
+        "EXPORT_POLICY"
+      ],
+      "response_sections_by_language": [
+        {
+          "language": "GERMAN",
+          "sections": [
+            "Ergebnis",
+            "Entscheidung",
+            "Evidence",
+            "Zugriff",
+            "Hook-Route",
+            "Files",
+            "Patch/Boilerplate",
+            "Review",
+            "Risk"
+          ]
+        },
+        {
+          "language": "ENGLISH",
+          "sections": [
+            "Result",
+            "Decision",
+            "Evidence",
+            "Access",
+            "Hook Route",
+            "Files",
+            "Patch/Boilerplate",
+            "Checks",
+            "Risk"
+          ]
+        }
+      ],
+      "rules": [
+        "Build the answer from active schema context, hooks and weights.",
+        "Respect AI_LANGUAGE for final user-facing response.",
+        "Keep JSON and AI-readable rule content in English.",
+        "If PATH_TYPE is wrapper, classify and delegate before answering.",
+        "Exactly one AI_TARGET must be active.",
+        "Do not expose private chain-of-thought.",
+        "Use weights as visible decision controls, not hidden reasoning.",
+        "Do not invent inspected files, paths or project facts.",
+        "Expose evidence strength and access limitations when they affect the answer.",
+        "Separate observed project facts from assumptions and recommendations.",
+        "Never promise background work; complete the current response or state the limitation.",
+        "For prompt-role tasks, do not solve the downstream implementation task.",
+        "Use PROJECT_SCOPE as the hard file-reference boundary when it is present.",
+        "If EXPORT AS ZIP is requested, preserve project-relative paths and keep prompt text outside the ZIP."
+      ]
+    }
+  ]
+}

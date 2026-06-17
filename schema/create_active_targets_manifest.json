@@ -1,0 +1,61 @@
+{
+  "schema_id": "create_active_targets_manifest",
+  "artifact": "CREATE_ACTIVE_TARGETS.json",
+  "owner": "Create Export / Prompt Builder",
+  "purpose": "Human-readable and machine-readable summary of every active Create, Generator, Project Tree and Dependency-Layer target.",
+  "trigger_policy": {
+    "export_intelligence_high": "Prompt Builder and USER_PROMPT.txt must introduce all active targets with content-based descriptions and manifest references.",
+    "wrapper_policy": "Wrapper is only one target and must not hide backend, frontend, assets, generated or dependency-scoped child targets.",
+    "path_policy": "When absolute project paths are enabled, path is compiled absolute and relative_path preserves the project-relative original."
+  },
+  "required_fields": [
+    "artifact",
+    "schema_version",
+    "created_at",
+    "mode",
+    "stack",
+    "export_intelligence",
+    "path_policy",
+    "target_count",
+    "targets",
+    "manifest_contract"
+  ],
+  "target_fields": [
+    "id",
+    "title",
+    "description",
+    "path",
+    "relative_path",
+    "path_type",
+    "build_target",
+    "ai_target",
+    "enabled",
+    "sources",
+    "roles",
+    "boilerplates",
+    "boilerplate_profiles",
+    "file_types",
+    "dependency_manifests",
+    "dependency_packages",
+    "evidence",
+    "manifest_contract"
+  ],
+  "source_priority": [
+    "current_create_config",
+    "WRITE_AI_RULES_TO targets",
+    "detected_create_project_targets",
+    "create_project_tree_preview_root",
+    "CREATE_DEPENDENCY_LAYER.json"
+  ],
+  "manifest_contract": [
+    "CREATE_ACTIVE_TARGETS.json is the human target summary for prompts.",
+    "CREATE_PROJECT_MAPPING.json remains the target root and tree boundary source.",
+    "CREATE_DEPENDENCY_LAYER.json remains the target-scoped package source.",
+    "EXPORT_MANIFEST.json remains the exported-file truth."
+  ],
+  "guardrails": [
+    "Do not collapse active targets to wrapper only.",
+    "Do not invent target folders that are not present in config, mapping, generator targets, preview tree or dependency layer.",
+    "Do not treat absolute prompt paths as ZIP member names; ZIP entries remain project-relative."
+  ]
+}

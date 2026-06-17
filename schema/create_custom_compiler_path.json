@@ -1,0 +1,74 @@
+{
+  "schema_id": "create_custom_compiler_path",
+  "purpose": "Create timeline compiler path contract. A user-pinned project-local compiler folder or Python file is the point of truth for dynamic compilation. It supports both project context compilers and template source compilers without scanning the entire working tree for executables.",
+  "controls": [
+    {
+      "id": "create_compiler_path",
+      "label": "Compiler path",
+      "scope": "Create header / Config",
+      "value_type": "path",
+      "path_policy": "Prefer project-relative folders such as backend/core/compiler or backend/core/compiler/main.py. Absolute paths are accepted only when explicitly selected by the user.",
+      "execution_policy": "Python API runner only. Supports compile_project(context)/compile(context)/build(context)/run(context)/execute(context)/main(context) and template compile(src, vars_map, blueprint_var, entry). Prompt-guide does not generate shell, exe, bat, cmd or arbitrary binary compiler commands from this path.",
+      "ui_policy": "Shown in the Create header Config area so the compiler path is resolved before timeline compilation."
+    }
+  ],
+  "boilerplates": [
+    {
+      "id": "custom_compiler_path_boilerplate",
+      "applies_to": [
+        "feature_for_existing_project",
+        "refactor_existing_stack",
+        "new_project_abstraction"
+      ],
+      "contract": [
+        "Resolve the user-pinned compiler_path before {$compiler_run}.",
+        "Do not scan the whole project for compiler commands during Run Timeline.",
+        "Load only Python entry files from the configured compiler path: main.py, compiler.py, compile.py, build.py, __init__.py or direct file selection.",
+        "Call a Python API entrypoint: compile_project, compile, build, run, execute, main or a *Compiler class method.",
+        "Write CREATE_COMPILER_DISCOVERY.json with candidate files, selected entrypoint, status and errors.",
+        "If the selected Python entry exposes a template Compiler.compile(src, vars_map=None, blueprint_var=None, entry=None), adapt it to render placeholder files in the preview target instead of calling compile(context).",
+        "Template adapter must derive blueprint/name/class_name variables from each file path and skip the compiler folder itself.",
+        "Discovery output must include template_adapter rendered_count, rendered_files, skipped_count and errors when template mode is used.",
+        "Project context compilers remain supported: compile_project(context), compile(context), build(context), run(context), execute(context), main(context), and *Compiler class methods with the same context signatures.",
+        "Load PROMPT_MANIFEST.json into context as project_mapping/mapping when available before invoking a context compiler.",
+        "Template compiler detection is only used when compile(...) clearly expects source/template text, vars_map, blueprint_var or entry."
+      ]
+    }
+  ],
+  "reference_domains": [
+    {
+      "id": "create_custom_compiler_path_reference",
+      "label": "Create Custom Compiler Path Reference",
+      "source_truth": "User-selected compiler path in Create / Compiler tab",
+      "non_goals": [
+        "No generated arbitrary executables",
+        "No broad compiler scan on Run Timeline",
+        "No compileall over unresolved boilerplate placeholders"
+      ]
+    }
+  ],
+  "operation_roles": [
+    {
+      "id": "create_custom_compiler_operator",
+      "label": "Create Custom Compiler Operator",
+      "behavior": [
+        "Treat compiler_path as authoritative when set.",
+        "Use project-local Python compiler APIs only.",
+        "Pass target_path, preview_path, temp_root, working_dir, export_dir and mapping_path as context.",
+        "Fail clearly when the path is missing or no compiler entrypoint exists.",
+        "Recognize template compiler APIs separately from project compile(context) APIs.",
+        "Do not reject a *Compiler class merely because compile requires a source/template argument.",
+        "Prefer explicit project context entrypoints when the callable accepts context.",
+        "Pass PROMPT_MANIFEST.json as context[\"project_mapping\"] when available.",
+        "Use the template adapter only for source/template compile APIs, not for compile(context)."
+      ]
+    }
+  ],
+  "weight_operators": [
+    {
+      "id": "create_custom_compiler_path_weight_operator",
+      "label": "Create Custom Compiler Path Weight Operator",
+      "weight_effect": "Compiler path beats fallback compiler rows. Fallback rows remain manual/explicit only."
+    }
+  ]
+}

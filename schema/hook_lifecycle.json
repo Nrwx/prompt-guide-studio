@@ -1,0 +1,81 @@
+{
+  "hook_lifecycle": [
+    {
+      "id": "01_classify_task",
+      "label": "Classify Task",
+      "order": 10,
+      "purpose": "Classify task by keywords, explicit paths and target capabilities.",
+      "rules": [
+        "Use schema keywords.",
+        "Prefer explicit folder mentions.",
+        "Do not execute implementation yet."
+      ]
+    },
+    {
+      "id": "02_validate_access",
+      "label": "Validate AI Access",
+      "order": 20,
+      "purpose": "Validate what the selected AI target can actually access or modify.",
+      "rules": [
+        "Codex may edit repository files.",
+        "WebAgent verifies evidence.",
+        "ChatGPT explains and delegates."
+      ]
+    },
+    {
+      "id": "03_load_rules",
+      "label": "Load Target Rules",
+      "order": 30,
+      "purpose": "Load exact AI-RULES.json for selected target path.",
+      "rules": [
+        "Use WRITE_AI_RULES_TO.",
+        "Match selected path_type exactly.",
+        "Point to exact rules_path."
+      ]
+    },
+    {
+      "id": "04_apply_weights",
+      "label": "Apply Weight Table",
+      "order": 40,
+      "purpose": "Apply human decision weights and risk controls.",
+      "rules": [
+        "Apply active weight profile.",
+        "Increase caution for Codex.",
+        "Prefer minimal change when risk is high."
+      ]
+    },
+    {
+      "id": "05_build_boilerplate",
+      "label": "Build Modular Boilerplate",
+      "order": 50,
+      "purpose": "Generate boilerplate modules through hooks.",
+      "rules": [
+        "Use only matching boilerplate profiles.",
+        "Inject special routines if configured.",
+        "Keep modules isolated."
+      ]
+    },
+    {
+      "id": "06_validate_output",
+      "label": "Validate Output",
+      "order": 60,
+      "purpose": "Validate generated rules, modules and response contract.",
+      "rules": [
+        "Check target-path match.",
+        "Check single AI target.",
+        "Check hooks and weights are attached."
+      ]
+    },
+    {
+      "id": "07_chat_response",
+      "label": "AI Chat Response",
+      "order": 70,
+      "purpose": "Compose final answer from schema context.",
+      "rules": [
+        "Do not reveal hidden reasoning.",
+        "Use AI_LANGUAGE.",
+        "Provide concise decision summary."
+      ]
+    }
+  ]
+}

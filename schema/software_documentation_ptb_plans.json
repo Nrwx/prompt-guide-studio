@@ -1,0 +1,304 @@
+{
+  "software_documentation_ptb_schema": {
+    "schema_version": "software-documentation-ptb-plan.v1",
+    "purpose": "Reusable local schema for PTB/WELMEC-aligned documentation and update plans.",
+    "selection_rule": "A documentation plan chooses exactly one profile as structure. Other PTB references may be cross-references only when evidenced.",
+    "profiles": {
+      "ptb_mb01_software_documentation": [
+        "document metadata",
+        "system hardware/software structure",
+        "measuring process or functional process",
+        "software identification",
+        "interfaces",
+        "configuration/resources",
+        "additional documents"
+      ],
+      "welmec_7_2_software_guide": [
+        "instrument/software type classification",
+        "risk class assumptions",
+        "requirement block references",
+        "checklist mapping",
+        "validation guidance"
+      ],
+      "ptb_mb06_update_lifecycle": [
+        "organizational update process",
+        "technical update suitability",
+        "authenticity/integrity",
+        "permanent update logging",
+        "approval/consent assumptions"
+      ],
+      "ptb_mb04_risk_assessment": [
+        "assets",
+        "security properties",
+        "generic threats",
+        "type-specific threats",
+        "mitigations",
+        "residual gaps"
+      ],
+      "ptb_mb07_software_separation": [
+        "legally relevant vs non-relevant boundary",
+        "interfaces/data flows",
+        "non-influence evidence",
+        "update boundary"
+      ]
+    },
+    "evidence_matrix_columns": [
+      "topic",
+      "project_file_or_section",
+      "status",
+      "remark_or_gap"
+    ],
+    "update_plan_sections": [
+      "change objective",
+      "affected artifacts",
+      "resource reuse",
+      "validation",
+      "rollback",
+      "known gaps"
+    ],
+    "claim_boundary": "This schema produces reviewable documentation scaffolding, not conformity, certification or legal approval."
+  },
+  "test_plan_schema": {
+    "schema_version": "unit-test-plan.v1",
+    "purpose": "Small, project-native unit test planning and optional test patches.",
+    "framework_detection_order": [
+      "existing test directories",
+      "package.json scripts/devDependencies",
+      "pyproject/requirements",
+      "dependency layer validation tokens",
+      "manual user choice"
+    ],
+    "test_matrix_columns": [
+      "behavior",
+      "unit under test",
+      "resource/fixture",
+      "assertion",
+      "validation command or gap"
+    ],
+    "write_gate": "Write tests only when behavior and framework evidence are clear."
+  },
+  "resource_reuse_schema": {
+    "schema_version": "resource-reuse-plan.v1",
+    "purpose": "Identify local resources before creating new code/docs/tests.",
+    "reuse_sources": [
+      "selected scope",
+      "Project Tree import relation cache",
+      "dependency layer",
+      "schema reference/operator ids",
+      "existing docs/tests/fixtures"
+    ],
+    "report_columns": [
+      "candidate",
+      "source",
+      "fit reason",
+      "selected/rejected",
+      "risk/gap"
+    ]
+  },
+  "reference_domains": [
+    {
+      "id": "documentation_planning_reference",
+      "label": "Software Documentation Planning Reference",
+      "category": "documentation",
+      "rules": [
+        "Use a documented structure before writing prose.",
+        "Separate documentation content, update plan, validation proof and known gaps.",
+        "Do not use documentation to claim compliance."
+      ],
+      "source_refs": [
+        {
+          "label": "Diátaxis documentation framework",
+          "url": "https://diataxis.fr/",
+          "authority": "public_methodology"
+        },
+        {
+          "label": "Write the Docs software documentation guide",
+          "url": "https://www.writethedocs.org/guide/",
+          "authority": "community_best_practice"
+        }
+      ]
+    },
+    {
+      "id": "unit_testing_reference",
+      "label": "Unit Testing / Small Tests Reference",
+      "category": "testing",
+      "rules": [
+        "Prefer small deterministic tests for isolated behavior.",
+        "Reuse the existing project test framework and fixtures.",
+        "Escalate to integration/smoke only when a unit boundary is not evidenced."
+      ],
+      "source_refs": [
+        {
+          "label": "Google Testing Blog: Test Sizes",
+          "url": "https://testing.googleblog.com/2010/12/test-sizes.html",
+          "authority": "engineering_best_practice"
+        }
+      ]
+    },
+    {
+      "id": "resource_reuse_reference",
+      "label": "Local Resource Reuse Reference",
+      "category": "architecture",
+      "rules": [
+        "Search selected scope, imports and dependency layer before adding new resources.",
+        "Prefer existing utilities, components, fixtures and docs when fit is evidenced.",
+        "Report reuse candidates and why they were selected or rejected."
+      ]
+    }
+  ],
+  "operation_roles": [
+    {
+      "id": "documentation_update_planning_operator",
+      "label": "Documentation Update Planning Operator",
+      "category": "documentation",
+      "reference_domains": [
+        "documentation_planning_reference",
+        "ptb_software_documentation_reference",
+        "ptb_software_update_reference"
+      ],
+      "rules": [
+        "Choose exactly one documentation schema profile.",
+        "Build an evidence matrix from local project facts.",
+        "Write update plan and manifest delta together."
+      ],
+      "validation_focus": [
+        "selected documentation schema",
+        "evidence matrix",
+        "update plan",
+        "manifest delta"
+      ]
+    },
+    {
+      "id": "unit_test_planning_operator",
+      "label": "Unit Test Planning Operator",
+      "category": "testing",
+      "reference_domains": [
+        "unit_testing_reference"
+      ],
+      "rules": [
+        "Detect existing test framework before writing tests.",
+        "Prefer small tests and existing fixtures.",
+        "If no framework evidence exists, produce a plan/manual gap instead of installing dependencies."
+      ],
+      "validation_focus": [
+        "test framework evidence",
+        "unit boundary",
+        "assertions",
+        "command or manual gap"
+      ]
+    },
+    {
+      "id": "resource_reuse_operator",
+      "label": "Local Resource Reuse Operator",
+      "category": "architecture",
+      "reference_domains": [
+        "resource_reuse_reference"
+      ],
+      "rules": [
+        "Inspect local candidates before creating code/docs/tests.",
+        "Do not duplicate utilities or schemas that already exist.",
+        "Record selected and rejected reuse candidates."
+      ],
+      "validation_focus": [
+        "candidate source",
+        "fit reason",
+        "duplication avoidance",
+        "rollback"
+      ]
+    }
+  ],
+  "weight_operators": [
+    {
+      "id": "unit_test_planning_operator",
+      "label": "Unit Test Planning Weight Operator",
+      "category": "testing",
+      "weights": {
+        "small_scope": 10,
+        "framework_evidence": 10,
+        "determinism": 9,
+        "dependency_resistance": 9
+      },
+      "rules": [
+        "Small deterministic tests are preferred.",
+        "No new framework dependency without evidence or explicit user request."
+      ]
+    },
+    {
+      "id": "resource_reuse_operator",
+      "label": "Resource Reuse Weight Operator",
+      "category": "architecture",
+      "weights": {
+        "reuse_before_create": 10,
+        "duplication_resistance": 9,
+        "local_evidence": 10,
+        "minimal_change": 9
+      },
+      "rules": [
+        "Existing local resources are preferred when fit is evidenced.",
+        "Do not overfit by reusing a resource solely because of a similar name."
+      ]
+    }
+  ],
+  "hooks": [
+    {
+      "id": "unit_test_plan_evidence_gate",
+      "label": "Unit Test Plan Evidence Gate",
+      "lifecycle_phase": "validation",
+      "priority": 63,
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated"
+      ],
+      "applies_to_file_types": [
+        "py",
+        "js",
+        "ts",
+        "vue",
+        "json",
+        "md"
+      ],
+      "inject_into": [
+        "CREATE_PROMPT",
+        "VALIDATION"
+      ],
+      "weight_profile": "professional_solution_engineering_standard",
+      "rules": [
+        "Require framework evidence or manual gap before writing test files.",
+        "Prefer project-native test commands."
+      ]
+    },
+    {
+      "id": "local_resource_reuse_gate",
+      "label": "Local Resource Reuse Gate",
+      "lifecycle_phase": "planning",
+      "priority": 64,
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated",
+        "assets"
+      ],
+      "applies_to_file_types": [
+        "py",
+        "js",
+        "ts",
+        "vue",
+        "json",
+        "md",
+        "txt"
+      ],
+      "inject_into": [
+        "CREATE_PROMPT",
+        "BOILERPLATE_MODULES"
+      ],
+      "weight_profile": "clean_project_standard",
+      "rules": [
+        "Scan local candidates before creating new resources.",
+        "Report reuse candidates in output."
+      ]
+    }
+  ]
+}

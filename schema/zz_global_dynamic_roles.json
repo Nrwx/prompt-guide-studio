@@ -1,0 +1,623 @@
+{
+  "boilerplate_profiles": [
+    {
+      "id": "CreateVueProject",
+      "label": "Create Vue Project",
+      "description": "Global role intent for creating or initializing a Vue project without static project-specific boilerplate.",
+      "default_enabled": false,
+      "applies_to_path_types": [
+        "frontend",
+        "wrapper"
+      ],
+      "keywords": [
+        "create vue project",
+        "new vue project",
+        "vue setup",
+        "initialize vue"
+      ]
+    },
+    {
+      "id": "ImportAwareExport",
+      "label": "Import Aware Export",
+      "description": "Expands selected project tree paths with local imports before prompt scope and ZIP export.",
+      "default_enabled": false,
+      "applies_to_path_types": [
+        "wrapper",
+        "frontend",
+        "backend",
+        "assets",
+        "generated"
+      ]
+    },
+    {
+      "id": "DependencyManifestExport",
+      "label": "Dependency Manifest Export",
+      "description": "Copies dependency manifest files into ZIP only when explicitly enabled; dependency lists are not embedded in AI-RULES.",
+      "default_enabled": false,
+      "applies_to_path_types": [
+        "wrapper",
+        "frontend",
+        "backend",
+        "generated"
+      ]
+    }
+  ],
+  "reference_domains": [
+    {
+      "id": "global_frontend_framework_reference",
+      "label": "Global Frontend Framework Reference",
+      "category": "frontend",
+      "applies_to_path_types": [
+        "frontend",
+        "wrapper"
+      ],
+      "applies_to_file_types": [
+        "js",
+        "ts",
+        "vue",
+        "scss",
+        "json",
+        "md"
+      ],
+      "applies_to_profiles": [
+        "Programming",
+        "Design",
+        "Refactor",
+        "CreateVueProject",
+        "CustomPrompt",
+        "SearchAndFix"
+      ],
+      "trigger_keywords": [
+        "frontend",
+        "component",
+        "vue",
+        "create project",
+        "build",
+        "lint",
+        "sass",
+        "webpack"
+      ],
+      "keywords": [
+        "frontend",
+        "framework",
+        "create_project",
+        "vue"
+      ],
+      "source_refs": [
+        {
+          "label": "Vue Single-File Components",
+          "url": "https://vuejs.org/guide/scaling-up/sfc.html",
+          "authority": "official"
+        },
+        {
+          "label": "Vue CLI Service",
+          "url": "https://cli.vuejs.org/guide/cli-service.html",
+          "authority": "official"
+        }
+      ],
+      "rules": [
+        "Treat framework/tooling names as detected evidence, not as project-specific roles or boilerplate.",
+        "Do not generate static framework boilerplate unless the task explicitly asks for new files and the target rules allow implementation.",
+        "Use detected commands and selected PROJECT_SCOPE before recommending setup or migration steps.",
+        "Package imports remain external unless they resolve to concrete local project files outside dependency manifests."
+      ],
+      "guardrails": [
+        "No dependency list is embedded into AI-RULES.",
+        "No project-specific operator role names.",
+        "No package import is auto-copied as a project file."
+      ]
+    },
+    {
+      "id": "import_aware_project_scope_reference",
+      "label": "Import Aware Project Scope Reference",
+      "category": "scope",
+      "applies_to_path_types": [
+        "wrapper",
+        "frontend",
+        "backend",
+        "assets",
+        "generated"
+      ],
+      "applies_to_file_types": [
+        "js",
+        "ts",
+        "vue",
+        "scss",
+        "json",
+        "md",
+        "py"
+      ],
+      "applies_to_profiles": [
+        "ImportAwareExport",
+        "Programming",
+        "Refactor",
+        "SearchAndFix",
+        "CustomPrompt"
+      ],
+      "trigger_keywords": [
+        "include imports",
+        "import schema",
+        "selected tree",
+        "export clone",
+        "project scope"
+      ],
+      "keywords": [
+        "import",
+        "scope",
+        "export",
+        "tree"
+      ],
+      "rules": [
+        "When Include Imports is enabled, selected files must expand to project-local import matches before prompt generation and ZIP export.",
+        "Only resolved project-tree paths may be added; external packages are not copied as imports.",
+        "Imported paths are scope references and must preserve project-relative paths in export."
+      ]
+    },
+    {
+      "id": "dependency_manifest_export_reference",
+      "label": "Dependency Manifest Export Reference",
+      "category": "dependency",
+      "applies_to_path_types": [
+        "wrapper",
+        "frontend",
+        "backend",
+        "generated"
+      ],
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "py",
+        "js",
+        "ts",
+        "vue"
+      ],
+      "applies_to_profiles": [
+        "DependencyManifestExport",
+        "Documentation",
+        "Analytics"
+      ],
+      "trigger_keywords": [
+        "package.json",
+        "requirements.txt",
+        "requirements.json",
+        "dependency manifest",
+        "export dependencies"
+      ],
+      "keywords": [
+        "dependency",
+        "manifest",
+        "export"
+      ],
+      "rules": [
+        "Dependency manifests are exported only when the explicit checkbox/CLI flag is active.",
+        "Only package.json, requirements.txt and requirements.json may be forced into ZIP by this feature.",
+        "Dependency lists must stay out of AI-RULES and AI-CHAT active context."
+      ]
+    },
+    {
+      "id": "tool_wide_prompt_engineering_reference",
+      "label": "Tool-Wide Prompt Engineering Reference",
+      "category": "prompt_engineering",
+      "always_on": true,
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "py",
+        "js",
+        "ts",
+        "vue",
+        "scss"
+      ],
+      "trigger_keywords": [
+        "prompt",
+        "context",
+        "scope",
+        "eval",
+        "quality",
+        "schema",
+        "operator"
+      ],
+      "keywords": [
+        "prompt_engineering",
+        "context_engineering",
+        "quality",
+        "eval"
+      ],
+      "rules": [
+        "Prompt engineering applies across the whole tool: schema, GUI state, export scope, generated prompts and eval reports must agree.",
+        "Separate authority context, user prompt text, project evidence, constraints, output contract and validation posture.",
+        "Prefer dynamic routing from evidence over static project-specific prompt blocks.",
+        "Generated and exported artifacts must prefer output/export as the single visible output folder."
+      ]
+    }
+  ],
+  "operation_roles": [
+    {
+      "id": "create_vue_project_operator",
+      "label": "Create Vue Project Operator",
+      "category": "create_project",
+      "reference_domains": [
+        "global_frontend_framework_reference"
+      ],
+      "applies_to_path_types": [
+        "frontend",
+        "wrapper"
+      ],
+      "applies_to_file_types": [
+        "js",
+        "ts",
+        "vue",
+        "scss",
+        "json",
+        "md"
+      ],
+      "rules": [
+        "Create or initialize Vue project structure only when the actual task asks for creation, not during role-prompt generation.",
+        "Respect detected package manager and commands; do not invent scripts.",
+        "Prefer minimal setup and clearly separate assumptions from detected evidence."
+      ]
+    },
+    {
+      "id": "import_scope_operator",
+      "label": "Import Scope Operator",
+      "category": "scope",
+      "reference_domains": [
+        "import_aware_project_scope_reference"
+      ],
+      "applies_to_path_types": [
+        "wrapper",
+        "frontend",
+        "backend",
+        "assets",
+        "generated"
+      ],
+      "applies_to_file_types": [
+        "js",
+        "ts",
+        "vue",
+        "scss",
+        "json",
+        "md",
+        "py"
+      ],
+      "rules": [
+        "Expand selected files with resolved local imports before generating AI-RULES/prompt scope.",
+        "Keep external packages as dependency evidence only, never as files to copy.",
+        "Document import-expanded paths in PROJECT_METADATA.scope_expansion."
+      ]
+    },
+    {
+      "id": "dependency_manifest_export_operator",
+      "label": "Dependency Manifest Export Operator",
+      "category": "dependency",
+      "reference_domains": [
+        "dependency_manifest_export_reference"
+      ],
+      "applies_to_path_types": [
+        "wrapper",
+        "frontend",
+        "backend",
+        "generated"
+      ],
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "py",
+        "js",
+        "ts",
+        "vue"
+      ],
+      "rules": [
+        "Never embed dependency lists in AI-RULES.",
+        "Only copy package.json, requirements.txt and requirements.json into ZIP when the explicit export option is enabled.",
+        "Do not copy lockfiles or installed dependency folders through this feature."
+      ]
+    },
+    {
+      "id": "tool_wide_prompt_architect_operator",
+      "label": "Tool-Wide Prompt Architect Operator",
+      "category": "prompt_engineering",
+      "reference_domains": [
+        "tool_wide_prompt_engineering_reference"
+      ],
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "py",
+        "js",
+        "ts",
+        "vue",
+        "scss"
+      ],
+      "rules": [
+        "Keep prompt engineering behavior consistent across GUI, CLI, schema, generated AI-RULES, prompts, manifest and eval checklist.",
+        "Dynamic evidence routing beats project-specific prompt blocks.",
+        "Every custom prompt wrapper must preserve user intent while adding scope, roles, weights and validation boundaries."
+      ]
+    },
+    {
+      "id": "frontend_vue_component_operator",
+      "label": "Frontend Component Operator",
+      "category": "frontend",
+      "reference_domains": [
+        "global_frontend_framework_reference",
+        "scss_style_reference",
+        "no_code_duplicate",
+        "keep_simple_reference"
+      ],
+      "applies_to_path_types": [
+        "frontend",
+        "wrapper"
+      ],
+      "applies_to_file_types": [
+        "vue",
+        "js",
+        "ts",
+        "scss",
+        "json",
+        "md"
+      ],
+      "rules": [
+        "Treat component work as a generic frontend component task; a framework is selected only from evidence or explicit task intent.",
+        "Search selected PROJECT_SCOPE for existing components before suggesting new files.",
+        "No static component boilerplate by default. Match existing project style when evidence exists."
+      ]
+    }
+  ],
+  "hooks": [
+    {
+      "id": "output_save_path_gate",
+      "label": "Output/export Save Path Gate",
+      "lifecycle_phase": "pre_generation",
+      "priority": 93,
+      "target_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "ai_targets": [
+        "ChatGPT",
+        "Codex",
+        "WebAgent"
+      ],
+      "file_types": [
+        "json",
+        "md"
+      ],
+      "weight_profile": "context_budget_standard",
+      "weight_operator": "tool_wide_prompt_context_operator",
+      "inject_into": [
+        "EXPORT_POLICY",
+        "PROJECT_SCOPE",
+        "PROMPT_ENGINEERING_2026_POLICY"
+      ],
+      "rules": [
+        "Project root and generated/export output folder are separate paths.",
+        "Generated files, prompt files, schema copies, logs, summaries, ZIPs and export manifests must prefer output/export.",
+        "ZIP export clears only stale clone/ZIP/manifest/prompt sidecars inside output/export, never the project root and never the whole generated output folder."
+      ]
+    },
+    {
+      "id": "dependency_manifest_export_gate",
+      "label": "Dependency Manifest Export Gate",
+      "lifecycle_phase": "pre_export",
+      "priority": 92,
+      "target_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated"
+      ],
+      "ai_targets": [
+        "ChatGPT",
+        "Codex",
+        "WebAgent"
+      ],
+      "file_types": [
+        "json",
+        "md",
+        "py",
+        "js",
+        "ts",
+        "vue"
+      ],
+      "weight_profile": "analytics_inventory_standard",
+      "weight_operator": "dependency_manifest_export_operator",
+      "inject_into": [
+        "EXPORT_POLICY",
+        "PROJECT_DEPENDENCY_POLICY"
+      ],
+      "rules": [
+        "Dependency manifests are excluded from ZIP unless explicitly enabled.",
+        "AI-RULES never embeds dependency names or requirement lines."
+      ]
+    },
+    {
+      "id": "dynamic_global_role_gate",
+      "label": "Dynamic Global Role Gate",
+      "lifecycle_phase": "role_resolution",
+      "priority": 91,
+      "target_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "ai_targets": [
+        "ChatGPT",
+        "Codex",
+        "WebAgent"
+      ],
+      "file_types": [
+        "json",
+        "md",
+        "py",
+        "js",
+        "ts",
+        "vue",
+        "scss"
+      ],
+      "weight_profile": "custom_prompt_context_standard",
+      "weight_operator": "tool_wide_prompt_context_operator",
+      "inject_into": [
+        "ACTIVE_OPERATION_ROLES",
+        "PROMPT_ENGINEERING_2026_POLICY"
+      ],
+      "rules": [
+        "Roles must be global capabilities, not names of one user project.",
+        "Dependencies may activate references or roles, but must not create project-specific role definitions."
+      ]
+    },
+    {
+      "id": "frontend_framework_evidence_gate",
+      "label": "Frontend Framework Evidence Gate",
+      "lifecycle_phase": "evidence_scan",
+      "priority": 82,
+      "target_path_types": [
+        "frontend",
+        "wrapper"
+      ],
+      "ai_targets": [
+        "ChatGPT",
+        "Codex",
+        "WebAgent"
+      ],
+      "file_types": [
+        "js",
+        "ts",
+        "vue",
+        "scss",
+        "json",
+        "md"
+      ],
+      "weight_profile": "frontend_framework_evidence_standard",
+      "weight_operator": "dynamic_frontend_framework_operator",
+      "inject_into": [
+        "ACTIVE_REFERENCE_DOMAINS",
+        "ACTIVE_OPERATION_ROLES",
+        "VALIDATION_POSTURE"
+      ],
+      "rules": [
+        "Use detected framework/tooling evidence as routing metadata only.",
+        "Do not create dependency-specific or project-specific roles.",
+        "Do not embed dependency inventories into AI-RULES.",
+        "Do not resolve package imports as project files."
+      ]
+    }
+  ],
+  "weight_operators": [
+    {
+      "id": "tool_wide_prompt_context_operator",
+      "label": "Tool-Wide Prompt Context Operator",
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "py",
+        "js",
+        "ts",
+        "vue",
+        "scss"
+      ],
+      "applies_to_profiles": [
+        "PromptEngineering",
+        "ContextEngineering",
+        "CustomPrompt",
+        "SearchAndFix",
+        "Documentation",
+        "Analytics",
+        "CreateVueProject"
+      ],
+      "rules": [
+        "Build prompts from authority, user intent, project scope, references, weights, output contract and validation posture.",
+        "Avoid static project-specific prompt blocks.",
+        "Keep dependency inventories out of AI-RULES active context."
+      ],
+      "priority_weights": {
+        "scope_relevance": 10,
+        "evidence_provenance": 10,
+        "output_contract": 9,
+        "prompt_security": 9,
+        "minimal_context": 8
+      }
+    },
+    {
+      "id": "dynamic_frontend_framework_operator",
+      "label": "Dynamic Frontend Framework Operator",
+      "applies_to_path_types": [
+        "frontend",
+        "wrapper"
+      ],
+      "applies_to_file_types": [
+        "js",
+        "ts",
+        "vue",
+        "scss",
+        "json",
+        "md"
+      ],
+      "applies_to_profiles": [
+        "Programming",
+        "Design",
+        "Refactor",
+        "CreateVueProject",
+        "SearchAndFix",
+        "CustomPrompt"
+      ],
+      "rules": [
+        "Use framework evidence to route decisions; do not output static boilerplate by default.",
+        "Respect detected build/lint commands and package manager.",
+        "When creating files, keep components small and match existing project structure."
+      ],
+      "priority_weights": {
+        "existing_structure": 10,
+        "detected_tooling": 9,
+        "minimal_boilerplate": 9,
+        "style_consistency": 8
+      }
+    }
+  ],
+  "weight_table": [
+    {
+      "id": "frontend_framework_evidence_standard",
+      "label": "Frontend Framework Evidence Standard",
+      "target_ai": "Codex",
+      "human_style": "Use detected frontend framework evidence, but keep roles global and changes minimal.",
+      "rules": [
+        "Framework evidence may activate general routing and validation posture, not static project-specific roles.",
+        "Use PROJECT_SCOPE before implementation.",
+        "Prefer existing project structure over boilerplate.",
+        "Dependency package imports never expand file scope."
+      ],
+      "weights": {
+        "evidence": 10,
+        "existing_structure": 10,
+        "minimal_change": 9,
+        "no_static_boilerplate": 9
+      }
+    }
+  ]
+}

@@ -1,0 +1,1449 @@
+{
+  "weight_operators": [
+    {
+      "id": "design_scss_operator",
+      "label": "Design + SCSS Operator",
+      "applies_to_file_types": [
+        "scss"
+      ],
+      "applies_to_profiles": [
+        "Design",
+        "Programming",
+        "Refactor"
+      ],
+      "applies_to_path_types": [
+        "frontend",
+        "assets"
+      ],
+      "minimal_change_bias": 7,
+      "risk_sensitivity": 7,
+      "evidence_required": 6,
+      "style_consistency": 10,
+      "shared_abstraction_bias": 9,
+      "class_sprawl_resistance": 10,
+      "human_clarity": 9,
+      "rules": [
+        "Write SCSS through shared modules.",
+        "Use @use and @forward for shared variables, mixins and tokens.",
+        "Do not create random one-off global class sprawl.",
+        "Prefer semantic component structure and reusable design tokens.",
+        "Do not break existing Vuetify structure."
+      ]
+    },
+    {
+      "id": "frontend_es_module_operator",
+      "label": "Frontend ES Module Operator",
+      "applies_to_file_types": [
+        "js"
+      ],
+      "applies_to_profiles": [
+        "Programming",
+        "Refactor",
+        "Debugging"
+      ],
+      "applies_to_path_types": [
+        "frontend"
+      ],
+      "minimal_change_bias": 8,
+      "risk_sensitivity": 7,
+      "evidence_required": 7,
+      "module_boundary_strictness": 9,
+      "side_effect_resistance": 8,
+      "human_clarity": 8,
+      "rules": [
+        "Use ES module import/export.",
+        "Prefer explicit module boundaries.",
+        "Avoid hidden global side effects.",
+        "Keep API clients centralized."
+      ]
+    },
+    {
+      "id": "frontend_vue_operator",
+      "label": "Vue Build-Only Operator",
+      "applies_to_file_types": [
+        "vue"
+      ],
+      "applies_to_profiles": [
+        "Design",
+        "Programming",
+        "Refactor",
+        "Debugging"
+      ],
+      "applies_to_path_types": [
+        "frontend"
+      ],
+      "minimal_change_bias": 8,
+      "risk_sensitivity": 8,
+      "evidence_required": 7,
+      "build_compatibility": 10,
+      "component_cohesion": 9,
+      "human_clarity": 9,
+      "rules": [
+        "Keep Vue build-only.",
+        "Do not add serve/dev scripts.",
+        "Respect existing component and Vuetify conventions.",
+        "Move repeated API behavior into shared services."
+      ]
+    },
+    {
+      "id": "backend_python_operator",
+      "label": "Backend Python Operator",
+      "applies_to_file_types": [
+        "py"
+      ],
+      "applies_to_profiles": [
+        "Debugging",
+        "Programming",
+        "Refactor"
+      ],
+      "applies_to_path_types": [
+        "backend",
+        "generated"
+      ],
+      "minimal_change_bias": 10,
+      "risk_sensitivity": 10,
+      "evidence_required": 9,
+      "queue_safety": 10,
+      "type_safety": 8,
+      "human_clarity": 8,
+      "rules": [
+        "Never touch a running system without evidence.",
+        "Preserve Flask queue/dispatch/controller/model/view patterns.",
+        "Use type hints and pathlib.",
+        "Validate all external inputs.",
+        "Return structured errors for API contexts."
+      ]
+    },
+    {
+      "id": "config_json_operator",
+      "label": "Config JSON Operator",
+      "applies_to_file_types": [
+        "json"
+      ],
+      "applies_to_profiles": [
+        "Programming",
+        "Refactor",
+        "Debugging"
+      ],
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "minimal_change_bias": 9,
+      "risk_sensitivity": 9,
+      "evidence_required": 8,
+      "schema_flatness": 10,
+      "human_clarity": 8,
+      "rules": [
+        "Keep schema arrays flat and id-addressable.",
+        "Preserve unknown fields.",
+        "Avoid deep nested configuration unless unavoidable.",
+        "Validate generated JSON."
+      ]
+    },
+    {
+      "id": "game_shader_operator",
+      "label": "Game Shader Operator",
+      "applies_to_file_types": [
+        "shader"
+      ],
+      "applies_to_profiles": [
+        "Programming",
+        "Debugging",
+        "Refactor"
+      ],
+      "applies_to_path_types": [
+        "frontend",
+        "assets"
+      ],
+      "minimal_change_bias": 8,
+      "risk_sensitivity": 9,
+      "evidence_required": 8,
+      "performance_sensitivity": 10,
+      "rendering_correctness": 10,
+      "human_clarity": 7,
+      "rules": [
+        "Treat shader changes as performance-sensitive.",
+        "Preserve map channels and coordinate assumptions.",
+        "Avoid expensive runtime branches unless justified.",
+        "Document material input expectations."
+      ]
+    },
+    {
+      "id": "asset_texture_operator",
+      "label": "Asset Texture Operator",
+      "applies_to_file_types": [
+        "asset_image"
+      ],
+      "applies_to_profiles": [
+        "Design",
+        "Programming",
+        "Debugging"
+      ],
+      "applies_to_path_types": [
+        "assets",
+        "frontend",
+        "backend"
+      ],
+      "minimal_change_bias": 9,
+      "risk_sensitivity": 8,
+      "evidence_required": 7,
+      "destructive_edit_resistance": 10,
+      "metadata_required": 10,
+      "human_clarity": 8,
+      "rules": [
+        "Do not overwrite source textures.",
+        "Preserve alpha and map semantics.",
+        "Write generation metadata.",
+        "Separate preview assets from final exports."
+      ]
+    },
+    {
+      "id": "documentation_operator",
+      "label": "Markdown Documentation Operator",
+      "applies_to_file_types": [
+        "md"
+      ],
+      "applies_to_profiles": [
+        "Debugging",
+        "Design",
+        "Programming",
+        "Refactor"
+      ],
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "minimal_change_bias": 8,
+      "risk_sensitivity": 7,
+      "evidence_required": 8,
+      "staleness_resistance": 10,
+      "command_accuracy": 10,
+      "human_clarity": 10,
+      "rules": [
+        "Document observed facts separately from assumptions.",
+        "Keep command examples copy-pasteable and based on detected metadata.",
+        "Do not document nonexistent scripts, folders or frameworks.",
+        "Mark missing evidence and validation gaps plainly.",
+        "Update docs in the same language policy: human-facing docs may follow AI_LANGUAGE; AI-readable rules stay English."
+      ]
+    },
+    {
+      "id": "operator_prompt_boundary_operator",
+      "label": "Operator Prompt Boundary Operator",
+      "applies_to_file_types": [
+        "json",
+        "md"
+      ],
+      "applies_to_profiles": [
+        "Debugging",
+        "Design",
+        "Programming",
+        "Refactor"
+      ],
+      "applies_to_path_types": [
+        "wrapper"
+      ],
+      "minimal_change_bias": 9,
+      "risk_sensitivity": 9,
+      "evidence_required": 9,
+      "role_boundary_strictness": 10,
+      "delegation_accuracy": 10,
+      "human_clarity": 10,
+      "rules": [
+        "For prompt-only tasks, define behavior and constraints; do not solve the downstream implementation task.",
+        "Keep the operator role reusable and target-scoped.",
+        "Make access limitations explicit before giving repository-sensitive instructions.",
+        "Prefer bounded best-effort answers over broad rewrites or fake certainty.",
+        "Never let a wrapper prompt silently become a target implementation prompt."
+      ]
+    },
+    {
+      "id": "scope_limited_export_operator",
+      "label": "Scope-Limited Project Export Operator",
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "js",
+        "vue",
+        "scss",
+        "py",
+        "asset_image",
+        "shader"
+      ],
+      "applies_to_profiles": [
+        "Debugging",
+        "Design",
+        "Programming",
+        "Refactor"
+      ],
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "minimal_change_bias": 10,
+      "risk_sensitivity": 10,
+      "evidence_required": 9,
+      "scope_strictness": 10,
+      "export_reproducibility": 10,
+      "human_clarity": 9,
+      "rules": [
+        "Use the selected project-tree scope as the hard boundary for generated rules, prompts and exports.",
+        "Keep file references flat, path-based and id-addressable.",
+        "When EXPORT AS ZIP is enabled, clear /output/export clone sidecars first, then clone selected files preserving project-relative paths.",
+        "Write export prompt text next to the ZIP only; never put the prompt text file inside the ZIP.",
+        "Always include generated AI-RULES.json files in their configured target paths when exporting."
+      ]
+    },
+    {
+      "id": "blender_material_operator",
+      "label": "Blender / PBR Material Operator",
+      "applies_to_file_types": [
+        "scene_3d",
+        "shader",
+        "asset_image",
+        "json",
+        "md"
+      ],
+      "applies_to_profiles": [
+        "Visual3D",
+        "Design",
+        "Programming"
+      ],
+      "applies_to_path_types": [
+        "assets",
+        "frontend",
+        "generated"
+      ],
+      "minimal_change_bias": 8,
+      "evidence_required": 8,
+      "rules": [
+        "Preserve material semantics before optimizing visuals.",
+        "Keep Principled BSDF/PBR channel assumptions explicit: base color, metallic, roughness, normal, alpha.",
+        "Never relink or overwrite source textures without explicit intent."
+      ],
+      "source_ids": [
+        "blender_principled_bsdf"
+      ]
+    },
+    {
+      "id": "photoshop_layer_operator",
+      "label": "Photoshop Layer Operator",
+      "applies_to_file_types": [
+        "psd",
+        "asset_image",
+        "md",
+        "json"
+      ],
+      "applies_to_profiles": [
+        "Visual2D",
+        "Design"
+      ],
+      "applies_to_path_types": [
+        "assets",
+        "frontend"
+      ],
+      "minimal_change_bias": 9,
+      "evidence_required": 8,
+      "rules": [
+        "Treat layers/groups as source-of-truth design structure.",
+        "Preserve non-destructive edits: masks, adjustment layers and smart objects.",
+        "Export flattened derivatives only as outputs, not as replacement sources."
+      ],
+      "source_ids": [
+        "photoshop_layers"
+      ]
+    },
+    {
+      "id": "threejs_webgl_operator",
+      "label": "ThreeJS / WebGL Operator",
+      "applies_to_file_types": [
+        "js",
+        "ts",
+        "vue",
+        "shader",
+        "scene_3d"
+      ],
+      "applies_to_profiles": [
+        "Visual3D",
+        "Programming",
+        "Design"
+      ],
+      "applies_to_path_types": [
+        "frontend",
+        "generated"
+      ],
+      "minimal_change_bias": 8,
+      "evidence_required": 8,
+      "rules": [
+        "Separate renderer setup from Vue component presentation.",
+        "Detect WebGL/WebGL2 support before relying on advanced APIs.",
+        "Dispose geometries, materials, textures, render targets and event listeners."
+      ],
+      "source_ids": [
+        "threejs_webgl_renderer",
+        "webgl2_browser_capabilities"
+      ]
+    },
+    {
+      "id": "vue_redesign_operator",
+      "label": "Vue Redesign Operator",
+      "applies_to_file_types": [
+        "vue",
+        "scss",
+        "js",
+        "ts"
+      ],
+      "applies_to_profiles": [
+        "Design",
+        "Visual2D",
+        "Visual3D",
+        "Refactor"
+      ],
+      "applies_to_path_types": [
+        "frontend"
+      ],
+      "minimal_change_bias": 8,
+      "evidence_required": 7,
+      "rules": [
+        "Redesign by extending existing components/design tokens first.",
+        "No duplicate component if an existing component can be parameterized.",
+        "Keep style references explicit and scoped."
+      ],
+      "source_ids": [
+        "vue_component_reference",
+        "scss_style_reference",
+        "no_code_duplicate"
+      ]
+    },
+    {
+      "id": "marketing_accuracy_operator",
+      "label": "Marketing Accuracy Operator",
+      "applies_to_file_types": [
+        "md",
+        "json",
+        "vue",
+        "js",
+        "ts",
+        "data_table"
+      ],
+      "applies_to_profiles": [
+        "Marketing",
+        "Business"
+      ],
+      "applies_to_path_types": [
+        "frontend",
+        "assets",
+        "generated",
+        "wrapper"
+      ],
+      "minimal_change_bias": 7,
+      "evidence_required": 9,
+      "rules": [
+        "Separate claims, hypotheses and proven metrics.",
+        "Never invent testimonials, results, pricing, market size or conversion uplift.",
+        "Tie copy changes to measurable user intent."
+      ],
+      "source_ids": [
+        "marketing_conversion_reference"
+      ]
+    },
+    {
+      "id": "math_business_data_operator",
+      "label": "Math / Business Data Correctness Operator",
+      "applies_to_file_types": [
+        "py",
+        "js",
+        "ts",
+        "vue",
+        "json",
+        "data_table",
+        "md"
+      ],
+      "applies_to_profiles": [
+        "Mathematics",
+        "Business",
+        "Marketing"
+      ],
+      "applies_to_path_types": [
+        "backend",
+        "frontend",
+        "generated",
+        "wrapper"
+      ],
+      "minimal_change_bias": 8,
+      "evidence_required": 10,
+      "rules": [
+        "Require units, periods, currencies and rounding modes.",
+        "Keep gross/net/tax assumptions explicit.",
+        "Validate formulas with small examples and edge cases."
+      ],
+      "source_ids": [
+        "math_correctness_reference",
+        "economics_revenue_reference"
+      ]
+    },
+    {
+      "id": "translation_scope_operator",
+      "label": "Translation Scope Operator",
+      "applies_to_file_types": [
+        "md",
+        "json",
+        "vue",
+        "js",
+        "ts",
+        "i18n"
+      ],
+      "applies_to_profiles": [
+        "Translation"
+      ],
+      "applies_to_path_types": [
+        "wrapper",
+        "frontend",
+        "backend",
+        "assets",
+        "generated"
+      ],
+      "minimal_change_bias": 9,
+      "evidence_required": 8,
+      "rules": [
+        "Translate only human-facing text within selected scope.",
+        "Preserve placeholders, interpolation syntax, JSON keys, schema ids, imports and commands.",
+        "Do not mix languages in machine-readable keys."
+      ],
+      "source_ids": [
+        "translation_project_tree_reference"
+      ]
+    },
+    {
+      "id": "welmec_compliance_operator",
+      "label": "WELMEC / Legal Metrology Operator",
+      "applies_to_file_types": [
+        "py",
+        "js",
+        "ts",
+        "json",
+        "md",
+        "data_table"
+      ],
+      "applies_to_profiles": [
+        "Compliance"
+      ],
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated",
+        "assets"
+      ],
+      "minimal_change_bias": 10,
+      "evidence_required": 10,
+      "rules": [
+        "Do not create compliance claims; create evidence requests and guardrails.",
+        "Separate legally relevant software from non-relevant software where applicable.",
+        "Require version identity, audit trail, risk assumptions and protected interface boundaries."
+      ],
+      "source_ids": [
+        "ptb_welmec_legal_metrology",
+        "welmec_software_guide"
+      ]
+    },
+    {
+      "id": "platform_windows_linux_operator",
+      "label": "Windows / Linux Platform Operator",
+      "applies_to_file_types": [
+        "py",
+        "js",
+        "ts",
+        "json",
+        "md"
+      ],
+      "applies_to_profiles": [
+        "Programming",
+        "Debugging",
+        "Refactor",
+        "Visual3D"
+      ],
+      "applies_to_path_types": [
+        "backend",
+        "frontend",
+        "generated",
+        "wrapper"
+      ],
+      "minimal_change_bias": 8,
+      "evidence_required": 8,
+      "rules": [
+        "Do not hardcode Windows-only or Linux-only paths unless target evidence says so.",
+        "Use pathlib/path normalization for Python filesystem code.",
+        "Document platform-specific dependencies and GPU/driver assumptions."
+      ],
+      "source_ids": [
+        "windows_linux_platform_reference"
+      ]
+    },
+    {
+      "id": "project_tree_import_scope_operator",
+      "label": "Project Tree Import Scope Operator",
+      "applies_to_file_types": [
+        "i18n",
+        "js",
+        "json",
+        "md",
+        "py",
+        "scss",
+        "ts",
+        "vue"
+      ],
+      "applies_to_profiles": [
+        "Debugging",
+        "Design",
+        "Programming",
+        "Refactor",
+        "Translation",
+        "Visual2D",
+        "Visual3D"
+      ],
+      "applies_to_path_types": [
+        "wrapper",
+        "frontend",
+        "backend",
+        "generated",
+        "assets"
+      ],
+      "minimal_change_bias": 9,
+      "evidence_required": 9,
+      "rules": [
+        "Treat selected project-tree paths as the hard scope boundary.",
+        "If Include Imports is active, expand scope through direct and recursively matched local files only.",
+        "Never add dependency packages or installed libraries to export scope; dependency manifests are a separate explicit checkbox.",
+        "Do not add directories just because an import path names a folder; resolve to a concrete file such as .vue, .js, .ts, .py or index/__init__.py.",
+        "Do not duplicate modules; prefer using the already imported component/module/style reference.",
+        "Preview file content as evidence, but never embed large file bodies into AI-RULES."
+      ],
+      "source_ids": [
+        "project_scope_tree_gate"
+      ]
+    },
+    {
+      "id": "ptb_legal_metrology_operator",
+      "label": "PTB Legal Metrology Operator",
+      "applies_to_file_types": [
+        "py",
+        "js",
+        "ts",
+        "json",
+        "md",
+        "data_table"
+      ],
+      "applies_to_profiles": [
+        "Compliance",
+        "LegalMetrologySoftware"
+      ],
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated",
+        "assets"
+      ],
+      "minimal_change_bias": 10,
+      "risk_sensitivity": 10,
+      "evidence_required": 10,
+      "legal_claim_resistance": 10,
+      "traceability_required": 10,
+      "human_clarity": 9,
+      "rules": [
+        "Create guardrails and evidence requests, not legal-conformity claims.",
+        "Separate legal relevance, validation posture, risk assumptions and certification evidence.",
+        "Use official PTB/WELMEC references as routing context."
+      ],
+      "source_ids": [
+        "ptb_metrological_software_reference",
+        "ptb_welmec_legal_metrology",
+        "welmec_software_guide"
+      ]
+    },
+    {
+      "id": "ptb_documentation_evidence_operator",
+      "label": "PTB Documentation Evidence Operator",
+      "applies_to_file_types": [
+        "py",
+        "js",
+        "ts",
+        "json",
+        "md",
+        "data_table"
+      ],
+      "applies_to_profiles": [
+        "PTBDocumentation",
+        "Compliance"
+      ],
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated",
+        "assets"
+      ],
+      "minimal_change_bias": 10,
+      "risk_sensitivity": 10,
+      "evidence_required": 10,
+      "legal_claim_resistance": 10,
+      "traceability_required": 10,
+      "human_clarity": 9,
+      "rules": [
+        "Require document title/identifier, instrument type, version/issue date and stable section/page references.",
+        "Document missing evidence explicitly.",
+        "Do not generate fake checklist completion."
+      ],
+      "source_ids": [
+        "ptb_software_documentation_reference"
+      ],
+      "documentation_traceability": 10
+    },
+    {
+      "id": "ptb_executable_generation_operator",
+      "label": "PTB Executable Generation Operator",
+      "applies_to_file_types": [
+        "py",
+        "js",
+        "ts",
+        "json",
+        "md",
+        "data_table"
+      ],
+      "applies_to_profiles": [
+        "PTBDocumentation",
+        "LegalMetrologySoftware",
+        "Compliance"
+      ],
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated",
+        "assets"
+      ],
+      "minimal_change_bias": 10,
+      "risk_sensitivity": 10,
+      "evidence_required": 10,
+      "legal_claim_resistance": 10,
+      "traceability_required": 10,
+      "human_clarity": 9,
+      "rules": [
+        "Map source/accessory files and identifiers to executable module identifiers.",
+        "Record build date, build tools, data carrier and platform identifiers when applicable.",
+        "Do not claim reproducibility without complete build inputs."
+      ],
+      "source_ids": [
+        "ptb_executable_generation_reference"
+      ],
+      "build_traceability": 10
+    },
+    {
+      "id": "ptb_risk_assessment_operator",
+      "label": "PTB Risk Assessment Operator",
+      "applies_to_file_types": [
+        "py",
+        "js",
+        "ts",
+        "json",
+        "md",
+        "data_table"
+      ],
+      "applies_to_profiles": [
+        "PTBRisk",
+        "Compliance"
+      ],
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated",
+        "assets"
+      ],
+      "minimal_change_bias": 10,
+      "risk_sensitivity": 10,
+      "evidence_required": 10,
+      "legal_claim_resistance": 10,
+      "traceability_required": 10,
+      "human_clarity": 9,
+      "rules": [
+        "Keep risk class explicit.",
+        "Map assets to security properties, generic threats, type-specific threats, measures and evidence.",
+        "Treat risk assessment as review artifact, not proof of compliance."
+      ],
+      "source_ids": [
+        "ptb_software_risk_assessment_reference"
+      ],
+      "risk_model_completeness": 10
+    },
+    {
+      "id": "ptb_software_separation_operator",
+      "label": "PTB Software Separation Operator",
+      "applies_to_file_types": [
+        "py",
+        "js",
+        "ts",
+        "json",
+        "md",
+        "data_table"
+      ],
+      "applies_to_profiles": [
+        "PTBUpdateLifecycle",
+        "LegalMetrologySoftware",
+        "Compliance"
+      ],
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated",
+        "assets"
+      ],
+      "minimal_change_bias": 10,
+      "risk_sensitivity": 10,
+      "evidence_required": 10,
+      "legal_claim_resistance": 10,
+      "traceability_required": 10,
+      "human_clarity": 9,
+      "rules": [
+        "Classify legally relevant and non-relevant software only from evidence.",
+        "Require physical/logical separation, distinguishable indications and protective interfaces.",
+        "Do not let non-relevant updates affect legally relevant behavior silently."
+      ],
+      "source_ids": [
+        "ptb_software_separation_reference",
+        "ptb_embedded_metrological_systems_reference"
+      ],
+      "boundary_strictness": 10
+    },
+    {
+      "id": "ptb_update_lifecycle_operator",
+      "label": "PTB Update Lifecycle Operator",
+      "applies_to_file_types": [
+        "py",
+        "js",
+        "ts",
+        "json",
+        "md",
+        "data_table"
+      ],
+      "applies_to_profiles": [
+        "PTBUpdateLifecycle",
+        "Compliance"
+      ],
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated",
+        "assets"
+      ],
+      "minimal_change_bias": 10,
+      "risk_sensitivity": 10,
+      "evidence_required": 10,
+      "legal_claim_resistance": 10,
+      "traceability_required": 10,
+      "human_clarity": 9,
+      "rules": [
+        "Classify update impact and update admissibility before implementation recommendations.",
+        "Keep permanent update records, certificates and authority assumptions visible.",
+        "For security changes, carry CVE/security-vulnerability context if available."
+      ],
+      "source_ids": [
+        "ptb_software_update_reference",
+        "ptb_cra_impact_reference"
+      ],
+      "change_control": 10
+    },
+    {
+      "id": "ptb_security_configuration_operator",
+      "label": "PTB Security Configuration Operator",
+      "applies_to_file_types": [
+        "py",
+        "js",
+        "ts",
+        "json",
+        "md",
+        "data_table"
+      ],
+      "applies_to_profiles": [
+        "PTBSecurity",
+        "Compliance"
+      ],
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated",
+        "assets"
+      ],
+      "minimal_change_bias": 10,
+      "risk_sensitivity": 10,
+      "evidence_required": 10,
+      "legal_claim_resistance": 10,
+      "traceability_required": 10,
+      "human_clarity": 9,
+      "rules": [
+        "Require configuration evidence for OS, live media, runtime, DBMS, IPC and virtualization claims.",
+        "Document chain of trust, access control, loaded components and protective interfaces.",
+        "Do not claim state-of-the-art protection without evidence."
+      ],
+      "source_ids": [
+        "ptb_os_configuration_reference",
+        "ptb_live_media_reference",
+        "ptb_configurable_software_reference"
+      ],
+      "configuration_evidence": 10
+    },
+    {
+      "id": "ptb_crypto_time_operator",
+      "label": "PTB Crypto and Time Operator",
+      "applies_to_file_types": [
+        "py",
+        "js",
+        "ts",
+        "json",
+        "md",
+        "data_table"
+      ],
+      "applies_to_profiles": [
+        "PTBSecurity",
+        "Compliance"
+      ],
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated",
+        "assets"
+      ],
+      "minimal_change_bias": 10,
+      "risk_sensitivity": 10,
+      "evidence_required": 10,
+      "legal_claim_resistance": 10,
+      "traceability_required": 10,
+      "human_clarity": 9,
+      "rules": [
+        "Require crypto module identification, algorithms, key lengths, standards, components and access rules.",
+        "Require time-source, protocol, authentication, certificate/root CA, UTC and deviation evidence.",
+        "Do not infer legal time traceability or crypto sufficiency."
+      ],
+      "source_ids": [
+        "ptb_cryptographic_modules_reference",
+        "ptb_time_management_reference"
+      ],
+      "security_parameter_precision": 10
+    },
+    {
+      "id": "ptb_cra_impact_operator",
+      "label": "PTB CRA Impact Operator",
+      "applies_to_file_types": [
+        "py",
+        "js",
+        "ts",
+        "json",
+        "md",
+        "data_table"
+      ],
+      "applies_to_profiles": [
+        "PTBUpdateLifecycle",
+        "PTBSecurity",
+        "Compliance"
+      ],
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated",
+        "assets"
+      ],
+      "minimal_change_bias": 10,
+      "risk_sensitivity": 10,
+      "evidence_required": 10,
+      "legal_claim_resistance": 10,
+      "traceability_required": 10,
+      "human_clarity": 9,
+      "rules": [
+        "Treat CRA impact as update/change classification.",
+        "Separate legally relevant and non-relevant security updates.",
+        "Record certificate-revision and software-difference-check assumptions."
+      ],
+      "source_ids": [
+        "ptb_cra_impact_reference"
+      ],
+      "regulatory_change_awareness": 9
+    },
+    {
+      "id": "create_stack_weight_operator",
+      "label": "Create Stack Weight Operator",
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "py",
+        "js",
+        "ts",
+        "vue",
+        "scss",
+        "cs",
+        "cpp",
+        "h",
+        "shader",
+        "scene_3d"
+      ],
+      "applies_to_profiles": [
+        "Create"
+      ],
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "minimal_change_bias": 8,
+      "risk_sensitivity": 8,
+      "evidence_required": 8,
+      "dependency_swappability": 10,
+      "hook_linking": 10,
+      "human_clarity": 9,
+      "rules": [
+        "Bind create requests to explicit dependencies, hooks, references and validation.",
+        "Keep stack defaults configurable and evidence-aware."
+      ]
+    },
+    {
+      "id": "official_manual_operator",
+      "label": "Official Manual Evidence Operator",
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "py",
+        "cs",
+        "cpp",
+        "h",
+        "shader",
+        "scene_3d",
+        "data_table"
+      ],
+      "applies_to_profiles": [
+        "BlenderManuals",
+        "UnityManuals",
+        "CppManuals",
+        "GovernmentGermany",
+        "LegalMetrologySoftware"
+      ],
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "minimal_change_bias": 7,
+      "risk_sensitivity": 9,
+      "evidence_required": 10,
+      "manual_version_awareness": 10,
+      "human_clarity": 9,
+      "rules": [
+        "Prefer official/manual sources and preserve source IDs/version/date.",
+        "State when a manual is guidance, not binding law or validation."
+      ]
+    },
+    {
+      "id": "clean_project_operator",
+      "label": "Clean Project Operator",
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "py",
+        "js",
+        "ts",
+        "vue",
+        "scss",
+        "cs",
+        "cpp",
+        "h",
+        "shader",
+        "scene_3d"
+      ],
+      "applies_to_profiles": [
+        "CleanProject"
+      ],
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "minimal_change_bias": 9,
+      "risk_sensitivity": 9,
+      "evidence_required": 8,
+      "artifact_traceability": 10,
+      "human_clarity": 9,
+      "rules": [
+        "Prune generated/cache/build noise from context and exports.",
+        "Keep source, generated artifacts and manifest traceability explicit."
+      ]
+    },
+    {
+      "id": "do_not_normalize_operator",
+      "label": "Do Not Normalize Operator",
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "py",
+        "js",
+        "ts",
+        "vue",
+        "scss",
+        "cs",
+        "cpp",
+        "h",
+        "shader",
+        "scene_3d",
+        "data_table"
+      ],
+      "applies_to_profiles": [
+        "DoNotNormalize"
+      ],
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "minimal_change_bias": 9,
+      "risk_sensitivity": 10,
+      "evidence_required": 9,
+      "terminology_fidelity": 10,
+      "human_clarity": 9,
+      "rules": [
+        "Preserve source wording, IDs, units and domain distinctions.",
+        "Require explicit reversible mapping if code naming differs."
+      ]
+    },
+    {
+      "id": "professional_solution_engineering_operator",
+      "label": "Professional Solution Engineering Weight Operator",
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "py",
+        "js",
+        "ts",
+        "vue",
+        "scss",
+        "cs",
+        "cpp",
+        "h"
+      ],
+      "applies_to_profiles": [
+        "ProfessionalSolutionEngineering"
+      ],
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "minimal_change_bias": 8,
+      "risk_sensitivity": 8,
+      "evidence_required": 8,
+      "interface_design": 9,
+      "validation_bias": 10,
+      "human_clarity": 10,
+      "rules": [
+        "Prefer a bounded professional slice with clear seams and validation.",
+        "Avoid abstraction without evidence and rollback."
+      ]
+    },
+    {
+      "id": "micro_tasks_weight_operator",
+      "label": "Micro Tasks Weight Operator",
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "py",
+        "shell"
+      ],
+      "applies_to_profiles": [
+        "MicroTasks",
+        "Create"
+      ],
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "minimal_change_bias": 10,
+      "risk_sensitivity": 8,
+      "evidence_required": 8,
+      "artifact_traceability": 10,
+      "human_clarity": 9,
+      "rules": [
+        "Keep each micro task bounded to a named artifact.",
+        "Write validation and rollback notes next to task output."
+      ]
+    },
+    {
+      "id": "create_pipeline_weight_operator",
+      "label": "Create Pipeline Weight Operator",
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "py",
+        "js",
+        "ts",
+        "vue",
+        "scss",
+        "shell",
+        "yaml",
+        "dockerfile"
+      ],
+      "applies_to_profiles": [
+        "CreatePipeline",
+        "Create",
+        "RepositoryManagement"
+      ],
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "minimal_change_bias": 8,
+      "risk_sensitivity": 9,
+      "evidence_required": 9,
+      "manifest_traceability": 10,
+      "working_path_isolation": 10,
+      "human_clarity": 10,
+      "rules": [
+        "Create working path and Create export path are first-class contract fields.",
+        "Normal export paths must not be mutated unless the user explicitly asks."
+      ]
+    },
+    {
+      "id": "terminal_timeline_operator",
+      "label": "Terminal Timeline Weight Operator",
+      "applies_to_file_types": [
+        "shell",
+        "json",
+        "md",
+        "py",
+        "js",
+        "ts",
+        "yaml",
+        "dockerfile"
+      ],
+      "applies_to_profiles": [
+        "TerminalTimeline",
+        "CreatePipeline",
+        "Create"
+      ],
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated"
+      ],
+      "minimal_change_bias": 9,
+      "risk_sensitivity": 10,
+      "evidence_required": 8,
+      "command_review_required": 10,
+      "human_clarity": 10,
+      "rules": [
+        "Compile commands into a reviewable terminal plan.",
+        "Do not execute placeholder prose.",
+        "Stop the run on the first non-zero exit code.",
+        "Run reviewed commands through a visible terminal session and generated platform script.",
+        "Keep manual command entry separate from compiled Create timeline execution."
+      ]
+    },
+    {
+      "id": "repository_management_prompt_operator",
+      "label": "Repository Management Prompt Weight Operator",
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "py",
+        "js",
+        "ts",
+        "vue",
+        "scss",
+        "shell",
+        "yaml"
+      ],
+      "applies_to_profiles": [
+        "RepositoryManagement",
+        "PromptEngineering",
+        "ContextEngineering",
+        "ProfessionalSolutionEngineering"
+      ],
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "minimal_change_bias": 8,
+      "risk_sensitivity": 8,
+      "evidence_required": 9,
+      "schema_compatibility": 10,
+      "human_clarity": 10,
+      "rules": [
+        "Keep repository prompts outcome-first and evidence-backed.",
+        "Preserve authority boundaries between system/developer rules, schema, project files and user text."
+      ]
+    },
+    {
+      "id": "create_project_tree_preview_operator",
+      "label": "Create Project Tree Preview Weight Operator",
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "py",
+        "js",
+        "ts",
+        "vue",
+        "scss",
+        "shell"
+      ],
+      "applies_to_profiles": [
+        "Create",
+        "ProjectTreePreview",
+        "CreatePipeline"
+      ],
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "minimal_change_bias": 9,
+      "risk_sensitivity": 9,
+      "evidence_required": 8,
+      "tree_mapping_clarity": 10,
+      "target_uniqueness": 10,
+      "rules": [
+        "Prefer temp preview over direct writes.",
+        "Keep target-root mapping explicit and unique.",
+        "Ignore orphan nodes on apply."
+      ]
+    },
+    {
+      "id": "boilerplate_dependency_crud_operator",
+      "label": "Boilerplate Dependency CRUD Weight Operator",
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "py",
+        "js",
+        "ts",
+        "vue",
+        "scss",
+        "shell"
+      ],
+      "applies_to_profiles": [
+        "Create",
+        "BoilerplateDependencyCRUD",
+        "DependencyManifestExport"
+      ],
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated"
+      ],
+      "minimal_change_bias": 8,
+      "risk_sensitivity": 9,
+      "evidence_required": 9,
+      "dependency_target_fit": 10,
+      "manifest_alignment": 10,
+      "rules": [
+        "Map every dependency row to a target and manifest.",
+        "Keep version facts evidence-backed.",
+        "CRUD edits remain local to Create session unless exported."
+      ]
+    },
+    {
+      "id": "create_timeline_checkbox_operator",
+      "label": "Create Timeline Checkbox Weight Operator",
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "shell"
+      ],
+      "applies_to_profiles": [
+        "Create",
+        "TimelineCheckboxControl",
+        "CreatePipeline"
+      ],
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated"
+      ],
+      "minimal_change_bias": 8,
+      "risk_sensitivity": 9,
+      "evidence_required": 7,
+      "execution_control": 10,
+      "token_visibility": 9,
+      "rules": [
+        "Checked timeline steps execute; unchecked steps do not.",
+        "Keep skipped tokens visible for review.",
+        "Do not guess unresolved shell commands."
+      ]
+    },
+    {
+      "id": "create_runtime_progress_operator",
+      "label": "Create Runtime Progress Operator",
+      "applies_to_file_types": [
+        "py",
+        "json",
+        "md"
+      ],
+      "applies_to_profiles": [
+        "Create",
+        "Programming",
+        "Debugging"
+      ],
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated"
+      ],
+      "minimal_change_bias": 8,
+      "risk_sensitivity": 9,
+      "evidence_required": 8,
+      "runtime_feedback": 10,
+      "stop_safety": 10,
+      "human_clarity": 9,
+      "rules": [
+        "Map terminal events into progress state.",
+        "Highlight console sections by task phase.",
+        "Do not mark unfinished stopped tasks as done."
+      ]
+    }
+  ]
+}

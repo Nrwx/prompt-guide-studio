@@ -1,0 +1,1142 @@
+{
+  "boilerplate_profiles": [
+    {
+      "id": "Documentation",
+      "label": "Software Documentation",
+      "purpose": "Create or maintain README, architecture notes, operator references and scoped project documentation from inspected evidence.",
+      "keywords": [
+        "documentation",
+        "docs",
+        "readme",
+        "summary",
+        "architecture",
+        "operator reference",
+        "project reference",
+        "software documentation"
+      ],
+      "allowed_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "default_enabled": false,
+      "rules": [
+        "Document observed facts separately from assumptions.",
+        "Do not document scripts, frameworks, APIs or folders that were not detected in PROJECT_SCOPE or metadata.",
+        "Use PROJECT_SCOPE.file_references as the allowed documentation reference list.",
+        "Prefer short maintainable documentation over decorative prose."
+      ]
+    },
+    {
+      "id": "Analytics",
+      "label": "Project Analytics / Inventory",
+      "purpose": "Inventory project size, dependencies, extensions, large files and documentation coverage without embedding file contents.",
+      "keywords": [
+        "analytics",
+        "inventory",
+        "library",
+        "dependency",
+        "project size",
+        "file count",
+        "tree analysis",
+        "library.log"
+      ],
+      "allowed_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "default_enabled": false,
+      "rules": [
+        "Use .gitignore-aware PROJECT_SCOPE for analytics.",
+        "Report counts and sizes as evidence, not as architecture conclusions.",
+        "Keep generated analytics reproducible and machine-readable where possible.",
+        "Never include secret file contents in analytics output."
+      ]
+    },
+    {
+      "id": "Readme",
+      "label": "README Authoring",
+      "purpose": "Generate practical README structure from selected project tree, detected commands and validation evidence.",
+      "keywords": [
+        "readme",
+        "installation",
+        "usage",
+        "commands",
+        "setup",
+        "getting started"
+      ],
+      "allowed_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "default_enabled": false,
+      "rules": [
+        "A README must not invent setup commands.",
+        "Detected commands must come from package.json, pyproject.toml, build.json or explicit user input.",
+        "If commands are missing, write a missing-evidence note instead of pretending.",
+        "Keep examples copy-pasteable and scoped to the selected tree."
+      ]
+    },
+    {
+      "id": "OperationsDocs",
+      "label": "Operations / Admin Documentation",
+      "purpose": "Document process logs, summaries, export manifests, validation gaps and operator handoff notes.",
+      "keywords": [
+        "process log",
+        "summary",
+        "handoff",
+        "operator",
+        "admin",
+        "maintenance",
+        "release notes"
+      ],
+      "allowed_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "default_enabled": false,
+      "rules": [
+        "Every generated doc must identify its evidence source and scope.",
+        "Process documentation records what happened, not what is guaranteed correct.",
+        "Summaries must be updateable and not become stale undocumented truth.",
+        "Validation gaps must remain visible."
+      ]
+    }
+  ],
+  "file_types": [
+    {
+      "id": "documentation",
+      "label": "Documentation Bundle",
+      "extensions": [
+        ".md",
+        ".mdx",
+        ".rst",
+        ".txt"
+      ],
+      "standard": "Markdown/RST documentation",
+      "category": "documentation",
+      "keywords": [
+        "documentation",
+        "readme",
+        "architecture",
+        "summary",
+        "operator",
+        "handoff"
+      ],
+      "rules": [
+        "Keep documentation evidence-backed and scope-limited.",
+        "Separate observed facts, assumptions and recommended next steps.",
+        "Do not copy large source files into documentation."
+      ],
+      "quality_commands": [],
+      "weight_operator": "software_documentation_weight_operator"
+    },
+    {
+      "id": "log",
+      "label": "Process / Library Log",
+      "extensions": [
+        ".log",
+        ".md",
+        ".json"
+      ],
+      "standard": "Appendable process and inventory logs",
+      "category": "documentation",
+      "keywords": [
+        "process_log",
+        "summary",
+        "library.log",
+        "generation log",
+        "audit trail"
+      ],
+      "rules": [
+        "Logs must be chronological and honest about skipped validation.",
+        "Library logs must count files from PROJECT_SCOPE and respect .gitignore.",
+        "Do not store secrets or full file contents in logs."
+      ],
+      "quality_commands": [],
+      "weight_operator": "process_summary_log_weight_operator"
+    }
+  ],
+  "weight_table": [
+    {
+      "id": "documentation_traceability_standard",
+      "label": "Documentation Traceability Standard",
+      "human_style": "Clear, evidence-backed, boring in the good way: every doc claim must trace to project scope or detected metadata.",
+      "minimal_change_bias": 8,
+      "risk_sensitivity": 8,
+      "evidence_required": 9,
+      "refactor_resistance": 7,
+      "debug_depth": 5,
+      "design_flexibility": 4,
+      "automation_aggressiveness": 4,
+      "human_clarity": 10,
+      "rules": [
+        "Do not document nonexistent folders, commands or frameworks.",
+        "Use PROJECT_SCOPE and PROJECT_ANALYTICS as the primary documentation evidence set.",
+        "Summaries must be shorter than the source evidence and must not hide validation gaps.",
+        "README output must be practical: purpose, structure, setup, commands, validation, known gaps."
+      ]
+    },
+    {
+      "id": "analytics_inventory_standard",
+      "label": "Analytics Inventory Standard",
+      "human_style": "Precise, measurable, and explicit about what was counted and what was excluded.",
+      "minimal_change_bias": 9,
+      "risk_sensitivity": 8,
+      "evidence_required": 9,
+      "refactor_resistance": 8,
+      "debug_depth": 6,
+      "design_flexibility": 3,
+      "automation_aggressiveness": 5,
+      "human_clarity": 9,
+      "rules": [
+        "Project size must be computed from .gitignore-aware PROJECT_SCOPE.",
+        "Dependency inventories must come from package.json, requirements, pyproject.toml or build metadata only.",
+        "Large-file and extension counts are evidence for review, not automatic cleanup instructions.",
+        "Analytics output must avoid file content and secrets."
+      ]
+    }
+  ],
+  "hooks": [
+    {
+      "id": "process_summary_log_gate",
+      "label": "Process Log and Summary Gate",
+      "lifecycle_phase": "post_generation",
+      "priority": 100,
+      "target_path_types": [],
+      "ai_targets": [],
+      "boilerplate_profiles": [],
+      "file_types": [],
+      "weight_profile": "documentation_traceability_standard",
+      "weight_operator": "process_summary_log_operator",
+      "inject_into": [
+        "AI_MANAGER",
+        "AI-RULES",
+        "PROCESS_LOG",
+        "SUMMARY"
+      ],
+      "rules": [
+        "Always create or update PROCESS_LOG.md and SUMMARY.md after generation.",
+        "PROCESS_LOG.md is append-only per run; SUMMARY.md is the current scope snapshot.",
+        "Logs must include scope mode, file count, .gitignore posture, selected references and validation gaps.",
+        "Do not claim validation passed unless commands actually ran."
+      ]
+    },
+    {
+      "id": "library_analytics_gate",
+      "label": "Library Analytics Gate",
+      "lifecycle_phase": "metadata_scan",
+      "priority": 92,
+      "target_path_types": [],
+      "ai_targets": [],
+      "boilerplate_profiles": [
+        "Analytics",
+        "Documentation",
+        "Readme",
+        "OperationsDocs",
+        "Business"
+      ],
+      "file_types": [
+        "json",
+        "md",
+        "documentation",
+        "log",
+        "data_table"
+      ],
+      "weight_profile": "analytics_inventory_standard",
+      "weight_operator": "library_analytics_operator",
+      "inject_into": [
+        "PROJECT_METADATA",
+        "AI_MANAGER",
+        "LIBRARY.log"
+      ],
+      "rules": [
+        "Compute project size, extension counts and largest files from PROJECT_SCOPE.",
+        "Respect .gitignore and internal exclusions before counting files.",
+        "Dependency inventory must be derived from package.json, requirements.txt, requirements.json, pyproject.toml or build.json.",
+        "Never infer library usage from filenames alone when dependency metadata exists."
+      ]
+    },
+    {
+      "id": "software_documentation_gate",
+      "label": "Software Documentation Gate",
+      "lifecycle_phase": "prompt_compose",
+      "priority": 88,
+      "target_path_types": [],
+      "ai_targets": [
+        "ChatGPT",
+        "Codex"
+      ],
+      "boilerplate_profiles": [
+        "Documentation",
+        "Readme",
+        "OperationsDocs"
+      ],
+      "file_types": [
+        "md",
+        "documentation",
+        "json"
+      ],
+      "weight_profile": "documentation_traceability_standard",
+      "weight_operator": "software_documentation_operator",
+      "inject_into": [
+        "AI-RULES",
+        "AI-CHAT-RESPONSE",
+        "PROMPT"
+      ],
+      "rules": [
+        "Create documentation from selected project-tree references, not from assumptions.",
+        "Use PROJECT_SCOPE.file_references as the reference index.",
+        "Group docs into purpose, structure, setup, commands, architecture notes, validation and known gaps.",
+        "Keep documentation maintainable; do not dump complete file contents."
+      ]
+    },
+    {
+      "id": "readme_generation_gate",
+      "label": "README Generation Gate",
+      "lifecycle_phase": "prompt_compose",
+      "priority": 84,
+      "target_path_types": [],
+      "ai_targets": [
+        "ChatGPT",
+        "Codex"
+      ],
+      "boilerplate_profiles": [
+        "Readme",
+        "Documentation"
+      ],
+      "file_types": [
+        "md",
+        "documentation"
+      ],
+      "weight_operator": "readme_tree_operator",
+      "inject_into": [
+        "AI-RULES",
+        "PROMPT"
+      ],
+      "rules": [
+        "README generation must be reducible to the selected tree scope.",
+        "Only list setup and validation commands that were detected or explicitly provided.",
+        "If metadata is weak, include a short missing-evidence section.",
+        "Avoid marketing copy unless Marketing profile or role is active."
+      ]
+    },
+    {
+      "id": "project_reference_documentation_gate",
+      "label": "Project Reference Documentation Gate",
+      "lifecycle_phase": "prompt_compose",
+      "priority": 80,
+      "target_path_types": [],
+      "ai_targets": [],
+      "boilerplate_profiles": [
+        "Documentation",
+        "Analytics",
+        "OperationsDocs"
+      ],
+      "file_types": [
+        "json",
+        "md",
+        "documentation",
+        "log"
+      ],
+      "weight_operator": "project_reference_inventory_operator",
+      "inject_into": [
+        "AI-RULES",
+        "PROJECT_METADATA",
+        "SUMMARY"
+      ],
+      "rules": [
+        "Document full project references as flat, id-addressable lists.",
+        "Do not create deep nested documentation config unless unavoidable.",
+        "Generated references must preserve unknown fields and source paths.",
+        "Reference lists are indexes, not a replacement for inspecting source files."
+      ]
+    }
+  ],
+  "weight_operators": [
+    {
+      "id": "process_summary_log_operator",
+      "label": "Process Log / Summary Operator",
+      "applies_to_file_types": [],
+      "applies_to_profiles": [],
+      "applies_to_path_types": [],
+      "minimal_change_bias": 8,
+      "evidence_required": 8,
+      "rules": [
+        "Maintain PROCESS_LOG.md as an append-only generation trace.",
+        "Maintain SUMMARY.md as the latest scope snapshot.",
+        "Mention validation status honestly; generated does not mean validated.",
+        "Keep process entries human-readable and timestamped."
+      ],
+      "source_ids": [
+        "process_log_reference",
+        "summary_documentation_reference"
+      ]
+    },
+    {
+      "id": "software_documentation_operator",
+      "label": "Software Documentation Operator",
+      "applies_to_file_types": [
+        "md",
+        "documentation",
+        "json"
+      ],
+      "applies_to_profiles": [
+        "Documentation",
+        "Readme",
+        "OperationsDocs"
+      ],
+      "applies_to_path_types": [],
+      "minimal_change_bias": 7,
+      "evidence_required": 9,
+      "rules": [
+        "Write documentation from observed project structure and metadata only.",
+        "Use a practical order: overview, structure, setup, usage, validation, architecture, known gaps.",
+        "Do not over-document implementation details when a reference index is enough.",
+        "Mark weak evidence plainly."
+      ],
+      "source_ids": [
+        "documentation_project_reference",
+        "architecture_reference_map"
+      ]
+    },
+    {
+      "id": "readme_tree_operator",
+      "label": "README Tree Operator",
+      "applies_to_file_types": [
+        "md",
+        "documentation"
+      ],
+      "applies_to_profiles": [
+        "Readme",
+        "Documentation"
+      ],
+      "applies_to_path_types": [],
+      "minimal_change_bias": 8,
+      "evidence_required": 9,
+      "rules": [
+        "A README must fit the selected project tree, not a generic template.",
+        "List commands only if detected in metadata or explicitly supplied.",
+        "Keep examples minimal and copy-pasteable.",
+        "Use TODO/missing-evidence notes instead of inventing details."
+      ],
+      "source_ids": [
+        "readme_tree_reference"
+      ]
+    },
+    {
+      "id": "project_reference_inventory_operator",
+      "label": "Project Reference Inventory Operator",
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "documentation",
+        "log"
+      ],
+      "applies_to_profiles": [
+        "Documentation",
+        "Analytics",
+        "OperationsDocs"
+      ],
+      "applies_to_path_types": [],
+      "minimal_change_bias": 9,
+      "evidence_required": 9,
+      "rules": [
+        "Keep reference arrays flat and id-addressable.",
+        "Use relative project paths as stable ids when possible.",
+        "Preserve unknown fields in JSON references.",
+        "Avoid duplicating file references across unrelated sections."
+      ],
+      "source_ids": [
+        "documentation_project_reference",
+        "project_reference_map"
+      ]
+    },
+    {
+      "id": "library_analytics_operator",
+      "label": "Library / Project Analytics Operator",
+      "applies_to_file_types": [
+        "json",
+        "log",
+        "data_table",
+        "documentation"
+      ],
+      "applies_to_profiles": [
+        "Analytics",
+        "Documentation",
+        "Business"
+      ],
+      "applies_to_path_types": [],
+      "minimal_change_bias": 9,
+      "evidence_required": 9,
+      "rules": [
+        "Compute file counts and sizes from PROJECT_SCOPE only.",
+        "Group analytics by extension and top-level path.",
+        "Dependency inventory must remain separate from file inventory.",
+        "Do not turn analytics findings into cleanup actions unless the user asks."
+      ],
+      "source_ids": [
+        "library_analytics_reference"
+      ]
+    },
+    {
+      "id": "api_docs_operator",
+      "label": "API Documentation Operator",
+      "applies_to_file_types": [
+        "py",
+        "js",
+        "ts",
+        "json",
+        "md",
+        "documentation"
+      ],
+      "applies_to_profiles": [
+        "Documentation",
+        "Programming"
+      ],
+      "applies_to_path_types": [
+        "backend",
+        "frontend",
+        "generated"
+      ],
+      "minimal_change_bias": 7,
+      "evidence_required": 9,
+      "rules": [
+        "Only document public API surfaces visible in selected source references.",
+        "Keep route/function/component docs close to detected file paths.",
+        "Do not infer authentication, payloads or side effects without code evidence.",
+        "Prefer small examples over broad tutorial prose."
+      ],
+      "source_ids": [
+        "api_surface_documentation_reference"
+      ]
+    }
+  ],
+  "reference_domains": [
+    {
+      "id": "process_log_reference",
+      "label": "Process Log Reference",
+      "category": "documentation",
+      "always_on": true,
+      "applies_to_path_types": [],
+      "applies_to_file_types": [],
+      "applies_to_profiles": [],
+      "trigger_keywords": [
+        "process log",
+        "generation log",
+        "audit trail",
+        "summary",
+        "handoff"
+      ],
+      "source_refs": [
+        "PROCESS_LOG.md",
+        "AI_GENERATION_LOG.json"
+      ],
+      "rules": [
+        "PROCESS_LOG.md records generation actions and scope posture per run.",
+        "The process log is not validation proof.",
+        "Keep it append-only and timestamped."
+      ],
+      "guardrails": [
+        "Never store secrets or full source contents in the process log.",
+        "Never claim validation ran unless it actually ran."
+      ]
+    },
+    {
+      "id": "summary_documentation_reference",
+      "label": "Summary Documentation Reference",
+      "category": "documentation",
+      "always_on": true,
+      "applies_to_path_types": [],
+      "applies_to_file_types": [],
+      "applies_to_profiles": [],
+      "trigger_keywords": [
+        "summary",
+        "project summary",
+        "overview",
+        "status"
+      ],
+      "source_refs": [
+        "SUMMARY.md",
+        "PROJECT_METADATA.json"
+      ],
+      "rules": [
+        "SUMMARY.md is a current generated snapshot of scope, metadata and warnings.",
+        "It must distinguish detected facts from missing evidence.",
+        "It should stay short enough to be reviewed quickly."
+      ],
+      "guardrails": [
+        "Do not treat SUMMARY.md as hand-authored truth.",
+        "Refresh it when scope or metadata changes."
+      ]
+    },
+    {
+      "id": "library_analytics_reference",
+      "label": "Library / Project Size Analytics Reference",
+      "category": "analytics",
+      "applies_to_path_types": [],
+      "applies_to_file_types": [
+        "json",
+        "log",
+        "data_table",
+        "documentation"
+      ],
+      "applies_to_profiles": [
+        "Analytics",
+        "Documentation",
+        "Business"
+      ],
+      "trigger_keywords": [
+        "library.log",
+        "project size",
+        "analytics",
+        "file count",
+        "extension count",
+        "dependency inventory",
+        "library inventory"
+      ],
+      "source_refs": [
+        "LIBRARY.log",
+        "PROJECT_METADATA.project_analytics"
+      ],
+      "rules": [
+        "Project size analytics are calculated from .gitignore-aware PROJECT_SCOPE.",
+        "Dependencies must be derived from dependency manifests, not guessed from imports alone.",
+        "Largest-file lists are review hints, not deletion instructions."
+      ],
+      "guardrails": [
+        "Do not include file contents in LIBRARY.log.",
+        "Do not count .git/ or export/ internals."
+      ]
+    },
+    {
+      "id": "documentation_project_reference",
+      "label": "Software Documentation Project Reference",
+      "category": "documentation",
+      "applies_to_path_types": [],
+      "applies_to_file_types": [
+        "md",
+        "documentation",
+        "json"
+      ],
+      "applies_to_profiles": [
+        "Documentation",
+        "Readme",
+        "OperationsDocs"
+      ],
+      "trigger_keywords": [
+        "documentation",
+        "docs",
+        "software documentation",
+        "operator reference",
+        "project reference",
+        "architecture"
+      ],
+      "source_refs": [
+        "PROJECT_SCOPE.file_references",
+        "PROJECT_METADATA.targets",
+        "AI_MANAGER.json"
+      ],
+      "rules": [
+        "Use project file references as citations/index anchors for documentation work.",
+        "Document commands and frameworks only when detected metadata supports them.",
+        "Make documentation reducible to selected paths."
+      ],
+      "guardrails": [
+        "Do not generate static generic docs detached from PROJECT_SCOPE.",
+        "Do not duplicate documentation sections unnecessarily."
+      ]
+    },
+    {
+      "id": "readme_tree_reference",
+      "label": "README From Project Tree Reference",
+      "category": "documentation",
+      "applies_to_path_types": [],
+      "applies_to_file_types": [
+        "md",
+        "documentation"
+      ],
+      "applies_to_profiles": [
+        "Readme",
+        "Documentation"
+      ],
+      "trigger_keywords": [
+        "readme",
+        "getting started",
+        "setup",
+        "usage",
+        "commands",
+        "tree"
+      ],
+      "source_refs": [
+        "README.md",
+        "PROJECT_SCOPE",
+        "PROJECT_METADATA.detected commands"
+      ],
+      "rules": [
+        "README must explain this project tree, not an imagined framework.",
+        "Use detected commands or mark command evidence missing.",
+        "Keep sections practical and navigable."
+      ],
+      "guardrails": [
+        "No fake install/build commands.",
+        "No marketing-only README unless Marketing role is selected."
+      ]
+    },
+    {
+      "id": "architecture_reference_map",
+      "label": "Architecture Reference Map",
+      "category": "documentation",
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated"
+      ],
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "documentation",
+        "py",
+        "js",
+        "ts",
+        "vue"
+      ],
+      "applies_to_profiles": [
+        "Documentation",
+        "Programming",
+        "Refactor"
+      ],
+      "trigger_keywords": [
+        "architecture",
+        "module",
+        "component",
+        "service",
+        "controller",
+        "model",
+        "structure"
+      ],
+      "source_refs": [
+        "PROJECT_SCOPE.directory_references",
+        "PROJECT_SCOPE.file_references"
+      ],
+      "rules": [
+        "Document architecture as observed folders, modules and routing boundaries.",
+        "Do not infer hidden architecture from naming alone.",
+        "Prefer diagrams/lists only when they reduce ambiguity."
+      ],
+      "guardrails": [
+        "Do not propose rewrites while documenting unless user asks.",
+        "Mark uncertain boundaries as assumptions."
+      ]
+    },
+    {
+      "id": "api_surface_documentation_reference",
+      "label": "API Surface Documentation Reference",
+      "category": "documentation",
+      "applies_to_path_types": [
+        "backend",
+        "frontend",
+        "generated"
+      ],
+      "applies_to_file_types": [
+        "py",
+        "js",
+        "ts",
+        "vue",
+        "json",
+        "md",
+        "documentation"
+      ],
+      "applies_to_profiles": [
+        "Documentation",
+        "Programming"
+      ],
+      "trigger_keywords": [
+        "api",
+        "endpoint",
+        "route",
+        "service",
+        "function",
+        "component props",
+        "interface"
+      ],
+      "source_refs": [
+        "selected source files",
+        "detected route/component files"
+      ],
+      "rules": [
+        "Only document API surfaces that are visible in selected files.",
+        "Separate request/response facts from inferred behavior.",
+        "Use small examples and mention validation gaps."
+      ],
+      "guardrails": [
+        "Do not infer auth, error codes or side effects without code evidence."
+      ]
+    },
+    {
+      "id": "changelog_release_notes_reference",
+      "label": "Changelog / Release Notes Reference",
+      "category": "documentation",
+      "applies_to_path_types": [],
+      "applies_to_file_types": [
+        "md",
+        "documentation",
+        "log"
+      ],
+      "applies_to_profiles": [
+        "OperationsDocs",
+        "Documentation"
+      ],
+      "trigger_keywords": [
+        "changelog",
+        "release notes",
+        "changes",
+        "version",
+        "migration"
+      ],
+      "source_refs": [
+        "PROCESS_LOG.md",
+        "AI_GENERATION_LOG.json",
+        "EXPORT_MANIFEST.json"
+      ],
+      "rules": [
+        "Release notes must distinguish generated changes from manually validated changes.",
+        "Use process log entries and export manifests as evidence.",
+        "Keep compatibility and migration notes explicit."
+      ],
+      "guardrails": [
+        "Do not claim a release was tested unless validation ran."
+      ]
+    },
+    {
+      "id": "onboarding_admin_reference",
+      "label": "Onboarding / Admin Docs Reference",
+      "category": "documentation",
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend"
+      ],
+      "applies_to_file_types": [
+        "md",
+        "documentation",
+        "json"
+      ],
+      "applies_to_profiles": [
+        "Documentation",
+        "OperationsDocs",
+        "Readme"
+      ],
+      "trigger_keywords": [
+        "onboarding",
+        "admin",
+        "maintenance",
+        "runbook",
+        "handoff"
+      ],
+      "source_refs": [
+        "SUMMARY.md",
+        "README.md",
+        "PROJECT_METADATA.json"
+      ],
+      "rules": [
+        "Admin docs must show how to regenerate rules, inspect outputs and verify validation status.",
+        "Keep maintenance steps explicit and reversible.",
+        "Call out missing environment or credential information instead of guessing."
+      ],
+      "guardrails": [
+        "Do not include credentials or secrets.",
+        "Do not invent deployment steps."
+      ]
+    }
+  ],
+  "operation_roles": [
+    {
+      "id": "software_documentation_operator",
+      "label": "Software Documentation Operator",
+      "category": "documentation",
+      "reference_domains": [
+        "documentation_project_reference",
+        "architecture_reference_map",
+        "summary_documentation_reference"
+      ],
+      "applies_to_path_types": [],
+      "applies_to_file_types": [
+        "md",
+        "documentation",
+        "json"
+      ],
+      "applies_to_profiles": [
+        "Documentation",
+        "Readme",
+        "OperationsDocs"
+      ],
+      "rules": [
+        "Build docs from PROJECT_SCOPE and detected metadata, not generic assumptions.",
+        "Keep docs scoped, navigable and updateable.",
+        "Separate observed facts, assumptions and validation gaps.",
+        "Preserve unknown schema fields when documenting JSON configuration."
+      ],
+      "validation_focus": [
+        "metadata evidence",
+        "command evidence",
+        "scope reduction",
+        "missing evidence notes"
+      ]
+    },
+    {
+      "id": "readme_author_operator",
+      "label": "README Author Operator",
+      "category": "documentation",
+      "reference_domains": [
+        "readme_tree_reference",
+        "documentation_project_reference"
+      ],
+      "applies_to_path_types": [],
+      "applies_to_file_types": [
+        "md",
+        "documentation"
+      ],
+      "applies_to_profiles": [
+        "Readme",
+        "Documentation"
+      ],
+      "rules": [
+        "Create README structure from real tree, detected commands and target scope.",
+        "Keep installation/usage commands copy-pasteable and evidence-backed.",
+        "Do not document unverified deployment, auth or cloud setup.",
+        "Use short examples; avoid bloated template prose."
+      ],
+      "validation_focus": [
+        "detected commands",
+        "project tree coverage",
+        "missing evidence",
+        "readability"
+      ]
+    },
+    {
+      "id": "project_reference_archivist_operator",
+      "label": "Project Reference Archivist Operator",
+      "category": "documentation",
+      "reference_domains": [
+        "documentation_project_reference",
+        "architecture_reference_map",
+        "library_analytics_reference"
+      ],
+      "applies_to_path_types": [],
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "documentation",
+        "log"
+      ],
+      "applies_to_profiles": [
+        "Documentation",
+        "Analytics",
+        "OperationsDocs"
+      ],
+      "rules": [
+        "Create complete, flat, id-addressable reference indexes for selected project scope.",
+        "Keep path references project-relative.",
+        "Avoid duplicating references across unrelated sections.",
+        "Treat indexes as navigation aids, not source replacement."
+      ],
+      "validation_focus": [
+        "path stability",
+        "duplicate references",
+        "scope boundaries",
+        "JSON validity"
+      ]
+    },
+    {
+      "id": "analytics_inventory_operator",
+      "label": "Analytics Inventory Operator",
+      "category": "analytics",
+      "reference_domains": [
+        "library_analytics_reference"
+      ],
+      "applies_to_path_types": [],
+      "applies_to_file_types": [
+        "json",
+        "log",
+        "data_table",
+        "documentation"
+      ],
+      "applies_to_profiles": [
+        "Analytics",
+        "Business",
+        "Documentation"
+      ],
+      "rules": [
+        "Use PROJECT_ANALYTICS for file count, directory count, extension counts and total size.",
+        "Keep dependency inventory separate from file analytics.",
+        "Do not recommend deletion or optimization unless asked.",
+        "Report exclusions explicitly: .git/, export/ and .gitignore ignored paths."
+      ],
+      "validation_focus": [
+        "counts",
+        "total size",
+        "extension grouping",
+        "dependency source"
+      ]
+    },
+    {
+      "id": "library_dependency_operator",
+      "label": "Library Dependency Operator",
+      "category": "analytics",
+      "reference_domains": [
+        "library_analytics_reference"
+      ],
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend"
+      ],
+      "applies_to_file_types": [
+        "json",
+        "py",
+        "js",
+        "ts",
+        "documentation",
+        "log"
+      ],
+      "applies_to_profiles": [
+        "Analytics",
+        "Documentation",
+        "Programming"
+      ],
+      "rules": [
+        "Read dependencies from manifests first.",
+        "Do not treat imports as installed dependencies unless manifests confirm or user asks for import audit.",
+        "Group runtime and dev dependencies when metadata allows it.",
+        "Flag missing manifests plainly."
+      ],
+      "validation_focus": [
+        "package.json",
+        "requirements",
+        "pyproject",
+        "build metadata"
+      ]
+    },
+    {
+      "id": "api_documentation_operator",
+      "label": "API Documentation Operator",
+      "category": "documentation",
+      "reference_domains": [
+        "api_surface_documentation_reference",
+        "architecture_reference_map"
+      ],
+      "applies_to_path_types": [
+        "backend",
+        "frontend",
+        "generated"
+      ],
+      "applies_to_file_types": [
+        "py",
+        "js",
+        "ts",
+        "vue",
+        "json",
+        "md",
+        "documentation"
+      ],
+      "applies_to_profiles": [
+        "Documentation",
+        "Programming"
+      ],
+      "rules": [
+        "Document only visible public API surfaces.",
+        "Use selected files as the boundary for endpoints, functions, props and interfaces.",
+        "Separate examples from guaranteed behavior.",
+        "Do not invent response schemas or side effects."
+      ],
+      "validation_focus": [
+        "source evidence",
+        "public surface",
+        "examples",
+        "unknowns"
+      ]
+    },
+    {
+      "id": "onboarding_docs_operator",
+      "label": "Onboarding / Admin Docs Operator",
+      "category": "documentation",
+      "reference_domains": [
+        "onboarding_admin_reference",
+        "readme_tree_reference",
+        "summary_documentation_reference"
+      ],
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend"
+      ],
+      "applies_to_file_types": [
+        "md",
+        "documentation",
+        "json"
+      ],
+      "applies_to_profiles": [
+        "OperationsDocs",
+        "Documentation",
+        "Readme"
+      ],
+      "rules": [
+        "Write handoff notes for future maintainers using actual generated files and detected commands.",
+        "Document regeneration, export and validation workflow clearly.",
+        "Keep admin docs secret-safe.",
+        "Mention missing environment information instead of guessing."
+      ],
+      "validation_focus": [
+        "handoff clarity",
+        "regeneration workflow",
+        "secret safety",
+        "missing evidence"
+      ]
+    }
+  ],
+  "prompt_text_types": [
+    {
+      "id": "documentation_role",
+      "label": "Documentation Role",
+      "task_boundary": "Define a documentation operator role only. Do not write the final documentation unless explicitly asked next.",
+      "rules": [
+        "Carry PROJECT_SCOPE, PROJECT_ANALYTICS, active references and validation gaps into the next prompt.",
+        "Documentation must be based on observed facts and detected metadata.",
+        "README, SUMMARY and process docs must stay scope-limited."
+      ]
+    },
+    {
+      "id": "analytics_role",
+      "label": "Analytics / Inventory Role",
+      "task_boundary": "Define an analytics operator role only. Do not perform cleanup or optimization unless explicitly asked next.",
+      "rules": [
+        "Use PROJECT_ANALYTICS and LIBRARY.log semantics as the evidence model.",
+        "Report project size, extension counts, top-level paths and dependency inventory without file contents.",
+        "Keep exclusions and missing metadata explicit."
+      ]
+    },
+    {
+      "id": "readme_role",
+      "label": "README Author Role",
+      "task_boundary": "Define a README author operator role only. Do not write README content unless explicitly asked next.",
+      "rules": [
+        "README structure must come from selected project tree and detected commands.",
+        "If evidence is missing, the README role must include a missing-evidence section.",
+        "No fake install, build, deploy or test commands."
+      ]
+    }
+  ]
+}

@@ -1,0 +1,414 @@
+{
+  "weight_table": [
+    {
+      "id": "conservative_it_company",
+      "label": "Conservative IT Company Standard",
+      "human_style": "Senior, careful, pragmatic, calm and responsible.",
+      "minimal_change_bias": 10,
+      "risk_sensitivity": 10,
+      "evidence_required": 9,
+      "refactor_resistance": 8,
+      "debug_depth": 8,
+      "design_flexibility": 4,
+      "automation_aggressiveness": 3,
+      "human_clarity": 9,
+      "target_ai": "Codex",
+      "rules": [
+        "Never touch a running system without evidence.",
+        "Prefer minimal reversible patches.",
+        "Preserve public behavior and existing architecture.",
+        "Validate before and after changes."
+      ]
+    },
+    {
+      "id": "web_evidence_standard",
+      "label": "Web Evidence Standard",
+      "human_style": "Evidence-driven, cautious, explicit about uncertainty.",
+      "minimal_change_bias": 7,
+      "risk_sensitivity": 8,
+      "evidence_required": 10,
+      "refactor_resistance": 6,
+      "debug_depth": 6,
+      "design_flexibility": 5,
+      "automation_aggressiveness": 2,
+      "human_clarity": 8,
+      "target_ai": "WebAgent",
+      "rules": [
+        "Verify claims before recommending changes.",
+        "Do not infer direct code access.",
+        "Use evidence and cite or summarize source context when possible."
+      ]
+    },
+    {
+      "id": "human_assistant_standard",
+      "label": "Human Assistant Standard",
+      "human_style": "Helpful, direct, empathetic and schema-grounded.",
+      "minimal_change_bias": 8,
+      "risk_sensitivity": 7,
+      "evidence_required": 7,
+      "refactor_resistance": 6,
+      "debug_depth": 6,
+      "design_flexibility": 7,
+      "automation_aggressiveness": 3,
+      "human_clarity": 10,
+      "target_ai": "ChatGPT",
+      "rules": [
+        "Explain decisions in human language.",
+        "Avoid pretending to have direct repository access.",
+        "Ask only when ambiguity would cause a wrong or destructive change."
+      ]
+    },
+    {
+      "id": "ptb_legal_metrology_standard",
+      "label": "PTB Legal Metrology Standard",
+      "ai_targets": [
+        "ChatGPT",
+        "Codex",
+        "WebAgent"
+      ],
+      "applies_to_hooks": [
+        "ptb_reference_route_gate",
+        "ptb_documentation_evidence_gate",
+        "ptb_risk_assessment_gate",
+        "ptb_software_separation_gate",
+        "ptb_update_lifecycle_gate",
+        "ptb_security_configuration_gate",
+        "ptb_crypto_time_gate",
+        "ptb_cra_impact_gate"
+      ],
+      "weights": {
+        "evidence_required": 10,
+        "legal_claim_resistance": 10,
+        "traceability_required": 10,
+        "risk_sensitivity": 10,
+        "minimal_change_bias": 9,
+        "human_clarity": 9
+      },
+      "rules": [
+        "Use PTB/WELMEC references to structure evidence and operator behavior.",
+        "Never claim legal conformity or certification from generated rules.",
+        "Prefer explicit assumptions and validation gaps over polished uncertainty hiding."
+      ]
+    },
+    {
+      "id": "ptb_documentation_traceability_standard",
+      "label": "PTB Documentation Traceability Standard",
+      "ai_targets": [
+        "ChatGPT",
+        "Codex",
+        "WebAgent"
+      ],
+      "applies_to_hooks": [
+        "ptb_documentation_evidence_gate",
+        "ptb_executable_generation_gate"
+      ],
+      "weights": {
+        "document_identifier_accuracy": 10,
+        "section_reference_stability": 10,
+        "build_traceability": 10,
+        "missing_evidence_visibility": 10,
+        "human_clarity": 9
+      },
+      "rules": [
+        "Documentation claims must trace to scoped files or detected metadata.",
+        "Generated docs must keep gaps and assumptions visible."
+      ]
+    },
+    {
+      "id": "ptb_security_update_standard",
+      "label": "PTB Security Update Standard",
+      "ai_targets": [
+        "ChatGPT",
+        "Codex",
+        "WebAgent"
+      ],
+      "applies_to_hooks": [
+        "ptb_security_configuration_gate",
+        "ptb_crypto_time_gate",
+        "ptb_update_lifecycle_gate",
+        "ptb_cra_impact_gate"
+      ],
+      "weights": {
+        "configuration_evidence": 10,
+        "change_control": 10,
+        "crypto_parameter_precision": 10,
+        "time_traceability": 10,
+        "certification_claim_resistance": 10
+      },
+      "rules": [
+        "Security/update work must classify legal relevance before recommending changes.",
+        "Use CVE/update context only as evidence, not automatic permission."
+      ]
+    },
+    {
+      "id": "create_stack_standard",
+      "label": "Create Stack Standard",
+      "human_style": "Direct, systematic, implementation-oriented and evidence-grounded.",
+      "minimal_change_bias": 8,
+      "risk_sensitivity": 8,
+      "evidence_required": 8,
+      "refactor_resistance": 7,
+      "debug_depth": 7,
+      "design_flexibility": 6,
+      "automation_aggressiveness": 5,
+      "human_clarity": 9,
+      "target_ai": "ChatGPT",
+      "rules": [
+        "Start with Create contract: mode, outcome, non-goals, target paths, dependencies, references, weights, validation and rollback.",
+        "Use project evidence and selected scope before generic boilerplate.",
+        "Keep dependencies swappable and document assumptions.",
+        "Prefer a timeline-based Context Build over one-shot scaffolding.",
+        "Expose dependency choices as option groups, but write only the selected manifest entries.",
+        "Keep ZIP export, USER_PROMPT.txt and EXPORT_MANIFEST.json in sync."
+      ]
+    },
+    {
+      "id": "official_manual_evidence_standard",
+      "label": "Official Manual Evidence Standard",
+      "human_style": "Precise, source-aware and cautious about manuals/specs.",
+      "minimal_change_bias": 7,
+      "risk_sensitivity": 9,
+      "evidence_required": 10,
+      "refactor_resistance": 7,
+      "debug_depth": 6,
+      "design_flexibility": 4,
+      "automation_aggressiveness": 2,
+      "human_clarity": 9,
+      "target_ai": "WebAgent",
+      "rules": [
+        "Prefer official manuals/public authority docs when available.",
+        "State version/date/source limitations.",
+        "Do not claim compliance from documentation alone."
+      ]
+    },
+    {
+      "id": "clean_project_standard",
+      "label": "Clean Project Standard",
+      "human_style": "Boring, tidy, reversible and traceable.",
+      "minimal_change_bias": 9,
+      "risk_sensitivity": 9,
+      "evidence_required": 8,
+      "refactor_resistance": 8,
+      "debug_depth": 6,
+      "design_flexibility": 4,
+      "automation_aggressiveness": 3,
+      "human_clarity": 9,
+      "target_ai": "Codex",
+      "rules": [
+        "Separate source, generated output, dependencies, caches and exports.",
+        "Do not delete source evidence blindly.",
+        "Every artifact must be discoverable from EXPORT_MANIFEST.json."
+      ]
+    },
+    {
+      "id": "do_not_normalize_standard",
+      "label": "Do Not Normalize Standard",
+      "human_style": "Domain-faithful, exact and explicit about terminology.",
+      "minimal_change_bias": 9,
+      "risk_sensitivity": 10,
+      "evidence_required": 9,
+      "refactor_resistance": 8,
+      "debug_depth": 6,
+      "design_flexibility": 3,
+      "automation_aggressiveness": 2,
+      "human_clarity": 9,
+      "target_ai": "ChatGPT",
+      "rules": [
+        "Preserve authoritative labels, units, IDs and legal/metrological wording.",
+        "Document reversible mappings if code naming differs from source terms.",
+        "Never collapse distinct domain concepts just to simplify output."
+      ]
+    },
+    {
+      "id": "professional_solution_engineering_standard",
+      "label": "Professional Solution Engineering Standard",
+      "human_style": "Senior, pragmatic, structured and validation-focused.",
+      "minimal_change_bias": 8,
+      "risk_sensitivity": 8,
+      "evidence_required": 8,
+      "refactor_resistance": 7,
+      "debug_depth": 8,
+      "design_flexibility": 6,
+      "automation_aggressiveness": 4,
+      "human_clarity": 10,
+      "target_ai": "Codex",
+      "rules": [
+        "Implement the smallest professional slice that proves the design.",
+        "Define interfaces, dependency seams, tests and rollback.",
+        "Do not over-engineer beyond selected scope."
+      ]
+    },
+    {
+      "id": "micro_tasks_standard",
+      "label": "Micro Tasks Standard",
+      "human_style": "Small, boring, artifact-first and reversible.",
+      "minimal_change_bias": 10,
+      "risk_sensitivity": 8,
+      "evidence_required": 8,
+      "refactor_resistance": 9,
+      "debug_depth": 5,
+      "design_flexibility": 4,
+      "automation_aggressiveness": 4,
+      "human_clarity": 9,
+      "target_ai": "ChatGPT",
+      "rules": [
+        "One micro task writes one explicit artifact unless the user asks otherwise.",
+        "Use selected project scope as evidence.",
+        "Do not install dependencies or run destructive commands as a side effect."
+      ]
+    },
+    {
+      "id": "create_pipeline_production_standard",
+      "label": "Create Pipeline Production Standard",
+      "human_style": "Production-minded, path-isolated, manifest-backed and direct.",
+      "minimal_change_bias": 8,
+      "risk_sensitivity": 9,
+      "evidence_required": 9,
+      "refactor_resistance": 7,
+      "debug_depth": 7,
+      "design_flexibility": 6,
+      "automation_aggressiveness": 5,
+      "human_clarity": 10,
+      "target_ai": "Codex",
+      "rules": [
+        "Separate Create working path, Create export and normal Generator export.",
+        "Keep timeline, tree blueprint and manifest aligned.",
+        "Prefer LTS/stable policy labels over invented exact versions."
+      ]
+    },
+    {
+      "id": "terminal_execution_safety_standard",
+      "label": "Terminal Execution Safety Standard",
+      "human_style": "Explicit command review, no magic execution.",
+      "minimal_change_bias": 9,
+      "risk_sensitivity": 10,
+      "evidence_required": 8,
+      "refactor_resistance": 8,
+      "debug_depth": 8,
+      "design_flexibility": 3,
+      "automation_aggressiveness": 3,
+      "human_clarity": 10,
+      "target_ai": "Codex",
+      "rules": [
+        "Compile before Run.",
+        "Skip unresolved tokens instead of guessing.",
+        "Display cwd, command output and exit code."
+      ]
+    },
+    {
+      "id": "create_project_tree_preview_standard",
+      "label": "Create Project Tree Preview Standard",
+      "target_ai": "ChatGPT",
+      "human_style": "Simple visual temp-tree mapping before real writes.",
+      "rules": [
+        "Build temp preview first.",
+        "One root per wrapper/backend/frontend.",
+        "Ignore orphan structures."
+      ],
+      "weights": {
+        "target_uniqueness": 10,
+        "temp_safety": 10,
+        "tree_clarity": 9,
+        "minimal_write_risk": 9
+      }
+    },
+    {
+      "id": "boilerplate_dependency_crud_standard",
+      "label": "Boilerplate Dependency CRUD Standard",
+      "target_ai": "ChatGPT",
+      "human_style": "Dependency rows are explicit, target-scoped and swappable.",
+      "rules": [
+        "Row-level dependency mapping.",
+        "Manifest alignment required.",
+        "No guessed versions."
+      ],
+      "weights": {
+        "manifest_alignment": 10,
+        "target_assignment": 10,
+        "version_evidence": 9,
+        "crud_reversibility": 8
+      }
+    },
+    {
+      "id": "create_timeline_checkbox_standard",
+      "label": "Create Timeline Checkbox Standard",
+      "target_ai": "ChatGPT",
+      "human_style": "Run only what is checked, keep the rest visible.",
+      "rules": [
+        "Compile refreshes timeline steps.",
+        "Run checked steps only.",
+        "Unresolved commands are skipped."
+      ],
+      "weights": {
+        "execution_control": 10,
+        "checked_step_traceability": 9,
+        "safe_terminal_use": 9,
+        "token_visibility": 8
+      }
+    },
+    {
+      "id": "create_project_first_mapping_standard",
+      "label": "Create Project-First Mapping Standard",
+      "human_style": "Senior, practical, project-evidence-first and safe-by-default.",
+      "minimal_change_bias": 9,
+      "risk_sensitivity": 9,
+      "evidence_required": 10,
+      "refactor_resistance": 8,
+      "debug_depth": 7,
+      "design_flexibility": 5,
+      "automation_aggressiveness": 5,
+      "human_clarity": 9,
+      "target_ai": "ChatGPT",
+      "rules": [
+        "Read the project tree before choosing stacks for existing-project features.",
+        "Prefer exact manifest evidence over catalog assumptions.",
+        "Use temp preview for all compile/evaluation work and keep real project writes behind Run."
+      ]
+    },
+    {
+      "id": "create_runtime_progress_standard",
+      "label": "Create Runtime Progress Standard",
+      "human_style": "Practical runtime feedback for Create terminal work.",
+      "minimal_change_bias": 8,
+      "risk_sensitivity": 9,
+      "evidence_required": 8,
+      "refactor_resistance": 7,
+      "debug_depth": 8,
+      "design_flexibility": 6,
+      "automation_aggressiveness": 6,
+      "human_clarity": 9,
+      "target_ai": "ChatGPT",
+      "rules": [
+        "Show live progress for terminal work.",
+        "Keep stopped work pending.",
+        "Prefer explicit CRUD forms over compact but fragile text prompts."
+      ]
+    },
+    {
+      "id": "create_node_nvm_version_standard",
+      "label": "Create Node NVM Version Standard",
+      "ai_targets": [
+        "ChatGPT",
+        "Codex"
+      ],
+      "applies_to_hooks": [
+        "create_node_nvm_version_gate"
+      ],
+      "weights": {
+        "runtime_reproducibility": 10,
+        "no_guessing_versions": 10,
+        "target_scoping": 9,
+        "terminal_safety": 9,
+        "package_alignment": 9
+      },
+      "rules": [
+        "Stack switching may set the NVM field from the local NVM return value; no return keeps None.",
+        "NVM runtime selection is explicit, target-scoped and defaults to None.",
+        "Node commands are prefixed only when nvm_version is configured.",
+        "Package/version/runtime rows stay editable and exportable."
+      ]
+    }
+  ],
+  "weight_scale": "0..10",
+  "weight_rule": "Weights are not hidden chain-of-thought. They are visible decision controls used to shape risk, evidence and output style."
+}

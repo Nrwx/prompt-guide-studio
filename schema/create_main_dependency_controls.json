@@ -1,0 +1,104 @@
+{
+  "create_main_dependency_controls": {
+    "purpose": "Create header displays only the dependency control rows relevant to the selected Stack/Schema/Boilerplate.",
+    "point_of_truth": "dependency_groups and dependency_abstraction in the active create stack config",
+    "ui_rule": "Node/NVM and Gradle have dedicated controls. Other main dependencies are summarized in the Main dependency row and hidden when the active stack has no matching ecosystem.",
+    "ecosystem_groups": [
+      {
+        "id": "node_nvm",
+        "ecosystems": [
+          "node",
+          "javascript",
+          "typescript",
+          "frontend",
+          "node/browser"
+        ],
+        "control": "Node/NVM version + NVM path",
+        "shown_when": "active stack/schema declares package.json, node or frontend dependency evidence"
+      },
+      {
+        "id": "gradle",
+        "ecosystems": [
+          "android",
+          "gradle"
+        ],
+        "control": "Gradle version",
+        "shown_when": "active stack/schema declares Android/Gradle dependency evidence"
+      },
+      {
+        "id": "python",
+        "ecosystems": [
+          "python",
+          "pip",
+          "pyproject"
+        ],
+        "control": "Main dependency summary",
+        "main_dependency": "Python runtime / requirements.txt / pyproject.toml"
+      },
+      {
+        "id": "conda",
+        "ecosystems": [
+          "conda",
+          "scientific_python"
+        ],
+        "control": "Main dependency summary",
+        "main_dependency": "Conda environment / environment.yml"
+      },
+      {
+        "id": "flutter",
+        "ecosystems": [
+          "pub",
+          "flutter",
+          "dart"
+        ],
+        "control": "Main dependency summary",
+        "main_dependency": "Flutter SDK / pubspec.yaml"
+      },
+      {
+        "id": "native",
+        "ecosystems": [
+          "native",
+          "cpp",
+          "c",
+          "cmake"
+        ],
+        "control": "Main dependency summary",
+        "main_dependency": "CMake / compiler toolchain"
+      },
+      {
+        "id": "devops",
+        "ecosystems": [
+          "ops",
+          "docker"
+        ],
+        "control": "Main dependency summary",
+        "main_dependency": "Docker / compose / CI scripts"
+      },
+      {
+        "id": "docs",
+        "ecosystems": [
+          "documentation"
+        ],
+        "control": "Main dependency summary",
+        "main_dependency": "README/SUMMARY/PROCESS_LOG/traceability docs"
+      },
+      {
+        "id": "prompt_eval",
+        "ecosystems": [
+          "prompt_engineering",
+          "mixed"
+        ],
+        "control": "Main dependency summary",
+        "main_dependency": "PROMPT_MANIFEST / eval checklist / schema contract"
+      },
+      {
+        "id": "terminal",
+        "ecosystems": [
+          "cross_platform_shell"
+        ],
+        "control": "Main dependency summary",
+        "main_dependency": "Terminal timeline runner / generated command script"
+      }
+    ]
+  }
+}

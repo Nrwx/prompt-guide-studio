@@ -1,0 +1,474 @@
+{
+  "boilerplate_profiles": [
+    {
+      "id": "DevelopFeatures",
+      "label": "Develop Features",
+      "purpose": "Build new or extended features with explicit outcome, scope, acceptance criteria and validation posture.",
+      "keywords": [
+        "feature",
+        "develop feature",
+        "new feature",
+        "implement",
+        "add capability",
+        "extend tool",
+        "entwickle",
+        "feature entwickeln",
+        "add function"
+      ],
+      "allowed_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated",
+        "assets"
+      ],
+      "default_enabled": false,
+      "rules": [
+        "Define done before proposing implementation steps.",
+        "Bind every new feature to an explicit target path, evidence set, output contract and validation posture.",
+        "Prefer extending existing schema hooks, weights and references before adding parallel mechanisms.",
+        "Keep feature changes small, reversible and traceable through generated manifests and reports."
+      ]
+    }
+  ],
+  "reference_domains": [
+    {
+      "id": "develop_feature_reference",
+      "label": "Develop Feature Reference",
+      "category": "develop_features",
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated",
+        "assets"
+      ],
+      "applies_to_file_types": [
+        "py",
+        "js",
+        "ts",
+        "vue",
+        "scss",
+        "json",
+        "md",
+        "data_table"
+      ],
+      "applies_to_profiles": [
+        "DevelopFeatures",
+        "Programming",
+        "Design",
+        "Refactor"
+      ],
+      "trigger_keywords": [
+        "feature",
+        "develop feature",
+        "new feature",
+        "implement",
+        "extend tool",
+        "capability",
+        "acceptance criteria",
+        "done condition",
+        "funktion",
+        "entwickeln"
+      ],
+      "source_refs": [
+        {
+          "label": "Local prompt-engineering schema",
+          "url": "schema/prompt_engineering_2026.json",
+          "authority": "project"
+        },
+        {
+          "label": "Local hook lifecycle schema",
+          "url": "schema/hook_lifecycle.json",
+          "authority": "project"
+        }
+      ],
+      "rules": [
+        "Start feature work with outcome, non-goals, target paths, evidence, output contract, validation and rollback posture.",
+        "Search the selected PROJECT_SCOPE for existing hooks, weights, references, operators and schema fields before adding new ones.",
+        "When schema is extended, keep arrays flat, id-addressable and backward-compatible.",
+        "Every generated/exported feature artifact must be represented in EXPORT_MANIFEST.json and prompt traceability files.",
+        "Do not claim a feature is implemented unless the changed files and validation result are listed."
+      ],
+      "guardrails": [
+        "Do not introduce a second routing mechanism when an existing hook/reference/weight can be extended.",
+        "Do not mutate user intent when wrapping prompts for feature development.",
+        "Do not widen scope from selected paths to full project unless the user explicitly requests it."
+      ]
+    }
+  ],
+  "operation_roles": [
+    {
+      "id": "develop_feature_operator",
+      "label": "Develop Feature Operator",
+      "category": "develop_features",
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated",
+        "assets"
+      ],
+      "applies_to_file_types": [
+        "py",
+        "js",
+        "ts",
+        "vue",
+        "scss",
+        "json",
+        "md",
+        "data_table"
+      ],
+      "applies_to_profiles": [
+        "DevelopFeatures",
+        "Programming",
+        "Design",
+        "Refactor"
+      ],
+      "reference_domains": [
+        "develop_feature_reference",
+        "tool_wide_prompt_engineering_reference",
+        "structured_output_reference",
+        "search_and_fix_reference"
+      ],
+      "rules": [
+        "Translate the requested feature into a small implementation slice with a clear stop condition.",
+        "Use existing schema ids and generator functions before creating new abstractions.",
+        "Preserve running behavior and unknown JSON fields.",
+        "Record generated/exported files in manifests and reports.",
+        "If validation cannot run, state exactly which check was skipped and why."
+      ],
+      "validation_focus": [
+        "schema JSON parses",
+        "operator prompt still resolves variables",
+        "manifest lists generated/exported artifacts",
+        "search expansion terminates under configured caps"
+      ]
+    }
+  ],
+  "hooks": [
+    {
+      "id": "develop_feature_gate",
+      "label": "Develop Feature Gate",
+      "lifecycle_phase": "01_classify_task",
+      "priority": 91,
+      "target_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated",
+        "assets"
+      ],
+      "ai_targets": [
+        "ChatGPT",
+        "Codex",
+        "WebAgent"
+      ],
+      "boilerplate_profiles": [
+        "DevelopFeatures",
+        "Programming",
+        "Design",
+        "Refactor"
+      ],
+      "file_types": [
+        "py",
+        "js",
+        "ts",
+        "vue",
+        "scss",
+        "json",
+        "md",
+        "data_table"
+      ],
+      "weight_profile": "develop_feature_standard",
+      "weight_operator": "develop_feature_operator",
+      "inject_into": [
+        "ACTIVE_REFERENCE_DOMAINS",
+        "ACTIVE_OPERATION_ROLES",
+        "ACTIVE_WEIGHT_TABLE",
+        "VALIDATION_POSTURE"
+      ],
+      "rules": [
+        "Before implementation, identify the smallest coherent feature slice and the exact project scope.",
+        "Search existing schema/routing structures before adding new hooks, weights or references.",
+        "Every feature output must leave a manifest/audit trail under output/export."
+      ]
+    },
+    {
+      "id": "export_manifest_required_gate",
+      "label": "Export Manifest Required Gate",
+      "lifecycle_phase": "06_validate_output",
+      "priority": 96,
+      "target_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated",
+        "assets"
+      ],
+      "ai_targets": [
+        "ChatGPT",
+        "Codex",
+        "WebAgent"
+      ],
+      "boilerplate_profiles": [
+        "DevelopFeatures",
+        "PromptEngineering",
+        "ContextEngineering",
+        "Programming",
+        "Refactor"
+      ],
+      "file_types": [
+        "json",
+        "md",
+        "py",
+        "js",
+        "ts"
+      ],
+      "weight_profile": "export_traceability_standard",
+      "weight_operator": "export_manifest_operator",
+      "inject_into": [
+        "VALIDATION_POSTURE",
+        "EXPORT_MANIFEST",
+        "PROMPT_MANIFEST"
+      ],
+      "rules": [
+        "Treat EXPORT_MANIFEST.json as required for every generation/export run.",
+        "ZIP exports must include EXPORT_MANIFEST.json inside the ZIP and write the same sidecar next to the ZIP.",
+        "Prompt traceability files must stay in output/export and be listed by the manifest."
+      ]
+    },
+    {
+      "id": "search_performance_guard_gate",
+      "label": "Search Performance Guard Gate",
+      "lifecycle_phase": "04_apply_weights",
+      "priority": 94,
+      "target_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated",
+        "assets"
+      ],
+      "ai_targets": [
+        "ChatGPT",
+        "Codex",
+        "WebAgent"
+      ],
+      "boilerplate_profiles": [
+        "DevelopFeatures",
+        "Debugging",
+        "Refactor",
+        "Programming"
+      ],
+      "file_types": [
+        "py",
+        "js",
+        "ts",
+        "vue",
+        "scss",
+        "json",
+        "md"
+      ],
+      "weight_profile": "search_performance_standard",
+      "weight_operator": "search_performance_operator",
+      "inject_into": [
+        "PROJECT_SCOPE",
+        "VALIDATION_POSTURE",
+        "ACTIVE_WEIGHT_OPERATORS"
+      ],
+      "rules": [
+        "Use pruned tree scans instead of broad recursive globbing for metadata and import discovery.",
+        "Cap recursive import expansion and dedupe pending work before enqueueing new paths.",
+        "Do not trigger import expansion repeatedly from GUI selection events when cached results are available."
+      ]
+    }
+  ],
+  "weight_table": [
+    {
+      "id": "develop_feature_standard",
+      "label": "Develop Feature Standard",
+      "ai_targets": [
+        "ChatGPT",
+        "Codex",
+        "WebAgent"
+      ],
+      "applies_to_hooks": [
+        "develop_feature_gate"
+      ],
+      "weights": {
+        "outcome_clarity": 10,
+        "scope_control": 10,
+        "minimal_reversible_change": 9,
+        "schema_compatibility": 10,
+        "validation_traceability": 10,
+        "performance_awareness": 8
+      },
+      "rules": [
+        "A feature is not done until output contract, changed files, generated artifacts and validation posture are explicit.",
+        "Prefer extending existing hook/weight/reference arrays over adding parallel structures."
+      ]
+    },
+    {
+      "id": "export_traceability_standard",
+      "label": "Export Traceability Standard",
+      "ai_targets": [
+        "ChatGPT",
+        "Codex",
+        "WebAgent"
+      ],
+      "applies_to_hooks": [
+        "export_manifest_required_gate"
+      ],
+      "weights": {
+        "manifest_required": 10,
+        "zip_self_description": 10,
+        "audit_file_presence": 10,
+        "path_policy": 10
+      },
+      "rules": [
+        "Every exportable artifact must be discoverable from EXPORT_MANIFEST.json.",
+        "Generated prompt audit files are export artifacts, not optional extras."
+      ]
+    },
+    {
+      "id": "search_performance_standard",
+      "label": "Search Performance Standard",
+      "ai_targets": [
+        "ChatGPT",
+        "Codex",
+        "WebAgent"
+      ],
+      "applies_to_hooks": [
+        "search_performance_guard_gate"
+      ],
+      "weights": {
+        "scan_pruning": 10,
+        "dedupe_before_enqueue": 10,
+        "bounded_recursion": 10,
+        "cache_reuse": 9,
+        "gitignore_respect": 10
+      },
+      "rules": [
+        "Search should become narrower with each step; repeated full-tree scans are a bug unless explicitly requested.",
+        "Large dependency/build/cache directories are evidence noise and must be pruned."
+      ]
+    }
+  ],
+  "weight_operators": [
+    {
+      "id": "develop_feature_operator",
+      "label": "Develop Feature Weight Operator",
+      "applies_to_file_types": [
+        "py",
+        "js",
+        "ts",
+        "vue",
+        "scss",
+        "json",
+        "md",
+        "data_table"
+      ],
+      "applies_to_profiles": [
+        "DevelopFeatures",
+        "Programming",
+        "Design",
+        "Refactor"
+      ],
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated",
+        "assets"
+      ],
+      "minimal_change_bias": 9,
+      "risk_sensitivity": 8,
+      "evidence_required": 9,
+      "schema_compatibility": 10,
+      "manifest_traceability": 10,
+      "human_clarity": 9,
+      "rules": [
+        "Convert feature requests into a small, testable change slice.",
+        "Patch schema and generator behavior together when routing output depends on both.",
+        "Keep new ids stable, flat and grep-friendly."
+      ],
+      "source_ids": [
+        "develop_feature_reference"
+      ]
+    },
+    {
+      "id": "export_manifest_operator",
+      "label": "Export Manifest Operator",
+      "applies_to_file_types": [
+        "json",
+        "md"
+      ],
+      "applies_to_profiles": [
+        "DevelopFeatures",
+        "PromptEngineering",
+        "ContextEngineering",
+        "Programming",
+        "Refactor"
+      ],
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated",
+        "assets"
+      ],
+      "minimal_change_bias": 9,
+      "risk_sensitivity": 9,
+      "evidence_required": 10,
+      "manifest_traceability": 10,
+      "rules": [
+        "Write EXPORT_MANIFEST.json for generation-only and ZIP export runs.",
+        "Include EXPORT_MANIFEST.json inside ZIP exports, not only as an external sidecar.",
+        "List prompt/audit/report artifacts explicitly."
+      ],
+      "source_ids": [
+        "develop_feature_reference"
+      ]
+    },
+    {
+      "id": "search_performance_operator",
+      "label": "Search Performance Operator",
+      "applies_to_file_types": [
+        "py",
+        "js",
+        "ts",
+        "vue",
+        "scss",
+        "json",
+        "md"
+      ],
+      "applies_to_profiles": [
+        "DevelopFeatures",
+        "Debugging",
+        "Refactor",
+        "Programming"
+      ],
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated",
+        "assets"
+      ],
+      "minimal_change_bias": 8,
+      "risk_sensitivity": 8,
+      "evidence_required": 8,
+      "performance_sensitivity": 10,
+      "loop_resistance": 10,
+      "rules": [
+        "Replace repeated full recursive scans with one pruned index where possible.",
+        "Skip dependency/build/cache/export folders before walking into them.",
+        "Bound import recursion and cache GUI expansion results."
+      ],
+      "source_ids": [
+        "develop_feature_reference"
+      ]
+    }
+  ]
+}

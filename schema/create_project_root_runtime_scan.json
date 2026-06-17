@@ -1,0 +1,39 @@
+{
+  "schema_id": "create_project_root_runtime_hints_from_project_tree_scan",
+  "purpose": "Derive Node/NVM and Gradle runtime hints after the existing Project Tree scan completes; do not run a second root scanner.",
+  "controls": [
+    {
+      "id": "project_root_runtime_hints_from_existing_scan",
+      "label": "Project Root Runtime Hints from Project Tree Scan",
+      "scope": "Start Project Root / Project Tree scan -> Create header runtime fields",
+      "value_type": "existing_scan_result_adapter",
+      "scan_policy": "Reuse build_project_scope / Project Tree scan results. Inspect only marker files already present in file_references, such as .nvmrc, .node-version, package.json, gradle-wrapper.properties, settings.gradle, build.gradle, gradlew and gradlew.bat.",
+      "ui_policy": "Do not start a second filesystem crawl. Project Tree scan remains the only scan entrypoint and reports through the shared loadingbar/progress status."
+    }
+  ],
+  "boilerplates": [
+    {
+      "id": "project_root_runtime_hints_from_existing_scan_boilerplate",
+      "contract": [
+        "When Start Project Root / Working Tree changes, call the existing Project Tree scan path.",
+        "After that scan completes, derive runtime hints from the returned scope file_references.",
+        "Do not execute project build commands while deriving hints.",
+        "Resolve Node/NVM from .nvmrc, .node-version or package.json engines when those files are already in the scope.",
+        "Resolve Gradle from gradle-wrapper.properties or existing Gradle markers when those files are already in the scope.",
+        "Apply detected values to Create header runtime fields and dependency/compiler rows."
+      ]
+    }
+  ],
+  "operation_roles": [
+    {
+      "id": "create_project_root_runtime_hint_operator",
+      "label": "Create Project Root Runtime Hint Operator",
+      "behavior": [
+        "Treat the Project Tree scan as the point of truth for Start Project Root runtime evidence.",
+        "Do not introduce parallel scanners for the same root-change event.",
+        "Prefer project-declared runtime versions over broad system guessing.",
+        "Never infer shell execution commands from runtime marker files."
+      ]
+    }
+  ]
+}

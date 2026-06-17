@@ -1,0 +1,291 @@
+{
+  "special_routines": [
+    {
+      "id": "inject_validation_footer",
+      "label": "Inject Validation Footer",
+      "enabled": true,
+      "target_hook_ids": [
+        "codex_never_touch_running_system",
+        "backend_queue_guard",
+        "frontend_design_guard"
+      ],
+      "injection_point": "after_boilerplate",
+      "target_path_types": [
+        "backend",
+        "frontend",
+        "generated"
+      ],
+      "ai_targets": [
+        "Codex",
+        "ChatGPT"
+      ],
+      "boilerplate_profiles": [
+        "Programming",
+        "Refactor",
+        "Debugging"
+      ],
+      "rules": [
+        "Append validation commands to every generated module response.",
+        "Mention exact checks required by the active path type."
+      ],
+      "steps": []
+    },
+    {
+      "id": "inject_no_duplication_guard",
+      "label": "Inject No Duplication Guard",
+      "enabled": true,
+      "target_hook_ids": [
+        "wrapper_delegate_exact_target",
+        "backend_queue_guard",
+        "frontend_design_guard"
+      ],
+      "injection_point": "before_boilerplate",
+      "target_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated"
+      ],
+      "ai_targets": [
+        "ChatGPT",
+        "Codex",
+        "WebAgent"
+      ],
+      "boilerplate_profiles": [
+        "Programming",
+        "Refactor",
+        "Debugging",
+        "Design"
+      ],
+      "rules": [
+        "Search for an existing module first.",
+        "Do not create duplicates.",
+        "Prefer extension over parallel implementation."
+      ],
+      "steps": []
+    },
+    {
+      "id": "inject_create_context_build_timeline",
+      "label": "Inject Terminal Timeline Checklist",
+      "enabled": true,
+      "target_hook_ids": [
+        "create_tab_contract_gate",
+        "create_context_build_timeline_gate",
+        "dependency_swap_gate"
+      ],
+      "injection_point": "after_boilerplate",
+      "target_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "ai_targets": [
+        "ChatGPT",
+        "Codex",
+        "WebAgent"
+      ],
+      "boilerplate_profiles": [
+        "Create"
+      ],
+      "rules": [
+        "Add a short Output Timeline section to Create responses.",
+        "Show dependency manifest targets next to install/build commands.",
+        "State whether validation was run, not run or blocked by missing evidence.",
+        "Keep rollback simple: remove generated target path or revert listed changed files."
+      ],
+      "steps": []
+    },
+    {
+      "id": "project_to_markdown_micro_task",
+      "label": "Project to Markdown Micro Task",
+      "enabled": true,
+      "target_hook_ids": [
+        "micro_tasks_tab_gate",
+        "project_scope_tree_gate"
+      ],
+      "injection_point": "MICRO_TASKS_TAB",
+      "target_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "ai_targets": [
+        "ChatGPT",
+        "Codex"
+      ],
+      "boilerplate_profiles": [
+        "MicroTasks",
+        "Create"
+      ],
+      "rules": [
+        "Read project scope through build_project_scope().",
+        "Write PROJECT_TREE.md to the selected export folder.",
+        "Do not modify source files."
+      ],
+      "steps": []
+    },
+    {
+      "id": "create_terminal_timeline_compile_run",
+      "label": "Create Terminal Timeline Compile/Run",
+      "enabled": true,
+      "target_hook_ids": [
+        "create_working_path_gate",
+        "terminal_timeline_compile_gate"
+      ],
+      "injection_point": "CREATE_TAB_TERMINAL",
+      "target_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated"
+      ],
+      "ai_targets": [
+        "Codex"
+      ],
+      "boilerplate_profiles": [
+        "TerminalTimeline",
+        "CreatePipeline",
+        "Create"
+      ],
+      "rules": [
+        "Compile known timeline tokens before running.",
+        "Run only after user confirmation.",
+        "Use the Create working path as cwd and stop on non-zero exit.",
+        "Start a persistent OS shell session in the Terminal tab before execution.",
+        "Write compiled commands to a create-only terminal script and run that script inside the live session.",
+        "Keep Create working path, Create target path and Create-only export path visible in the terminal log."
+      ],
+      "steps": []
+    },
+    {
+      "id": "create_isolated_export_contract",
+      "label": "Create Isolated Export Contract",
+      "enabled": true,
+      "target_hook_ids": [
+        "create_isolated_export_gate"
+      ],
+      "injection_point": "CREATE_EXPORT_CONTRACT",
+      "target_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "ai_targets": [
+        "ChatGPT",
+        "Codex"
+      ],
+      "boilerplate_profiles": [
+        "CreatePipeline",
+        "Create"
+      ],
+      "rules": [
+        "Create-only export dir is separate from Generator export dir.",
+        "Create artifacts are excluded from other tabs by default.",
+        "Existing references remain reusable by Create via reference selection."
+      ],
+      "steps": []
+    },
+    {
+      "id": "compile_create_temp_preview_tree",
+      "label": "Compile Create Temp Preview Tree",
+      "enabled": true,
+      "target_hook_ids": [
+        "create_project_tree_preview_gate"
+      ],
+      "injection_point": "before_terminal_run",
+      "target_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "ai_targets": [
+        "ChatGPT",
+        "Codex"
+      ],
+      "boilerplate_profiles": [
+        "Create",
+        "ProjectTreePreview"
+      ],
+      "rules": [
+        "Write preview output to temp only during Compile.",
+        "Delete temp preview on close/reopen/worktree switch.",
+        "Apply preview to working path only via checked timeline Run."
+      ],
+      "steps": []
+    },
+    {
+      "id": "refresh_create_timeline_checkboxes",
+      "label": "Refresh Create Timeline Checkboxes",
+      "enabled": true,
+      "target_hook_ids": [
+        "create_timeline_checkbox_gate"
+      ],
+      "injection_point": "compile_timeline",
+      "target_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated"
+      ],
+      "ai_targets": [
+        "ChatGPT",
+        "Codex"
+      ],
+      "boilerplate_profiles": [
+        "Create",
+        "TimelineCheckboxControl"
+      ],
+      "rules": [
+        "Regenerate checkbox list from stack timeline and dependency rows.",
+        "Preserve user unchecked state unless stack is reinjected.",
+        "Execute checked steps only."
+      ],
+      "steps": []
+    },
+    {
+      "id": "create_runtime_stop_and_progress",
+      "label": "Create Runtime Stop and Progress",
+      "enabled": true,
+      "target_hook_ids": [
+        "create_timeline_stop_gate",
+        "create_terminal_progress_gate"
+      ],
+      "injection_point": "create_terminal_runtime",
+      "target_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated"
+      ],
+      "ai_targets": [
+        "ChatGPT",
+        "Codex"
+      ],
+      "boilerplate_profiles": [
+        "Create",
+        "Programming",
+        "Debugging"
+      ],
+      "rules": [
+        "Expose Stop for timeline execution.",
+        "Update global progress from terminal output.",
+        "Keep pending steps unchecked after abort."
+      ],
+      "steps": [
+        "join_temp_terminal",
+        "compile_pending_timeline",
+        "run_pending_steps",
+        "mark_completed_steps",
+        "stop_without_marking_current_step"
+      ]
+    }
+  ]
+}

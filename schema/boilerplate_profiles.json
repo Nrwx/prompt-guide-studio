@@ -1,0 +1,837 @@
+{
+  "boilerplate_profiles": [
+    {
+      "id": "Debugging",
+      "label": "Debugging",
+      "purpose": "Find, isolate and fix defects without unnecessary rewrites.",
+      "keywords": [
+        "debug",
+        "debugging",
+        "bug",
+        "error",
+        "traceback",
+        "problem",
+        "broken",
+        "fix"
+      ],
+      "allowed_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "rules": [
+        "Reproduce the problem before changing architecture.",
+        "Prefer targeted logs and assertions over broad refactors.",
+        "Never log secrets."
+      ],
+      "default_enabled": true
+    },
+    {
+      "id": "Design",
+      "label": "Design",
+      "purpose": "Improve UI, UX, visual consistency and editor workflow.",
+      "keywords": [
+        "design",
+        "ui",
+        "ux",
+        "layout",
+        "style",
+        "component",
+        "colors",
+        "editor workflow"
+      ],
+      "allowed_path_types": [
+        "wrapper",
+        "frontend",
+        "assets"
+      ],
+      "rules": [
+        "Preserve editor state and user workflow.",
+        "Reuse Vue and Vuetify conventions for frontend.",
+        "Do not add design-only dependencies unless requested."
+      ],
+      "default_enabled": true
+    },
+    {
+      "id": "Programming",
+      "label": "Programming",
+      "purpose": "Create new project-compatible implementation or boilerplate.",
+      "keywords": [
+        "program",
+        "programming",
+        "implement",
+        "create",
+        "add",
+        "feature",
+        "module",
+        "endpoint",
+        "component"
+      ],
+      "allowed_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated"
+      ],
+      "rules": [
+        "Search existing code before generating files.",
+        "Generate the smallest useful boilerplate.",
+        "Keep backend, frontend, generated and assets concerns separated."
+      ],
+      "default_enabled": true
+    },
+    {
+      "id": "Refactor",
+      "label": "Refactor",
+      "purpose": "Improve structure while preserving behavior.",
+      "keywords": [
+        "refactor",
+        "restructure",
+        "clean up",
+        "optimize",
+        "simplify",
+        "split",
+        "move"
+      ],
+      "allowed_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated"
+      ],
+      "rules": [
+        "Preserve public behavior.",
+        "Preserve imports, routes, method_map keys and build compatibility.",
+        "Keep refactors minimal and reversible."
+      ],
+      "default_enabled": true
+    },
+    {
+      "id": "Visual3D",
+      "label": "Visual 3D",
+      "purpose": "3D, materials, scene assets, Blender/ThreeJS/WebGL/NVIDIA-style visual work.",
+      "keywords": [
+        "3d",
+        "blender",
+        "threejs",
+        "webgl",
+        "webgl2",
+        "material",
+        "principled bsdf",
+        "pbr",
+        "nvidia",
+        "omniverse",
+        "usd",
+        "gltf",
+        "glb"
+      ],
+      "allowed_path_types": [
+        "wrapper",
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "default_enabled": false,
+      "rules": [
+        "Route 3D work through active visual references before generating code.",
+        "Preserve source assets and material semantics.",
+        "Separate geometry, material, texture and renderer concerns."
+      ]
+    },
+    {
+      "id": "Visual2D",
+      "label": "Visual 2D / Illustration",
+      "purpose": "2D design, illustration, Photoshop layers, visual references and redesign work.",
+      "keywords": [
+        "2d",
+        "illustration",
+        "photoshop",
+        "layer",
+        "layers",
+        "redesign",
+        "style reference",
+        "image"
+      ],
+      "allowed_path_types": [
+        "wrapper",
+        "frontend",
+        "assets"
+      ],
+      "default_enabled": false,
+      "rules": [
+        "Treat visual references as constraints, not as random inspiration.",
+        "Preserve layer/source asset intent.",
+        "Keep redesign work scoped to selected files/components."
+      ]
+    },
+    {
+      "id": "Marketing",
+      "label": "Marketing / Conversion",
+      "purpose": "Marketing copy, conversion logic, claims, positioning and revenue-sensitive UI.",
+      "keywords": [
+        "marketing",
+        "conversion",
+        "sales",
+        "landing",
+        "campaign",
+        "cta",
+        "revenue",
+        "pricing",
+        "copy"
+      ],
+      "allowed_path_types": [
+        "wrapper",
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "default_enabled": false,
+      "rules": [
+        "Do not invent performance claims or revenue numbers.",
+        "Separate measurable facts from hypotheses.",
+        "Prefer testable conversion changes over vague persuasion."
+      ]
+    },
+    {
+      "id": "Mathematics",
+      "label": "Mathematics Correctness",
+      "purpose": "Math-heavy logic, formulas, calculations, validation and numerical correctness.",
+      "keywords": [
+        "math",
+        "formula",
+        "calculation",
+        "correctness",
+        "statistics",
+        "probability",
+        "unit",
+        "numeric"
+      ],
+      "allowed_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated"
+      ],
+      "default_enabled": false,
+      "rules": [
+        "State assumptions and units.",
+        "Check edge cases and rounding.",
+        "Do not hide approximations as exact results."
+      ]
+    },
+    {
+      "id": "Business",
+      "label": "Business / Economics / Revenue",
+      "purpose": "Business logic, economics, Umsatz/revenue correctness, pricing, reporting and financial reasoning.",
+      "keywords": [
+        "business",
+        "economics",
+        "revenue",
+        "umsatz",
+        "profit",
+        "margin",
+        "pricing",
+        "invoice",
+        "tax",
+        "forecast"
+      ],
+      "allowed_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated"
+      ],
+      "default_enabled": false,
+      "rules": [
+        "Never fabricate financial data.",
+        "Keep currency, tax, gross/net and period boundaries explicit.",
+        "Use auditable formulas for revenue-sensitive calculations."
+      ]
+    },
+    {
+      "id": "Translation",
+      "label": "Project Tree Translation",
+      "purpose": "Translate selected project trees, docs, labels and UI copy without corrupting code/config semantics.",
+      "keywords": [
+        "translate",
+        "translation",
+        "i18n",
+        "localization",
+        "locale",
+        "language",
+        "deutsch",
+        "english"
+      ],
+      "allowed_path_types": [
+        "wrapper",
+        "frontend",
+        "backend",
+        "assets",
+        "generated"
+      ],
+      "default_enabled": false,
+      "rules": [
+        "Translate human-facing text only unless explicitly asked.",
+        "Preserve identifiers, paths, keys, commands and schema ids.",
+        "Respect selected PROJECT_SCOPE as the translation boundary."
+      ]
+    },
+    {
+      "id": "Compliance",
+      "label": "Compliance / Legal Metrology",
+      "purpose": "Regulatory, WELMEC/PTB-inspired guardrails for legal metrology or audit-sensitive software.",
+      "keywords": [
+        "welmec",
+        "ptb",
+        "legal metrology",
+        "messwesen",
+        "risk class",
+        "software separation",
+        "conformity"
+      ],
+      "allowed_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated",
+        "assets"
+      ],
+      "default_enabled": false,
+      "rules": [
+        "Do not claim legal compliance from generated rules alone.",
+        "Separate legally relevant and non-relevant software concerns when applicable.",
+        "Keep audit trails and validation evidence explicit."
+      ]
+    },
+    {
+      "id": "LegalMetrologySoftware",
+      "label": "Legal Metrology Software",
+      "purpose": "PTB/WELMEC-inspired software guardrails for measuring instruments without claiming conformity.",
+      "keywords": [
+        "ptb",
+        "welmec",
+        "messwesen",
+        "metrological software",
+        "measuring instrument",
+        "software identification",
+        "legally relevant software"
+      ],
+      "allowed_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated",
+        "assets"
+      ],
+      "default_enabled": false,
+      "rules": [
+        "Separate legally relevant and legally non-relevant software when the scope contains measuring-instrument software.",
+        "Require explicit software identification, traceability and validation evidence.",
+        "Do not claim legal conformity, certification or type approval from generated rules alone."
+      ]
+    },
+    {
+      "id": "PTBDocumentation",
+      "label": "PTB Documentation Evidence",
+      "purpose": "Documentation requirements derived from PTB Working Group 8.51 leaflets.",
+      "keywords": [
+        "MB01",
+        "software documentation",
+        "conformity assessment",
+        "documentation checklist",
+        "PTB 8.51"
+      ],
+      "allowed_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated",
+        "assets"
+      ],
+      "default_enabled": false,
+      "rules": [
+        "Documents need stable identifiers, versions, page/section references and clear language scope.",
+        "Record missing evidence instead of filling regulatory gaps with assumptions.",
+        "Keep user/operator/authority-facing documentation language requirements visible."
+      ]
+    },
+    {
+      "id": "PTBRisk",
+      "label": "PTB Risk Assessment",
+      "purpose": "Risk-assessment guardrails for measuring instruments, assets, threats and risk classes.",
+      "keywords": [
+        "MB04",
+        "risk assessment",
+        "WELMEC 7.6",
+        "risk class",
+        "assets",
+        "generic threats",
+        "type-specific threats"
+      ],
+      "allowed_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated",
+        "assets"
+      ],
+      "default_enabled": false,
+      "rules": [
+        "Treat risk class as provided evidence or an explicit assumption.",
+        "Separate generic threats from type-specific threats.",
+        "Map assets, security properties, mitigations and residual validation gaps explicitly."
+      ]
+    },
+    {
+      "id": "PTBSecurity",
+      "label": "PTB Security / Crypto / Time / OS",
+      "purpose": "Guardrails for operating-system configuration, live media, time management and cryptographic modules.",
+      "keywords": [
+        "MB05",
+        "MB08",
+        "MB09",
+        "MB10",
+        "cryptographic modules",
+        "NTP",
+        "NTS",
+        "chain of trust",
+        "live media",
+        "operating system"
+      ],
+      "allowed_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated",
+        "assets"
+      ],
+      "default_enabled": false,
+      "rules": [
+        "Document chain of trust, protected interfaces, key handling and time-source assumptions.",
+        "Do not infer cryptographic strength or legal time traceability without evidence.",
+        "Prefer explicit configuration evidence over generic security claims."
+      ]
+    },
+    {
+      "id": "PTBUpdateLifecycle",
+      "label": "PTB Update / CRA Lifecycle",
+      "purpose": "Guardrails for software updates, software separation and CRA-driven change handling.",
+      "keywords": [
+        "MB06",
+        "MB07",
+        "MB12",
+        "software updates",
+        "software separation",
+        "CRA",
+        "CVE",
+        "certificate revision"
+      ],
+      "allowed_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated",
+        "assets"
+      ],
+      "default_enabled": false,
+      "rules": [
+        "Classify change impact before recommending update behavior.",
+        "Separate legally relevant and non-relevant update paths.",
+        "Record certificates, authority approval assumptions and CVE/security-vulnerability context where applicable."
+      ]
+    },
+    {
+      "id": "Create",
+      "label": "Create / Stack Blueprint",
+      "purpose": "Create a new project abstraction or feature from a configurable stack contract.",
+      "keywords": [
+        "create",
+        "boilerplate",
+        "stack",
+        "scaffold",
+        "new project",
+        "feature",
+        "dependencies",
+        "setup hooks"
+      ],
+      "allowed_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "rules": [
+        "Define outcome, non-goals, target path, dependencies, references, weights, validation and rollback before proposing files.",
+        "Use existing project evidence and selected Project Tree scope before creating new abstractions.",
+        "Keep dependencies swappable and explicitly documented."
+      ],
+      "default_enabled": false
+    },
+    {
+      "id": "CleanProject",
+      "label": "Clean Project",
+      "purpose": "Keep generated output, dependencies, caches and source evidence separated.",
+      "keywords": [
+        "clean project",
+        "cleanup",
+        "clean",
+        "noise",
+        "cache",
+        "build folder",
+        "export"
+      ],
+      "allowed_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "rules": [
+        "Remove or exclude generated/cache/build noise from AI context and export unless explicitly requested.",
+        "Never delete source evidence blindly.",
+        "Document what is included, excluded and why."
+      ],
+      "default_enabled": false
+    },
+    {
+      "id": "DoNotNormalize",
+      "label": "Do Not Normalize",
+      "purpose": "Preserve authoritative domain terms, units, identifiers and legal wording instead of simplifying them into generic labels.",
+      "keywords": [
+        "do not normalize",
+        "do not normalize",
+        "preserve wording",
+        "source truth",
+        "units",
+        "law",
+        "physics",
+        "welmec"
+      ],
+      "allowed_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "rules": [
+        "Do not rename or flatten domain-specific terms without explicit mapping.",
+        "Preserve legal wording, units, formulas, IDs and file names when they are source truth.",
+        "When normalization is necessary for code, document the reversible mapping."
+      ],
+      "default_enabled": false
+    },
+    {
+      "id": "ProfessionalSolutionEngineering",
+      "label": "Professional Solution Engineering",
+      "purpose": "Engineer complete but bounded implementation slices with traceability, validation and rollback.",
+      "keywords": [
+        "professional solution",
+        "engineering",
+        "architecture",
+        "best practice",
+        "production",
+        "stack"
+      ],
+      "allowed_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "rules": [
+        "Prefer boring, maintainable architecture over clever rewrites.",
+        "Define interfaces, dependency seams, tests and observability at the smallest useful scale.",
+        "Every solution needs changed files, artifacts, validation posture and rollback point."
+      ],
+      "default_enabled": false
+    },
+    {
+      "id": "BlenderManuals",
+      "label": "Blender Manuals",
+      "purpose": "Route Blender and bpy work through official Blender manual/API references.",
+      "keywords": [
+        "blender",
+        "bpy",
+        "addon",
+        "mesh",
+        "material",
+        "geometry nodes",
+        "shader"
+      ],
+      "allowed_path_types": [
+        "wrapper",
+        "assets",
+        "generated",
+        "backend"
+      ],
+      "rules": [
+        "Use Blender Manual and Python API as the source of truth.",
+        "State Blender version, unit scale, coordinate and material assumptions."
+      ],
+      "default_enabled": false
+    },
+    {
+      "id": "UnityManuals",
+      "label": "Unity Manuals",
+      "purpose": "Route Unity/C# stack work through official Unity Manual and package documentation.",
+      "keywords": [
+        "unity",
+        "c#",
+        "csharp",
+        "gameobject",
+        "monobehaviour",
+        "scriptableobject",
+        "urp",
+        "hdrp"
+      ],
+      "allowed_path_types": [
+        "wrapper",
+        "frontend",
+        "assets",
+        "generated",
+        "backend"
+      ],
+      "rules": [
+        "Use official Unity Manual/API as the source of truth.",
+        "Respect Unity folder/package/assembly conventions when evidence exists."
+      ],
+      "default_enabled": false
+    },
+    {
+      "id": "CppManuals",
+      "label": "C++ Manuals",
+      "purpose": "Route C++ stack work through standard-library and build-boundary references.",
+      "keywords": [
+        "c++",
+        "cpp",
+        "cmake",
+        "standard library",
+        "container",
+        "algorithm",
+        "math"
+      ],
+      "allowed_path_types": [
+        "wrapper",
+        "backend",
+        "generated"
+      ],
+      "rules": [
+        "Prefer standard library facilities before dependencies.",
+        "Keep headers, source files and build/test configuration explicit."
+      ],
+      "default_enabled": false
+    },
+    {
+      "id": "GovernmentGermany",
+      "label": "Germany Government Manuals",
+      "purpose": "Route German law, economics, technical and official-statistics work through official government sources.",
+      "keywords": [
+        "germany",
+        "german law",
+        "gesetz",
+        "gesetze",
+        "destatis",
+        "economics",
+        "technical rules",
+        "trgs",
+        "trbs"
+      ],
+      "allowed_path_types": [
+        "wrapper",
+        "backend",
+        "generated"
+      ],
+      "rules": [
+        "Use official German government/public authority sources where available.",
+        "Do not provide legal advice; produce evidence-backed implementation or documentation guidance."
+      ],
+      "default_enabled": false
+    },
+    {
+      "id": "TechnicalPhysics3D",
+      "label": "Technical / Physics / 3D",
+      "purpose": "Preserve technical units, physical formulas and 3D coordinate/material semantics.",
+      "keywords": [
+        "physics",
+        "formula",
+        "math",
+        "3d",
+        "unit",
+        "coordinate",
+        "technical",
+        "engineering"
+      ],
+      "allowed_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "rules": [
+        "State units, coordinate systems and numerical assumptions.",
+        "Keep visual/material concepts separate from physics/math concepts unless explicitly linked."
+      ],
+      "default_enabled": false
+    },
+    {
+      "id": "MicroTasks",
+      "label": "Micro Tasks",
+      "purpose": "Route small local project operations such as Project to Markdown, dependency inspection and validation snapshots.",
+      "keywords": [
+        "micro task",
+        "mikro task",
+        "project to markdown",
+        "project tree",
+        "small operation",
+        "tool task"
+      ],
+      "allowed_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "rules": [
+        "A micro task must have one named output artifact, one validation posture and one rollback note.",
+        "Do not turn micro tasks into broad refactors or hidden scaffolding."
+      ],
+      "default_enabled": false
+    },
+    {
+      "id": "CreatePipeline",
+      "label": "Create Pipeline",
+      "purpose": "Route Create-tab work through working-path isolation, timeline compilation and Create-only export contracts.",
+      "keywords": [
+        "create pipeline",
+        "timeline",
+        "compile run",
+        "working path",
+        "create export",
+        "repository management"
+      ],
+      "allowed_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "rules": [
+        "Create has its own working path and export boundary.",
+        "Compile/Run may only use explicit timeline commands resolved from known tokens or reviewed user input."
+      ],
+      "default_enabled": false
+    },
+    {
+      "id": "TerminalTimeline",
+      "label": "Terminal Timeline",
+      "purpose": "Represent build/run commands as reviewable Windows/Linux terminal timeline steps.",
+      "keywords": [
+        "terminal",
+        "compile",
+        "run",
+        "timeline",
+        "windows",
+        "linux",
+        "shell"
+      ],
+      "allowed_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated"
+      ],
+      "rules": [
+        "Commands must be target-scoped and reviewable before execution.",
+        "Unresolved/descriptive timeline tokens must be skipped instead of guessed."
+      ],
+      "default_enabled": false
+    },
+    {
+      "id": "RepositoryManagement",
+      "label": "Repository Management",
+      "purpose": "Route repository creation/maintenance prompts through tree, manifest, dependency and export evidence.",
+      "keywords": [
+        "repository",
+        "repo management",
+        "export manifest",
+        "project tree",
+        "workspace"
+      ],
+      "allowed_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "rules": [
+        "Use project tree and manifests as evidence before generating repository operations.",
+        "Keep generated artifacts discoverable from EXPORT_MANIFEST.json."
+      ],
+      "default_enabled": false
+    },
+    {
+      "id": "ProjectTreePreview",
+      "label": "Project Tree Preview",
+      "description": "Create-tab temp tree preview with target-root mapping and safe apply-on-run behavior.",
+      "default_enabled": false,
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "keywords": [
+        "project tree",
+        "preview tree",
+        "temp clone",
+        "mapping"
+      ]
+    },
+    {
+      "id": "BoilerplateDependencyCRUD",
+      "label": "Boilerplate Dependency CRUD",
+      "description": "Editable dependency abstraction rows assigned to target manifests without mutating source schema.",
+      "default_enabled": false,
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated"
+      ],
+      "keywords": [
+        "dependency crud",
+        "boilerplate dependency",
+        "manifest mapping",
+        "swap dependencies"
+      ]
+    },
+    {
+      "id": "TimelineCheckboxControl",
+      "label": "Timeline Checkbox Control",
+      "description": "Checkbox-driven Create timeline where compile refreshes steps and run executes checked tasks only.",
+      "default_enabled": false,
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated"
+      ],
+      "keywords": [
+        "timeline checkbox",
+        "compile timeline",
+        "run selected hooks"
+      ]
+    }
+  ]
+}

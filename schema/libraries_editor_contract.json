@@ -1,0 +1,155 @@
+{
+  "library_editor_contract": [
+    {
+      "id": "libraries_editor_not_generation_input",
+      "label": "Libraries Editor boundary",
+      "scope": "hooks_weights_references_roles",
+      "point_of_truth": [
+        "generator_targets",
+        "create_mode_config",
+        "create_stack_config",
+        "schema_routing"
+      ],
+      "editor_only_sections": [
+        "hooks",
+        "weight_table",
+        "weight_operators",
+        "reference_domains",
+        "operation_roles",
+        "plugin_reference_entries"
+      ],
+      "rules": [
+        "Libraries Editor selections may preview or load JSON records only.",
+        "Generator, Prompt Builder and Worktree Export must not read Libraries Editor checkbox state as active routing input.",
+        "Create Export may use references and roles from its resolved Create config because that config is produced by mode, stack, target match and schema contracts.",
+        "Targets, file types, boilerplate profiles and detected project evidence activate references and operation roles through schema matching.",
+        "Strict routing is allowed only for generator-pinned or Create-config-pinned IDs, never for editor preview selection."
+      ],
+      "validation_focus": [
+        "No call from Generator/Prompt/Worktree Export to _selected_reference_ids or _selected_operation_role_ids.",
+        "Libraries Editor can still preview/edit selected records without mutating target routing.",
+        "PROCESS_LOG and metadata distinguish generator-pinned IDs from editor preview state."
+      ]
+    }
+  ],
+  "reference_domains": [
+    {
+      "id": "libraries_editor_boundary_reference",
+      "label": "Libraries Editor Boundary Reference",
+      "category": "tool_architecture",
+      "applies_to_path_types": [
+        "wrapper"
+      ],
+      "applies_to_file_types": [
+        "py",
+        "json",
+        "md"
+      ],
+      "applies_to_profiles": [
+        "RepositoryManagement",
+        "PromptEngineering",
+        "Create"
+      ],
+      "trigger_keywords": [
+        "libraries editor",
+        "hooks",
+        "weights",
+        "references",
+        "roles",
+        "point of truth",
+        "generator targets"
+      ],
+      "rules": [
+        "Treat hooks, weights, references and roles tabs as library editors, not prompt routing selectors.",
+        "Use Generator targets and Create config as routing authority.",
+        "Do not mirror Create routing into editor checkbox state."
+      ],
+      "guardrails": [
+        "Editor-selected items are not active references by themselves.",
+        "Plugin/user entries remain data records until schema routing or target config activates them."
+      ]
+    }
+  ],
+  "operation_roles": [
+    {
+      "id": "libraries_editor_boundary_operator",
+      "label": "Libraries Editor Boundary Operator",
+      "category": "tool_architecture",
+      "reference_domains": [
+        "libraries_editor_boundary_reference"
+      ],
+      "applies_to_path_types": [
+        "wrapper"
+      ],
+      "applies_to_file_types": [
+        "py",
+        "json",
+        "md"
+      ],
+      "applies_to_profiles": [
+        "RepositoryManagement",
+        "PromptEngineering",
+        "Create"
+      ],
+      "rules": [
+        "Keep editor state and generation routing separate.",
+        "Validate that Generator/Prompt builds pass generator-pinned IDs only.",
+        "Validate that Create exports use resolved Create config references/roles, not Libraries Editor checkbox state."
+      ],
+      "validation_focus": [
+        "routing point of truth",
+        "editor state isolation",
+        "schema-backed activation"
+      ]
+    }
+  ],
+  "hooks": [
+    {
+      "id": "libraries_editor_boundary_gate",
+      "label": "Libraries Editor Boundary Gate",
+      "phase": "prompt_contract",
+      "weight_profile": "libraries_editor_boundary_standard",
+      "boilerplate_profiles": [
+        "RepositoryManagement",
+        "PromptEngineering",
+        "Create"
+      ],
+      "file_types": [
+        "py",
+        "json",
+        "md"
+      ],
+      "rules": [
+        "Reject generation paths that use Libraries Editor checkbox selections as active references or roles.",
+        "Allow editor selections only for preview/edit/load/apply operations."
+      ]
+    }
+  ],
+  "weight_table": [
+    {
+      "id": "libraries_editor_boundary_standard",
+      "label": "Libraries editor boundary standard",
+      "weights": {
+        "generator_target_authority": 10,
+        "editor_state_isolation": 10,
+        "schema_route_traceability": 9,
+        "backwards_compatible_preview": 7
+      },
+      "rules": [
+        "Generator targets and Create config outrank editor UI selections.",
+        "Library editor preview state must be excluded from export routing."
+      ]
+    }
+  ],
+  "weight_operators": [
+    {
+      "id": "libraries_editor_boundary_weight_operator",
+      "label": "Libraries Editor Boundary Weight Operator",
+      "weight_profile": "libraries_editor_boundary_standard",
+      "rules": [
+        "Score patches higher when routing authority is explicit and editor state stays isolated.",
+        "Score patches lower when checkboxes or preview selections leak into generation."
+      ]
+    }
+  ]
+}

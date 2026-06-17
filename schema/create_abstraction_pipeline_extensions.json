@@ -1,0 +1,240 @@
+{
+  "create_abstraction_pipeline_extensions": [
+    {
+      "id": "new_abstraction_visual_studio_utils",
+      "label": "Visual Studio Utils",
+      "mode": "new_project_abstraction",
+      "routine": "create_new_abstraction",
+      "category": "Create New Abstraction / Developer Tools",
+      "stack_category": "Create New Abstraction / Developer Tools",
+      "catalog_category": "Create New Abstraction / Developer Tools",
+      "group": "Create New Abstraction / Developer Tools",
+      "stack_node_id": "stack_visual_studio_utils",
+      "chain_boilerplate_id": "new_abstraction_visual_studio_utils",
+      "intent": "Creates a standalone new abstraction for Visual Studio utility tools with clear tool/extension boundary, manifest evidence and a small validatable start slice.",
+      "example_user_labels": [
+        "Visual Studio Utils"
+      ],
+      "output_contract": [
+        "utility_blueprint",
+        "tool_boundary",
+        "target_tree",
+        "dependency_layer",
+        "validation_plan",
+        "known_gaps"
+      ],
+      "validation_focus": [
+        "IDE/tool boundary",
+        "manifest evidence",
+        "local developer workflow",
+        "small utility slice"
+      ],
+      "handoff_rule": "After Build.complete, continue with feature_for_existing_project or refactor_existing_stack; do not model this as a Feature/Refactor plan."
+    },
+    {
+      "id": "new_abstraction_game_program",
+      "label": "Game Program",
+      "mode": "new_project_abstraction",
+      "routine": "create_new_abstraction",
+      "category": "Create New Abstraction / Game Tools",
+      "stack_category": "Create New Abstraction / Game Tools",
+      "catalog_category": "Create New Abstraction / Game Tools",
+      "group": "Create New Abstraction / Game Tools",
+      "stack_node_id": "stack_game_program",
+      "chain_boilerplate_id": "new_abstraction_game_program",
+      "intent": "Creates a standalone new game-program abstraction with engine/runtime boundary, asset flow, scene structure and a small playable or manually checkable start slice.",
+      "example_user_labels": [
+        "Game Program"
+      ],
+      "output_contract": [
+        "game_blueprint",
+        "runtime_boundary",
+        "asset_flow",
+        "target_tree",
+        "manual_test_plan",
+        "known_gaps"
+      ],
+      "validation_focus": [
+        "runtime/engine boundary",
+        "asset flow",
+        "manual playcheck point",
+        "small playable slice"
+      ],
+      "handoff_rule": "After Build.complete, continue with feature_for_existing_project or refactor_existing_stack; do not model this as a Feature/Refactor plan."
+    },
+    {
+      "id": "new_abstraction_pdf_program",
+      "label": "PDF Program",
+      "mode": "new_project_abstraction",
+      "routine": "create_new_abstraction",
+      "category": "Create New Abstraction / Document Tools",
+      "stack_category": "Create New Abstraction / Document Tools",
+      "catalog_category": "Create New Abstraction / Document Tools",
+      "group": "Create New Abstraction / Document Tools",
+      "stack_node_id": "stack_pdf_program",
+      "chain_boilerplate_id": "new_abstraction_pdf_program",
+      "intent": "Creates a standalone new PDF program abstraction for local PDF processing with clear file I/O, security and validation boundaries.",
+      "example_user_labels": [
+        "PDF Program"
+      ],
+      "output_contract": [
+        "pdf_program_blueprint",
+        "pdf_io_contract",
+        "target_tree",
+        "dependency_layer",
+        "validation_plan",
+        "known_gaps"
+      ],
+      "validation_focus": [
+        "local file safety",
+        "PDF IO contract",
+        "dependency evidence",
+        "manual file-processing validation"
+      ],
+      "handoff_rule": "After Build.complete, continue with feature_for_existing_project or refactor_existing_stack; do not model this as a Feature/Refactor plan."
+    },
+    {
+      "id": "new_abstraction_ai_prompt_image_editor",
+      "label": "AI Prompt Image Editing Tool",
+      "mode": "new_project_abstraction",
+      "routine": "create_new_abstraction",
+      "category": "Create New Abstraction / AI Image Tools",
+      "stack_category": "Create New Abstraction / AI Image Tools",
+      "catalog_category": "Create New Abstraction / AI Image Tools",
+      "group": "Create New Abstraction / AI Image Tools",
+      "stack_node_id": "stack_ai_prompt_image_editor",
+      "chain_boilerplate_id": "new_abstraction_ai_prompt_image_editor",
+      "intent": "Creates a standalone new abstraction for an AI Prompt Image Editing Tool with prompt, asset, adapter, UI and export boundaries.",
+      "example_user_labels": [
+        "AI Prompt Image Editing Tool"
+      ],
+      "output_contract": [
+        "image_editor_blueprint",
+        "prompt_asset_contract",
+        "adapter_boundary",
+        "target_tree",
+        "validation_plan",
+        "known_gaps"
+      ],
+      "validation_focus": [
+        "prompt/asset boundary",
+        "no invented AI service",
+        "local stub strategy",
+        "UI/export separation"
+      ],
+      "handoff_rule": "After Build.complete, continue with feature_for_existing_project or refactor_existing_stack; do not model this as a Feature/Refactor plan."
+    },
+    {
+      "id": "new_abstraction_3d_tool",
+      "label": "3D-Tool",
+      "mode": "new_project_abstraction",
+      "routine": "create_new_abstraction",
+      "category": "Create New Abstraction / 3D Tools",
+      "stack_category": "Create New Abstraction / 3D Tools",
+      "catalog_category": "Create New Abstraction / 3D Tools",
+      "group": "Create New Abstraction / 3D Tools",
+      "stack_node_id": "stack_3d_tool",
+      "chain_boilerplate_id": "new_abstraction_3d_tool",
+      "intent": "Creates a standalone new 3D tool abstraction with separate scene, asset, viewer/editor and export boundaries.",
+      "example_user_labels": [
+        "3D-Tool"
+      ],
+      "output_contract": [
+        "tool_3d_blueprint",
+        "scene_asset_contract",
+        "target_tree",
+        "dependency_layer",
+        "validation_plan",
+        "known_gaps"
+      ],
+      "validation_focus": [
+        "3D runtime boundary",
+        "scene/asset contract",
+        "preview validation",
+        "small start slice"
+      ],
+      "handoff_rule": "After Build.complete, continue with feature_for_existing_project or refactor_existing_stack; do not model this as a Feature/Refactor plan."
+    },
+    {
+      "id": "new_abstraction_blender_viewer",
+      "label": "Blender-Viewer",
+      "mode": "new_project_abstraction",
+      "routine": "create_new_abstraction",
+      "category": "Create New Abstraction / Blender Tools",
+      "stack_category": "Create New Abstraction / Blender Tools",
+      "catalog_category": "Create New Abstraction / Blender Tools",
+      "group": "Create New Abstraction / Blender Tools",
+      "stack_node_id": "stack_blender_viewer",
+      "chain_boilerplate_id": "new_abstraction_blender_viewer",
+      "intent": "Creates a standalone Blender/3D viewer abstraction for model display, scene import and simple viewer interaction.",
+      "example_user_labels": [
+        "Blender-Viewer"
+      ],
+      "output_contract": [
+        "viewer_blueprint",
+        "scene_contract",
+        "target_tree",
+        "dependency_layer",
+        "validation_plan",
+        "known_gaps"
+      ],
+      "validation_focus": [
+        "viewer runtime boundary",
+        "scene import contract",
+        "preview validation",
+        "small start slice"
+      ],
+      "handoff_rule": "After Build.complete, continue with feature_for_existing_project or refactor_existing_stack; do not model this as a Feature/Refactor plan."
+    },
+    {
+      "id": "new_abstraction_pdf_slicer",
+      "label": "PDF-SLICER",
+      "mode": "new_project_abstraction",
+      "routine": "create_new_abstraction",
+      "category": "Create New Abstraction / Document Tools",
+      "stack_category": "Create New Abstraction / Document Tools",
+      "catalog_category": "Create New Abstraction / Document Tools",
+      "group": "Create New Abstraction / Document Tools",
+      "stack_node_id": "stack_pdf_slicer",
+      "chain_boilerplate_id": "new_abstraction_pdf_slicer",
+      "intent": "Creates a standalone PDF slicer abstraction for split, merge, page-range selection and local file processing.",
+      "example_user_labels": [
+        "PDF-SLICER"
+      ],
+      "output_contract": [
+        "pdf_io_contract",
+        "target_tree",
+        "dependency_layer",
+        "timeline_plan",
+        "validation_plan",
+        "known_gaps"
+      ],
+      "validation_focus": [
+        "local file safety",
+        "PDF IO contract",
+        "minimal CLI/UI validation",
+        "rollback-ready output"
+      ],
+      "handoff_rule": "After Build.complete, continue with feature_for_existing_project or refactor_existing_stack; do not model this as a Feature/Refactor plan."
+    }
+  ],
+  "create_abstraction_pipeline_extension_rule": {
+    "schema_version": "2026.create.new_abstraction_plans.v3",
+    "owner_mode": "new_project_abstraction",
+    "routine": "create_new_abstraction",
+    "purpose": "Selectable plan library for creating new project abstractions such as desktop utilities, AI/3D tools, Blender viewers and PDF slicers.",
+    "not_feature_refactor": true,
+    "feature_refactor_boundary": "Feature/Refactor catalog entries operate only on an existing verified project or completed Create build.",
+    "classification_rule": "Each create_new_abstraction plan is standalone and category-bound. Do not combine Visual Studio, Game, PDF, AI Image, 3D, Blender or PDF-Slicer plans into one grouped entry.",
+    "stack_category_rule": "Every entry must declare stack_category/catalog_category and a matching create_stack_nodes stack_node_id with chain_boilerplate_ids.",
+    "standalone_plan_ids": [
+      "new_abstraction_visual_studio_utils",
+      "new_abstraction_game_program",
+      "new_abstraction_pdf_program",
+      "new_abstraction_ai_prompt_image_editor",
+      "new_abstraction_3d_tool",
+      "new_abstraction_blender_viewer",
+      "new_abstraction_pdf_slicer"
+    ]
+  }
+}

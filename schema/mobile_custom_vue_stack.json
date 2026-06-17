@@ -1,0 +1,927 @@
+{
+  "boilerplate_profiles": [
+    {
+      "id": "AndroidDevelopment",
+      "label": "Android Development",
+      "purpose": "Route Android/Kotlin/Gradle work through platform-aware mobile rules.",
+      "keywords": [
+        "android",
+        "kotlin",
+        "gradle",
+        "manifest",
+        "jetpack",
+        "compose",
+        "apk",
+        "aab"
+      ],
+      "allowed_path_types": [
+        "wrapper",
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "rules": [
+        "Respect Android module and Gradle structure.",
+        "Do not invent Android Studio, AGP or Kotlin versions.",
+        "Treat manifest, permission and signing changes as high-risk."
+      ],
+      "default_enabled": false
+    },
+    {
+      "id": "IosDevelopment",
+      "label": "iOS Development",
+      "purpose": "Route iOS/Swift/SwiftUI/UIKit work through platform-aware mobile rules.",
+      "keywords": [
+        "ios",
+        "swift",
+        "swiftui",
+        "uikit",
+        "xcode",
+        "plist",
+        "iphone",
+        "ipad"
+      ],
+      "allowed_path_types": [
+        "wrapper",
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "rules": [
+        "Respect Xcode, Swift and asset catalog evidence.",
+        "Do not invent provisioning, bundle IDs or deployment targets.",
+        "Treat Info.plist and entitlements as high-risk."
+      ],
+      "default_enabled": false
+    },
+    {
+      "id": "Summarize",
+      "label": "Summarize",
+      "purpose": "Summarize selected project tree, code or docs without pretending missing context was inspected.",
+      "keywords": [
+        "summarize",
+        "summary",
+        "overview",
+        "explain",
+        "review",
+        "tl;dr"
+      ],
+      "allowed_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "rules": [
+        "Summaries must be scope-limited.",
+        "Separate observed facts from assumptions.",
+        "Do not paste full source dumps."
+      ],
+      "default_enabled": false
+    },
+    {
+      "id": "SearchAndFix",
+      "label": "Search and Fix",
+      "purpose": "Search selected scope, identify likely cause and prefer the smallest safe fix.",
+      "keywords": [
+        "search",
+        "fix",
+        "find",
+        "bug",
+        "broken",
+        "trace",
+        "repair",
+        "patch"
+      ],
+      "allowed_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "rules": [
+        "Search selected PROJECT_SCOPE before editing.",
+        "Prefer minimal reversible patches over rewrites.",
+        "Report validation honestly."
+      ],
+      "default_enabled": false
+    },
+    {
+      "id": "CustomPrompt",
+      "label": "Custom Prompt",
+      "purpose": "Wrap user-provided task text with active schema weights, references, roles and project-tree scope.",
+      "keywords": [
+        "custom prompt",
+        "own prompt",
+        "user prompt",
+        "weighted prompt",
+        "task text"
+      ],
+      "allowed_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "rules": [
+        "Do not mutate the user's prompt intent.",
+        "Use the wrapper to add boundaries, not a premature solution.",
+        "Carry PROJECT_SCOPE, weights and references into the next prompt."
+      ],
+      "default_enabled": false
+    }
+  ],
+  "file_types": [
+    {
+      "id": "kt",
+      "label": "Kotlin",
+      "extensions": [
+        ".kt"
+      ],
+      "quality_commands": [
+        "./gradlew test",
+        "./gradlew lint"
+      ],
+      "rules": [
+        "Respect Android/Kotlin module boundaries."
+      ]
+    },
+    {
+      "id": "gradle",
+      "label": "Gradle",
+      "extensions": [
+        ".gradle",
+        ".gradle.kts"
+      ],
+      "quality_commands": [
+        "./gradlew tasks"
+      ],
+      "rules": [
+        "Preserve Gradle wrapper and module separation."
+      ]
+    },
+    {
+      "id": "swift",
+      "label": "Swift",
+      "extensions": [
+        ".swift"
+      ],
+      "quality_commands": [
+        "xcodebuild -list"
+      ],
+      "rules": [
+        "Respect SwiftUI/UIKit and app lifecycle boundaries."
+      ]
+    },
+    {
+      "id": "java",
+      "label": "Java",
+      "extensions": [
+        ".java"
+      ],
+      "quality_commands": [],
+      "rules": [
+        "Respect existing package/module structure."
+      ]
+    },
+    {
+      "id": "xml",
+      "label": "XML",
+      "extensions": [
+        ".xml"
+      ],
+      "quality_commands": [],
+      "rules": [
+        "Preserve unknown XML attributes and namespaces."
+      ]
+    },
+    {
+      "id": "mobile_config",
+      "label": "Mobile Config",
+      "extensions": [
+        "AndroidManifest.xml",
+        "Info.plist",
+        ".entitlements"
+      ],
+      "quality_commands": [],
+      "rules": [
+        "Treat platform config as high-risk.",
+        "Preserve unknown keys and permissions unless explicitly changed."
+      ]
+    }
+  ],
+  "prompt_text_types": [
+    {
+      "id": "custom_weighted_prompt",
+      "label": "Custom Weighted Prompt",
+      "task_boundary": "Wrap the user's own prompt with active weights, references, roles and PROJECT_SCOPE. Do not solve it inside the role definition.",
+      "rules": [
+        "Do not mutate user intent.",
+        "Carry selected project tree and active references into the next task.",
+        "Make validation gaps explicit."
+      ]
+    },
+    {
+      "id": "android_role",
+      "label": "Android Development Role",
+      "task_boundary": "Define an Android development operator role only. Do not implement Android changes unless explicitly asked next.",
+      "rules": [
+        "Respect Gradle/AGP/Kotlin evidence.",
+        "Do not invent module structure.",
+        "Treat manifests as high-risk."
+      ]
+    },
+    {
+      "id": "ios_role",
+      "label": "iOS Development Role",
+      "task_boundary": "Define an iOS development operator role only. Do not implement iOS changes unless explicitly asked next.",
+      "rules": [
+        "Respect Xcode/Swift evidence.",
+        "Do not invent provisioning.",
+        "Treat Info.plist and entitlements as high-risk."
+      ]
+    },
+    {
+      "id": "summarize_role",
+      "label": "Summarize Role",
+      "task_boundary": "Define a summarization operator role only. Do not write the final summary unless explicitly asked next.",
+      "rules": [
+        "Summarize only selected scope.",
+        "Separate facts from assumptions."
+      ]
+    },
+    {
+      "id": "search_fix_role",
+      "label": "Search and Fix Role",
+      "task_boundary": "Define a search-and-fix operator role only. Do not patch unless explicitly asked next.",
+      "rules": [
+        "Search before editing.",
+        "Prefer minimal reversible changes."
+      ]
+    }
+  ],
+  "hooks": [
+    {
+      "id": "custom_prompt_weighted_gate",
+      "label": "Custom Prompt Weighted Gate",
+      "lifecycle_phase": "prompt_compose",
+      "priority": 96,
+      "target_path_types": [],
+      "ai_targets": [
+        "ChatGPT",
+        "Codex"
+      ],
+      "boilerplate_profiles": [
+        "CustomPrompt"
+      ],
+      "file_types": [],
+      "weight_profile": "custom_prompt_context_standard",
+      "weight_operator": "custom_prompt_wrapper_operator",
+      "inject_into": [
+        "PROMPT",
+        "AI_MANAGER",
+        "AI-CHAT-RESPONSE"
+      ],
+      "rules": [
+        "Wrap user-provided text with active weights, references, roles and PROJECT_SCOPE.",
+        "Do not solve or rewrite the user's prompt while wrapping."
+      ]
+    },
+    {
+      "id": "search_and_fix_gate",
+      "label": "Search and Fix Gate",
+      "lifecycle_phase": "validate_access",
+      "priority": 94,
+      "target_path_types": [],
+      "ai_targets": [
+        "ChatGPT",
+        "Codex"
+      ],
+      "boilerplate_profiles": [
+        "SearchAndFix",
+        "Debugging",
+        "Refactor"
+      ],
+      "file_types": [],
+      "weight_profile": "search_fix_standard",
+      "weight_operator": "search_and_fix_operator",
+      "inject_into": [
+        "PROMPT",
+        "AI-RULES",
+        "AI-CHAT-RESPONSE"
+      ],
+      "rules": [
+        "Search selected PROJECT_SCOPE before changing files.",
+        "Identify likely cause and smallest safe patch."
+      ]
+    },
+    {
+      "id": "summarize_scope_gate",
+      "label": "Summarize Scope Gate",
+      "lifecycle_phase": "prompt_compose",
+      "priority": 83,
+      "target_path_types": [],
+      "ai_targets": [
+        "ChatGPT",
+        "WebAgent",
+        "Codex"
+      ],
+      "boilerplate_profiles": [
+        "Summarize",
+        "Documentation"
+      ],
+      "file_types": [
+        "md",
+        "documentation",
+        "json",
+        "js",
+        "vue",
+        "py",
+        "scss"
+      ],
+      "weight_profile": "summary_standard",
+      "weight_operator": "summarize_operator",
+      "inject_into": [
+        "PROMPT",
+        "AI-RULES",
+        "SUMMARY.md"
+      ],
+      "rules": [
+        "Summaries must be scope-limited.",
+        "Do not pretend to inspect files outside PROJECT_SCOPE."
+      ]
+    },
+    {
+      "id": "android_development_gate",
+      "label": "Android Development Gate",
+      "lifecycle_phase": "apply_weights",
+      "priority": 89,
+      "target_path_types": [
+        "frontend",
+        "generated",
+        "assets"
+      ],
+      "ai_targets": [
+        "Codex",
+        "ChatGPT"
+      ],
+      "boilerplate_profiles": [
+        "AndroidDevelopment"
+      ],
+      "file_types": [
+        "kt",
+        "gradle",
+        "java",
+        "xml",
+        "json",
+        "md",
+        "mobile_config"
+      ],
+      "weight_profile": "mobile_development_standard",
+      "weight_operator": "android_development_operator",
+      "inject_into": [
+        "PROMPT",
+        "AI-RULES"
+      ],
+      "rules": [
+        "Respect Android app architecture evidence and Gradle modules.",
+        "Treat manifest/permission changes as high-risk."
+      ]
+    },
+    {
+      "id": "ios_development_gate",
+      "label": "iOS Development Gate",
+      "lifecycle_phase": "apply_weights",
+      "priority": 89,
+      "target_path_types": [
+        "frontend",
+        "generated",
+        "assets"
+      ],
+      "ai_targets": [
+        "Codex",
+        "ChatGPT"
+      ],
+      "boilerplate_profiles": [
+        "IosDevelopment"
+      ],
+      "file_types": [
+        "swift",
+        "json",
+        "md",
+        "asset_image",
+        "mobile_config"
+      ],
+      "weight_profile": "mobile_development_standard",
+      "weight_operator": "ios_development_operator",
+      "inject_into": [
+        "PROMPT",
+        "AI-RULES"
+      ],
+      "rules": [
+        "Respect SwiftUI/UIKit and Xcode evidence.",
+        "Treat Info.plist and entitlements as high-risk."
+      ]
+    }
+  ],
+  "weight_table": [
+    {
+      "id": "custom_prompt_context_standard",
+      "label": "Custom Prompt Context Standard",
+      "target_ai": "ChatGPT",
+      "weights": {
+        "preserve_user_intent": 10,
+        "scope_boundary": 10,
+        "reference_alignment": 9,
+        "human_clarity": 9,
+        "no_solution_leakage": 9
+      }
+    },
+    {
+      "id": "search_fix_standard",
+      "label": "Search and Fix Standard",
+      "target_ai": "Codex",
+      "weights": {
+        "search_before_edit": 10,
+        "minimal_patch": 10,
+        "validation_honesty": 10,
+        "regression_risk": 9,
+        "no_rewrite_bias": 9
+      }
+    },
+    {
+      "id": "summary_standard",
+      "label": "Summary Standard",
+      "target_ai": "ChatGPT",
+      "weights": {
+        "scope_fidelity": 10,
+        "brevity": 8,
+        "evidence_gap_honesty": 10,
+        "structure": 8
+      }
+    },
+    {
+      "id": "mobile_development_standard",
+      "label": "Mobile Development Standard",
+      "target_ai": "Codex",
+      "weights": {
+        "platform_evidence": 10,
+        "config_safety": 10,
+        "minimal_change": 9,
+        "validation_honesty": 10
+      }
+    }
+  ],
+  "weight_operators": [
+    {
+      "id": "custom_prompt_wrapper_operator",
+      "label": "Custom Prompt Wrapper Operator",
+      "applies_to_file_types": [],
+      "applies_to_profiles": [
+        "CustomPrompt"
+      ],
+      "applies_to_path_types": [],
+      "minimal_change_bias": 9,
+      "risk_sensitivity": 9,
+      "evidence_required": 9,
+      "rules": [
+        "Wrap user text with active schema context without changing intent.",
+        "Include PROJECT_SCOPE, active references and validation posture.",
+        "Do not solve the task inside the wrapper."
+      ],
+      "source_ids": [
+        "custom_prompt_reference"
+      ]
+    },
+    {
+      "id": "search_and_fix_operator",
+      "label": "Search and Fix Operator",
+      "applies_to_file_types": [],
+      "applies_to_profiles": [
+        "SearchAndFix",
+        "Debugging",
+        "Refactor"
+      ],
+      "applies_to_path_types": [],
+      "minimal_change_bias": 9,
+      "risk_sensitivity": 9,
+      "evidence_required": 9,
+      "rules": [
+        "Search selected tree before editing.",
+        "Make smallest reversible change.",
+        "Document what was inspected and what was not."
+      ],
+      "source_ids": [
+        "search_and_fix_reference"
+      ]
+    },
+    {
+      "id": "summarize_operator",
+      "label": "Summarize Operator",
+      "applies_to_file_types": [],
+      "applies_to_profiles": [
+        "Summarize",
+        "Documentation"
+      ],
+      "applies_to_path_types": [],
+      "minimal_change_bias": 9,
+      "risk_sensitivity": 9,
+      "evidence_required": 9,
+      "rules": [
+        "Summarize PROJECT_SCOPE only.",
+        "Separate observed facts, assumptions and risks.",
+        "Keep output navigable."
+      ],
+      "source_ids": [
+        "summarize_scope_reference"
+      ]
+    },
+    {
+      "id": "android_development_operator",
+      "label": "Android Development Operator",
+      "applies_to_file_types": [
+        "kt",
+        "gradle",
+        "mobile_config",
+        "json",
+        "md"
+      ],
+      "applies_to_profiles": [
+        "AndroidDevelopment"
+      ],
+      "applies_to_path_types": [],
+      "minimal_change_bias": 9,
+      "risk_sensitivity": 9,
+      "evidence_required": 9,
+      "rules": [
+        "Respect Android architecture and Gradle evidence.",
+        "Do not invent platform versions or signing values.",
+        "Treat manifests as high-risk."
+      ],
+      "source_ids": [
+        "android_development_reference"
+      ]
+    },
+    {
+      "id": "ios_development_operator",
+      "label": "iOS Development Operator",
+      "applies_to_file_types": [
+        "swift",
+        "mobile_config",
+        "json",
+        "md",
+        "asset_image"
+      ],
+      "applies_to_profiles": [
+        "IosDevelopment"
+      ],
+      "applies_to_path_types": [],
+      "minimal_change_bias": 9,
+      "risk_sensitivity": 9,
+      "evidence_required": 9,
+      "rules": [
+        "Respect SwiftUI/UIKit/Xcode evidence.",
+        "Do not invent provisioning values.",
+        "Treat Info.plist and entitlements as high-risk."
+      ],
+      "source_ids": [
+        "ios_development_reference"
+      ]
+    }
+  ],
+  "reference_domains": [
+    {
+      "id": "custom_prompt_reference",
+      "label": "Custom Prompt Reference",
+      "category": "summary",
+      "applies_to_path_types": [],
+      "applies_to_file_types": [],
+      "applies_to_profiles": [
+        "CustomPrompt"
+      ],
+      "trigger_keywords": [
+        "custom prompt",
+        "own prompt",
+        "weighted prompt",
+        "user prompt"
+      ],
+      "source_refs": [],
+      "rules": [
+        "User prompt text is input evidence and must not be silently rewritten.",
+        "The wrapper adds active weights, references, operation roles and PROJECT_SCOPE."
+      ],
+      "guardrails": [
+        "Do not store secrets in generated prompt files.",
+        "Do not solve the task while only defining the role."
+      ]
+    },
+    {
+      "id": "search_and_fix_reference",
+      "label": "Search and Fix Reference",
+      "category": "search_fix",
+      "applies_to_path_types": [],
+      "applies_to_file_types": [],
+      "applies_to_profiles": [
+        "SearchAndFix",
+        "Debugging",
+        "Refactor"
+      ],
+      "trigger_keywords": [
+        "search",
+        "fix",
+        "repair",
+        "bug",
+        "broken",
+        "find",
+        "traceback",
+        "lint error"
+      ],
+      "source_refs": [],
+      "rules": [
+        "Search selected scope before changing code.",
+        "Prefer smallest reversible patch.",
+        "State searched files and validation gaps."
+      ],
+      "guardrails": [
+        "Do not create parallel implementation when an existing module can be fixed."
+      ]
+    },
+    {
+      "id": "summarize_scope_reference",
+      "label": "Summarize Scope Reference",
+      "category": "summary",
+      "applies_to_path_types": [],
+      "applies_to_file_types": [
+        "md",
+        "documentation",
+        "json",
+        "js",
+        "vue",
+        "py",
+        "scss"
+      ],
+      "applies_to_profiles": [
+        "Summarize",
+        "Documentation"
+      ],
+      "trigger_keywords": [
+        "summarize",
+        "summary",
+        "overview",
+        "explain",
+        "tl;dr",
+        "document"
+      ],
+      "source_refs": [],
+      "rules": [
+        "Summarize selected scope only.",
+        "Separate observed facts, assumptions and risks.",
+        "Keep output concise enough to review."
+      ],
+      "guardrails": [
+        "Do not invent project structure, versions or commands."
+      ]
+    },
+    {
+      "id": "android_development_reference",
+      "label": "Android Development Reference",
+      "category": "android",
+      "applies_to_path_types": [
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "applies_to_file_types": [
+        "kt",
+        "gradle",
+        "mobile_config",
+        "json",
+        "md"
+      ],
+      "applies_to_profiles": [
+        "AndroidDevelopment"
+      ],
+      "trigger_keywords": [
+        "android",
+        "kotlin",
+        "gradle",
+        "manifest",
+        "jetpack",
+        "compose",
+        "apk",
+        "aab"
+      ],
+      "source_refs": [
+        {
+          "label": "Android Development Reference",
+          "url": "https://developer.android.com/topic/architecture",
+          "authority": "official"
+        }
+      ],
+      "rules": [
+        "Use detected Gradle/module evidence before proposing structure.",
+        "Prefer Android architecture recommendations adapted to the app.",
+        "Treat manifest permissions and build signing as high-risk."
+      ],
+      "guardrails": [
+        "Do not invent project structure, versions or commands."
+      ]
+    },
+    {
+      "id": "ios_development_reference",
+      "label": "iOS Development Reference",
+      "category": "ios",
+      "applies_to_path_types": [
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "applies_to_file_types": [
+        "swift",
+        "mobile_config",
+        "json",
+        "md",
+        "asset_image"
+      ],
+      "applies_to_profiles": [
+        "IosDevelopment"
+      ],
+      "trigger_keywords": [
+        "ios",
+        "swift",
+        "swiftui",
+        "uikit",
+        "xcode",
+        "plist",
+        "iphone",
+        "ipad"
+      ],
+      "source_refs": [
+        {
+          "label": "iOS Development Reference",
+          "url": "https://developer.apple.com/documentation/swiftui",
+          "authority": "official"
+        }
+      ],
+      "rules": [
+        "Use detected Xcode/Swift evidence before proposing app structure.",
+        "Prefer platform-native lifecycle and UI patterns.",
+        "Treat Info.plist, entitlements and signing as high-risk."
+      ],
+      "guardrails": [
+        "Do not invent project structure, versions or commands."
+      ]
+    }
+  ],
+  "operation_roles": [
+    {
+      "id": "custom_prompt_operator",
+      "label": "Custom Prompt Operator",
+      "category": "summary",
+      "reference_domains": [
+        "custom_prompt_reference"
+      ],
+      "applies_to_path_types": [],
+      "applies_to_file_types": [],
+      "applies_to_profiles": [
+        "CustomPrompt"
+      ],
+      "rules": [
+        "Use selected PROJECT_SCOPE as hard boundary.",
+        "Prefer minimal reversible changes.",
+        "Be explicit about validation gaps."
+      ],
+      "validation_focus": [
+        "scope evidence",
+        "dependency evidence",
+        "minimal change",
+        "validation honesty"
+      ]
+    },
+    {
+      "id": "search_and_fix_operator",
+      "label": "Search and Fix Operator",
+      "category": "search_fix",
+      "reference_domains": [
+        "search_and_fix_reference",
+        "no_code_duplicate",
+        "keep_simple_reference"
+      ],
+      "applies_to_path_types": [],
+      "applies_to_file_types": [],
+      "applies_to_profiles": [
+        "SearchAndFix",
+        "Debugging",
+        "Refactor"
+      ],
+      "rules": [
+        "Use selected PROJECT_SCOPE as hard boundary.",
+        "Prefer minimal reversible changes.",
+        "Be explicit about validation gaps."
+      ],
+      "validation_focus": [
+        "scope evidence",
+        "dependency evidence",
+        "minimal change",
+        "validation honesty"
+      ]
+    },
+    {
+      "id": "summarize_operator",
+      "label": "Summarize Operator",
+      "category": "summary",
+      "reference_domains": [
+        "summarize_scope_reference",
+        "summary_documentation_reference"
+      ],
+      "applies_to_path_types": [],
+      "applies_to_file_types": [],
+      "applies_to_profiles": [
+        "Summarize",
+        "Documentation"
+      ],
+      "rules": [
+        "Use selected PROJECT_SCOPE as hard boundary.",
+        "Prefer minimal reversible changes.",
+        "Be explicit about validation gaps."
+      ],
+      "validation_focus": [
+        "scope evidence",
+        "dependency evidence",
+        "minimal change",
+        "validation honesty"
+      ]
+    },
+    {
+      "id": "android_development_operator",
+      "label": "Android Development Operator",
+      "category": "android",
+      "reference_domains": [
+        "android_development_reference"
+      ],
+      "applies_to_path_types": [
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "applies_to_file_types": [
+        "kt",
+        "gradle",
+        "mobile_config",
+        "json",
+        "md"
+      ],
+      "applies_to_profiles": [
+        "AndroidDevelopment"
+      ],
+      "rules": [
+        "Use selected PROJECT_SCOPE as hard boundary.",
+        "Prefer minimal reversible changes.",
+        "Be explicit about validation gaps."
+      ],
+      "validation_focus": [
+        "scope evidence",
+        "dependency evidence",
+        "minimal change",
+        "validation honesty"
+      ]
+    },
+    {
+      "id": "ios_development_operator",
+      "label": "iOS Development Operator",
+      "category": "ios",
+      "reference_domains": [
+        "ios_development_reference"
+      ],
+      "applies_to_path_types": [
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "applies_to_file_types": [
+        "swift",
+        "mobile_config",
+        "json",
+        "md",
+        "asset_image"
+      ],
+      "applies_to_profiles": [
+        "IosDevelopment"
+      ],
+      "rules": [
+        "Use selected PROJECT_SCOPE as hard boundary.",
+        "Prefer minimal reversible changes.",
+        "Be explicit about validation gaps."
+      ],
+      "validation_focus": [
+        "scope evidence",
+        "dependency evidence",
+        "minimal change",
+        "validation honesty"
+      ]
+    }
+  ]
+}

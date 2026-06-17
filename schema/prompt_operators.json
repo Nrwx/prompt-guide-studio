@@ -1,0 +1,137 @@
+{
+  "prompt_operators": [
+    {
+      "id": "default_operator_role",
+      "label": "Default Operator Role Prompt Builder",
+      "role_name": "Operator Role",
+      "voice": "human, direct, senior, practical, not corporate",
+      "role_tone": "calm, honest, slightly conversational, technically sharp",
+      "rules": [
+        "Generate a role prompt only.",
+        "Resolve every variable before output.",
+        "Do not generate the task solution.",
+        "Resolve date and language placeholders before output.",
+        "Use the schema, hooks, weights and file-type operators as the role source.",
+        "Include access boundaries, evidence strength, validation posture and clarification policy.",
+        "Separate facts from assumptions and recommendations.",
+        "Do not promise background work or future async delivery.",
+        "Include PROJECT_SCOPE summary and scoped file references when available.",
+        "Treat selected project-tree paths as a hard scope limit; do not reference files outside that scope.",
+        "Include active reference domains and operation roles when present.",
+        "Do not let reference domains become static boilerplate; use them as routing, validation and evidence controls.",
+        "When marketing, math, economics, translation or compliance roles are active, state assumptions and validation focus plainly.",
+        "When Include Imports is active, carry matched import references into PROJECT_SCOPE instead of broadening scope.",
+        "ZIP export must use project-relative archive paths with no output/root folder prefix."
+      ],
+      "required_sections": [
+        "active_target",
+        "operator_voice",
+        "project_evidence",
+        "role_boundary",
+        "access_boundary",
+        "hard_mindset",
+        "hook_route",
+        "validation_posture",
+        "behavior_contract",
+        "project_scope",
+        "scoped_file_references",
+        "reference_routing",
+        "operation_roles",
+        "reference_admin_rules"
+      ],
+      "quality_gates": [
+        "All placeholders resolved before output.",
+        "No fake repository-access claim.",
+        "No downstream implementation solution.",
+        "Target and path_type match WRITE_AI_RULES_TO.",
+        "JSON/config instructions remain English.",
+        "Prompt or AI-RULES is reducible to selected project-tree scope.",
+        "Scoped file references respect .gitignore and exclude export internals.",
+        "Include Imports never selects external packages unless they match an existing project-tree path.",
+        "ZIP archives do not contain the output base folder as their top-level prefix."
+      ]
+    }
+  ],
+  "prompt_text_types": [
+    {
+      "id": "operator_role",
+      "label": "Operator Role",
+      "task_boundary": "Do not solve the task. Define the operator role only.",
+      "rules": [
+        "Define the operator behavior, not the implementation result.",
+        "Carry target-specific constraints into the next prompt.",
+        "Include what the operator must refuse, delegate or validate."
+      ]
+    },
+    {
+      "id": "mindset_layer",
+      "label": "Mindset Layer",
+      "task_boundary": "Create only the mindset layer for the next AI prompt.",
+      "rules": [
+        "Stay short enough to paste above a real task.",
+        "Preserve role boundaries and access limits.",
+        "Avoid implementation details unless they are behavioral constraints."
+      ]
+    },
+    {
+      "id": "codex_role",
+      "label": "Codex Role",
+      "task_boundary": "Create a Codex-specific operator role. No implementation yet."
+    },
+    {
+      "id": "webagent_role",
+      "label": "WebAgent Role",
+      "task_boundary": "Create a WebAgent-specific evidence role. No implementation yet."
+    },
+    {
+      "id": "visual_reference_role",
+      "label": "Visual Reference Role",
+      "task_boundary": "Create a visual/reference-aware operator role. No implementation yet.",
+      "rules": [
+        "Prioritize selected visual reference domains.",
+        "Preserve source assets and style references.",
+        "Keep 3D/2D/material/platform assumptions explicit."
+      ]
+    },
+    {
+      "id": "marketing_role",
+      "label": "Marketing Operation Role",
+      "task_boundary": "Create a marketing operator role focused on truthful claims and measurable conversion. No campaign execution yet.",
+      "rules": [
+        "No invented claims or metrics.",
+        "Separate positioning, hypothesis and measured fact.",
+        "Tie changes to target audience and validation plan."
+      ]
+    },
+    {
+      "id": "math_correctness_role",
+      "label": "Math Correctness Role",
+      "task_boundary": "Create a math correctness operator role. No downstream calculation implementation yet.",
+      "rules": [
+        "Make units and assumptions explicit.",
+        "Check formulas, rounding and edge cases.",
+        "Refuse fake precision."
+      ]
+    },
+    {
+      "id": "economics_revenue_role",
+      "label": "Economics / Revenue Role",
+      "task_boundary": "Create a business/economics operator role. No financial implementation yet.",
+      "rules": [
+        "Keep gross/net, tax, currency and time period explicit.",
+        "Never invent revenue data.",
+        "Use auditable formulas and sensitivity checks."
+      ]
+    },
+    {
+      "id": "translation_role",
+      "label": "Scoped Translation Role",
+      "task_boundary": "Create a translation operator role for selected project trees. No translation yet.",
+      "rules": [
+        "Translate human-facing content only.",
+        "Preserve code identifiers, JSON keys and placeholders.",
+        "Respect PROJECT_SCOPE as the translation boundary."
+      ]
+    }
+  ]
+}

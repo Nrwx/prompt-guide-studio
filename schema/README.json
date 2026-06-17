@@ -1,0 +1,451 @@
+{
+  "purpose": "Dynamic hook-based AI rules schema for modern 2026 game/app programming workflows.",
+  "brutal_senior_dev_assessment": [
+    "The schema must derive decisions from project evidence.",
+    "The wrapper must delegate and never hallucinate target-specific implementation.",
+    "Single AI target per path is mandatory.",
+    "File type operators are mandatory for high-quality boilerplates.",
+    "Weights are visible decision controls, not hidden reasoning.",
+    "Prompt roles need explicit access boundaries; otherwise ChatGPT-style outputs overclaim repository access.",
+    "Evidence strength must be computed, not implied by nice wording.",
+    "Documentation needs its own operator because stale docs are a real production risk.",
+    "Project-tree scope must be explicit; otherwise AI-RULES and prompts become too broad to trust.",
+    "ZIP export must clone selected working-tree files with project-relative paths, not dump random generated files.",
+    "Specialist roles for marketing, math, economics, translation and WELMEC/PTB-style compliance must state assumptions and validation limits instead of pretending authority."
+  ],
+  "core_sections": [
+    "path_types",
+    "file_types",
+    "ai_targets",
+    "boilerplate_profiles",
+    "code_structures",
+    "delegation",
+    "ai_chat_response",
+    "hook_lifecycle",
+    "hooks",
+    "special_routines",
+    "weight_table",
+    "weight_operators",
+    "classifier_fields",
+    "prompt_operators",
+    "prompt_text_types",
+    "reference_domains",
+    "operation_roles",
+    "create_node_categories",
+    "dependency_groups",
+    "create_micro_tasks",
+    "create_stack_nodes",
+    "create_mode_parameter_controls",
+    "refactor_modules",
+    "feature_modules",
+    "target_match_boilerplates",
+    "plugin_reference_entries",
+    "plugin_manager_contract",
+    "create_chain_boilerplates",
+    "feature_refactor_overlay_contract",
+    "create_feature_refactor_specializations",
+    "generator_target_activation_rule",
+    "create_runtime_path_layout_rule",
+    "project_credit_infoboxes",
+    "human_prompt_texts",
+    "export_intelligence_profiles",
+    "create_abstraction_pipeline_extensions",
+    "last_git_commit_manifest",
+    "patch_tab_target_modes"
+  ],
+  "extension_rule": "Add or edit schema/**/*.json. Use flat top-level arrays with id fields.",
+  "file_type_rule": "Targets may select multiple file_types. Hooks, weight operators and boilerplates are reduced to matching file types.",
+  "single_ai_target_rule": "Exactly one AI target is selected per WRITE_AI_RULES_TO target.",
+  "metadata_scan_rule": "Read package.json, requirements.txt, requirements.json, pyproject.toml, build.json, lockfiles and known folders when present; compute evidence_score and evidence_strength.",
+  "prompt_tab_rule": "The Prompt Tab generates pure operator-role prompts with access boundaries, evidence strength, validation posture and no unresolved variables. It does not solve the task.",
+  "scope_export_rule": "Build recursive PROJECT_SCOPE from selected tree paths. Respect .gitignore, exclude .git/ and output/export/, include generated AI-RULES.json in configured target paths, and write optional prompt text outside the ZIP. Prompt Builder exports may add TASKS.TXT as a declared sidecar outside ZIP/folder output when CUSTOM_USER_PROMPT input exists; LAST-GIT-COMMIT references must be declared in manifests when enabled or selected.",
+  "reference_tab_rule": "The References / Roles tab selects source-backed reference domains and operation roles. Selected references are always active; unselected references can activate dynamically from scope evidence, file types, path type, profiles and detected metadata. References are guardrails/source anchors, not static generators.",
+  "create_pipeline_rule": "Create-tab work uses a separate working path and Create-only export contract; other tabs keep their own export path unless explicitly changed.",
+  "micro_tasks_rule": "Mikro Tasks are bounded local operations. Project to Markdown reads PROJECT_SCOPE and writes PROJECT_TREE.md without mutating source files.",
+  "terminal_timeline_rule": "Timeline Compile/Run must compile reviewable commands first, skip unresolved tokens and execute only after confirmation in the Create working path.",
+  "target_match_module_rule": "Target match boilerplates, feature_modules and refactor_modules are stack-node-bound overlays. They decide where existing-project Create work lands and which bounded feature/refactor contract applies without mutating create_stack_nodes.",
+  "create_mode_parameter_controls_rule": "Slider-style controls for feature_for_existing_project and refactor_existing_stack: precision 0-100, architecture 0-100, documentation_level 0-5, usability 0-10, security 0-10, weight 0-10. Lower weight means thinner/lighter work.",
+  "create_mode_parameter_schema_rule": "Feature/Refactor parameters now have one schema boilerplate, one reference domain, one operation role and one weight operator each in schema/create_mode_parameters.json. Resolve these before Create context sorting.",
+  "create_parameter_context_sort_rule": "Create context sorting uses create_parameter_context: Weight controls context breadth; security/architecture/precision receive boundary priority; active drivers are exported to mapping and prompt manifests.",
+  "schema_files": [
+    "create_mode_parameters.json",
+    "create_custom_compiler_path.json",
+    "create_project_root_runtime_scan.json",
+    "schema/README.json",
+    "schema/create_feature_refactor_overlay.json",
+    "schema/create_feature_refactor_specializations.json",
+    "create_main_dependency_controls.json",
+    "schema/create_ecosystem_runtime_resolver.json",
+    "credits_to_project.json",
+    "software_documentation_ptb_plans.json",
+    "human_prompt_locale.json",
+    "schema/create_chain_boilerplates.json",
+    "schema/create_target_feature_refactor_modules.json",
+    "schema/create_abstraction_pipeline_extensions.json",
+    "schema/last_git_commit_manifest.json",
+    "schema/patch_tab_target_modes.json",
+    "schema/create_node_catalog.json"
+  ],
+  "notes": [
+    "Libraries Editor groups hooks, weights, references and roles as schema/library editors only; Generator targets/Create config remain the routing point of truth.",
+    "Create Compiler tab supports a user-pinned compiler_path. {$compiler_run} uses that path as the authoritative custom compiler API and does not scan the whole project or generate arbitrary executables.",
+    "create_custom_compiler_path: compiler path lives in Create header / Config and supports both context compilers and template compiler adapters.",
+    "Operator flow and overwrite-existing-generated-files are Export-tab settings; Start tab remains Project Root first and does not own export execution policy.",
+    "When overwrite is enabled, worktree/create exports use stable <project>_<source>_stable folders instead of generating a new timestamped export ID.",
+    "create_project_root_runtime_scan: Start Project Root changes reuse the existing Project Tree scan; runtime hints are derived from its scope result, not from a second marker crawler.",
+    "Create normal scan must trigger the existing stack runtime check instead of introducing a separate NVM/Gradle crawler.",
+    "create_feature_refactor_specializations: clean Feature/Fix/Software Documentation/Refactor change-type schema; no generated scale variants.",
+    "Generator targets are activation-gated: default targets are inactive templates; only a Create-linked or Project-Root-matched project target is active and exportable.",
+    "Create ecosystem runtime resolver now runs bounded version probes after real Start/Create project reads for Python, Flutter, .NET, Go, Rust, Java, CMake and Docker in addition to Node/NVM and Gradle.",
+    "Runtime path Browse controls are available only for ecosystems where a selected/local executable can be meaningful; paths stay empty when auto/system resolution is enough.",
+    "Export-tab Operator flow is the Prompt Builder point of truth: changing it schedules regeneration of the generated operator prompt Remember block.",
+    "context-reactive feature plans: discovery/proposal and autonomous one-slice development are feature-only, evidence-ranked and bounded; randomness is only a tie-breaker, never write authority.",
+    "Reactive Human Prompt Builder Patch: schema/human_prompt_locale.json now contains surface-specific human intro texts for USER_PROMPT export, Create Preview, Prompt Builder, shortcut compile and mapping preview. Export intelligence low/medium/high controls all human-compiled prompt surfaces.",
+    "Manifest detail patch: medium/high USER_PROMPT compilation keeps declared details by translating actual manifest files, roles, references and plan schemas into human text; low mode stays compact."
+  ],
+  "custom_compiler_path_rule": "Compiler path is an explicit Create/Compiler editor value. When set, it is resolved before {$compiler_run}; only project-local Python API entrypoints are loaded and CREATE_COMPILER_DISCOVERY.json records the result.",
+  "export_settings_point_of_truth_rule": {
+    "id": "export_settings_point_of_truth_rule",
+    "owner_tab": "Export",
+    "moved_from": "Start",
+    "settings": [
+      "operator_flow",
+      "sequential_schema_boilerplate_research",
+      "overwrite_existing_generated_files"
+    ],
+    "path_policy": {
+      "overwrite_true": "stable export folder per project/source",
+      "overwrite_false": "fresh timestamped export ID per run"
+    },
+    "boundary": "Start tab owns Project Root / working tree only. Export tab owns export execution policy.",
+    "operator_confirmation_policy": "Derived exclusively from operator_flow: confirm_then_execute and sequential_roles require confirmation; start_immediately does not.",
+    "removed_duplicate_controls": [
+      "AI must confirm operators first"
+    ]
+  },
+  "compact_export_selected_scope_rule": {
+    "id": "compact_export_selected_scope_rule",
+    "rule": "Compact export must include files selected in the Export Tab / Selected Scope Preview with project-relative paths, matching normal export behavior.",
+    "details": [
+      "Compact control artifacts remain present: USER_PROMPT.txt, PROJECT_TREE.md, ROLE_OPERATOR_BOILERPLATE_MANIFEST.json, EXPORT_CONDITIONS.json and EXPORT_MANIFEST.json.",
+      "Selected Project Tree / Selected Scope files are copied into the compact staging area before ZIP creation.",
+      "If a selected project file collides with a compact control artifact name, it is remapped under PROJECT_SCOPE/ and recorded in EXPORT_CONDITIONS.json and EXPORT_MANIFEST.json.",
+      "Unselected project files remain excluded."
+    ]
+  },
+  "libraries_tab_rule": "Schema Edit and Libraries share one top-level Libraries tab. Schema, Hooks / Weights and References / Roles are separated only by inner Libraries sub-tabs; Library checkbox state remains editor/preview state, not Generator/Create input.",
+  "create_input_container_resize_rule": "Create-tab resize behavior belongs to the whole Inputs container via the vertical header/body sash, not to the Terminal Entry row. Terminal Entry stays a fixed control row under the terminal output.",
+  "create_runtime_hints_from_existing_scan_rule": "Runtime hints must reuse existing scan entrypoints. Project Tree / Create Working Dir scans may derive marker hints from their already-loaded scope, but they must then call the same stack-owned runtime resolver used by Create Stack changes: boilerplate minimum application, bounded NVM probe and bounded Gradle probe. Do not add a second project crawler for NVM or Gradle.",
+  "create_runtime_two_level_marker_rule": "Create runtime checks must treat project-structure markers as runtime evidence even when the selected stack label is generic/non-Node. Marker detection is bounded to root, one-level and two-level project folders, e.g. frontend/package.json, backend/package.json, apps/web/package.json, backend/build.gradle and Gradle wrapper metadata. This prevents non-Node stack skips when the loaded Create project actually contains Node or Gradle subprojects.",
+  "create_runtime_probe_trigger_rule": "NVM/Gradle probes run only after real Start-tab or Create-tab project ingestion. Stack/category changes may apply boilerplate minimum versions but must not start probes.",
+  "create_start_root_unmount_rule": "Changing the Start-tab Project Root unmounts any current Create mount/build state before the new project is scanned. Manual Unmount also clears Create mount state even when no Build.complete record exists.",
+  "create_build_complete_rule": "A successful Create timeline writes Build.complete when no active completed base exists. Feature/Refactor reruns against an existing Build.complete are recorded as mode runs and keep the base unchanged.",
+  "feature_refactor_overlay_rule": "Add selected entry injects exactly one clean change-type entry into the Create Prompt; generated scale variants are not allowed.",
+  "create_feature_refactor_specialization_rule": "Feature/Fix/Software Documentation/Unit Tests/Resource Reuse/Context Discovery/Autonomous Feature Slice/Refactor are separate clean change types; no cartesian scale variants.",
+  "create_main_dependency_controls_rule": "Create header dependency controls are selected-schema/boilerplate scoped: show Node/NVM only for Node evidence, Gradle only for Android/Gradle evidence, and summarize Python/Conda/Flutter/CMake/Docker/Docs/Prompt/Shell main dependencies only when declared by active dependency_groups/dependency_abstraction.",
+  "create_ecosystem_runtime_resolver_rule": {
+    "summary": "Create resolves runtime ecosystems dynamically from the existing Start/Create scan and bounded two-level markers, then exposes versions/paths to config, dependency layer and timeline setup.",
+    "point_of_truth": "Project Tree scope plus selected Create schema/boilerplate; paths are stored only when evidence-backed and needed.",
+    "ecosystems": [
+      "node",
+      "gradle",
+      "python",
+      "flutter",
+      "dotnet",
+      "go",
+      "rust",
+      "java",
+      "native",
+      "docker"
+    ],
+    "path_policy": "Stageable/local runtimes may expose path overrides; Docker stores only dockerfile_path evidence, not docker executable paths."
+  },
+  "generator_target_activation_rule": {
+    "id": "generator_target_activation_rule",
+    "rule": "Generator default targets are inactive catalog templates. Export, prompt metadata and AI_MANAGER may only use the single active target linked by Create or a scanned Project Root match.",
+    "details": [
+      "The default wrapper/backend/frontend rows remain visible as inactive templates.",
+      "A scanned project tree with schema/boilerplate evidence creates one project-scoped active target for the loaded root.",
+      "Create Add/Apply target linking may activate one concrete target and deactivates all others.",
+      "Reset/unmount/new-project abstraction returns Generator targets to inactive defaults.",
+      "Export/generation stops when no active linked target exists."
+    ]
+  },
+  "runtime_notes": [
+    "Python is detected immediately from Python project markers; if no project-local version pin exists, the running interpreter version is used as a fast fallback and remains overridable via Python path.",
+    "Docker does not expose a docker executable path. It detects Dockerfile/Compose files and allows overriding that file/folder only.",
+    "Runtime path controls are laid out as a compact 2-column grid and accept file or folder selections.",
+    "Create mode hides new_project_abstraction once project-root/build evidence exists, unless the user explicitly unmounted to return to a new-project state."
+  ],
+  "create_runtime_path_layout_rule": {
+    "status": "active",
+    "summary": "Create Config runtime/path controls use a horizontal autoflow strip. Path entries are intentionally compact fixed-width fields around 80px with Browse buttons next to them; no wide 2-column grid is used.",
+    "compiler_path": "Compiler path is part of the same runtime/path strip and accepts a compiler file or folder.",
+    "docker": "Docker exposes Dockerfile/Compose file selection, not a docker executable path."
+  },
+  "generator_build_complete_target_rule": {
+    "rule": "After a successful new_project_abstraction timeline, Build.complete becomes project evidence and must create exactly one active project-scoped Generator target. Built-in Generator defaults remain inactive catalog templates.",
+    "active_target_policy": "Export and prompt generation may use only the active project target; Unmount resets to inactive defaults."
+  },
+  "create_stack_ecosystem_probe_rule": {
+    "rule": "Changing the Create Stack catalog or opening the Create tab may trigger bounded runtime probes for ecosystems required by the selected stack/boilerplate, using the existing scan/hint pipeline.",
+    "stageable_runtime_policy": "Stageable runtimes such as Python/Conda must resolve an overridable path when found; global tools that do not require paths stay version-only unless explicitly selected."
+  },
+  "generator_target_normalization_rule": {
+    "id": "generator_target_normalization_rule",
+    "summary": "Generator targets are keyed by normalized repository-relative save paths. Default root/backend/frontend slots stay visible and are updated by schema/boilerplate roles/operators; Create new-project stack switches must not append targets.",
+    "rules": [
+      "Normalize ./backend to backend and ./frontend to frontend.",
+      "Treat shallow <project>/backend and <project>/frontend mappings as the backend/frontend default slots.",
+      "Allow multiple active targets only when their normalized save paths differ.",
+      "Project Root first scans may activate several targets; create_build_dir/temp preview paths must never become Generator save paths.",
+      "Build.complete uses explicit mapping/target_relations to activate default slots and must not add targets merely because the new abstraction preview exists."
+    ]
+  },
+  "credits_to_project_rule": {
+    "purpose": "Credits-to-Project infoboxes are schema-backed, editable boilerplates for .js, .txt and .vue files.",
+    "rules": [
+      "Use project_credit_infoboxes as the format authority.",
+      "Feature mode may add infobox capability; Refactor mode aligns existing blocks and must not duplicate them.",
+      "Owner/license values are user-editable and must not be invented."
+    ]
+  },
+  "feature_refactor_user_experience_rule": {
+    "summary": "Feature and Refactor standard plans must be professional, user-friendly and context-bound.",
+    "applies_to": [
+      "prompt.py plan catalogs",
+      "schema/create_chain_boilerplates.json",
+      "schema/create_feature_refactor_specializations.json",
+      "schema/create_target_feature_refactor_modules.json"
+    ],
+    "required_entry_keys": [
+      "user_goal",
+      "context_alignment",
+      "context_resolution_order",
+      "acceptance_criteria",
+      "non_goals",
+      "output_contract"
+    ],
+    "mode_split": {
+      "feature_for_existing_project": "describes new user/operator value under verified target paths",
+      "refactor_existing_stack": "preserves public behavior while improving structure, traceability or maintainability"
+    },
+    "authority": "Create Mapping, Build.complete/Start-tab evidence and selected scope outrank schema defaults."
+  },
+  "clean_feature_refactor_catalog": {
+    "schema_version": "clean-feature-refactor-catalog.v1",
+    "rules": [
+      "Software documentation is feature-only.",
+      "Generated scale variants and cartesian combinations are forbidden."
+    ],
+    "sources": [
+      "Fowler refactoring definition",
+      "Conventional Commits types",
+      "GitHub issue form validation",
+      "Keep a Changelog human-readable docs"
+    ]
+  },
+  "context_reactive_feature_plan_rule": {
+    "summary": "The catalog supports two autonomous feature entries: context opportunity discovery and autonomous development slice.",
+    "write_gate": "The AI may patch only one small selected slice when evidence, target path, acceptance criteria and validation/rollback are present.",
+    "randomness_policy": "Random choice is not a goal. It may only break ties between equally evidenced low-risk candidates.",
+    "fallback": "When context evidence is weak, output proposal_only and known gaps instead of editing files."
+  },
+  "software_documentation_ptb_plan_rule": {
+    "summary": "Software documentation is feature-only and must explicitly align to exactly one PTB/WELMEC schema profile when PTB mode is selected.",
+    "profiles": [
+      "ptb_mb01_software_documentation",
+      "welmec_7_2_software_guide",
+      "ptb_mb06_update_lifecycle",
+      "ptb_mb04_risk_assessment",
+      "ptb_mb07_software_separation"
+    ],
+    "required_outputs": [
+      "evidence_matrix",
+      "documentation_update_plan",
+      "validation_or_manual_gap",
+      "export_manifest_delta"
+    ],
+    "claim_boundary": "No generated documentation may claim legal conformity, certification or approval."
+  },
+  "unit_test_plan_rule": {
+    "summary": "Unit-test plans are feature entries. They detect existing frameworks and fixtures before writing tests; without evidence they produce a plan/manual gap instead of installing dependencies."
+  },
+  "resource_reuse_plan_rule": {
+    "summary": "Feature and refactor entries must identify reusable local resources from selected scope, import graph, Project Tree, dependency layer or schema ids before creating parallel code/docs/tests."
+  },
+  "human_prompt_export_rule": {
+    "summary": "USER_PROMPT.txt must be compiled into natural human text from project config, selected chain entries and localizable schema/human_prompt_locale.json strings.",
+    "raw_schema_policy": "Raw mode catalogs, schema dumps, token syntax and manifests stay in JSON/manifest artifacts, not in USER_PROMPT.txt.",
+    "export_intelligence_levels": {
+      "niedrig": "Selected plan and hard rules only.",
+      "mittel": "Standard compiled context with selected plan, relevant plan references, roles, parameters and short scope preview.",
+      "hoch": "Extended compiled context with broader plan references, role/reference summaries, parameter priority and detailed contracts."
+    },
+    "multilanguage_policy": "Human prompt wording must be derived from locale entries so future languages can be added without rewriting export logic."
+  },
+  "human_prompt_locale_contract": {
+    "reactive_surfaces": [
+      "user_prompt_export",
+      "create_preview",
+      "prompt_builder",
+      "shortcut_compile",
+      "mapping_preview"
+    ],
+    "point_of_truth": "create_export_intelligence shared with Export tab and Prompt Builder tab"
+  },
+  "human_prompt_manifest_guided_export_rule": {
+    "rule": "USER_PROMPT.txt is human-only and manifest-guided.",
+    "requirements": [
+      "Do not embed raw Project scope, Reference routing, Operation roles, Hook route, Weight profile or validation posture dumps in USER_PROMPT.txt.",
+      "Explain that export files must be processed recursively from the manifest-approved roots and scope.",
+      "Refer to PROMPT_MANIFEST.json, ROLE_OPERATOR_BOILERPLATE_MANIFEST.json, EXPORT_MANIFEST.json and EXPORT_MANIFEST.json for exact machine-readable details.",
+      "Compile every selected or visible feature/refactor chain entry as purpose, boundary, inputs, acceptance and validation in human language.",
+      "Keep the Remember block explicit enough to enforce confirm_then_execute, start_immediately and sequential_roles operator modes."
+    ],
+    "locale_source": "schema/human_prompt_locale.json"
+  },
+  "human_prompt_manifest_detail_rule": {
+    "rule": "USER_PROMPT.txt must be detailed for medium/high export intelligence without inventing undeclared artifacts.",
+    "requirements": [
+      "Low mode may stay compact.",
+      "Medium/high mode must include declared manifest file descriptions, plan references, role/reference planning, recursive scope processing and validation contract.",
+      "Only files declared by the selected export mode or listed in EXPORT_MANIFEST.json may be named as export artifacts.",
+      "Undeclared modules/manifests must not be summarized as text; missing evidence is a Known Gap.",
+      "Raw routing tables stay in JSON manifests and are compiled into human execution language."
+    ]
+  },
+  "last_git_commit_reference_rule": {
+    "summary": "Selecting a Last-Git-Commit Feature/Refactor plan runs a read-only Patch-tab Git scan before Prompt Builder compilation and exposes Reference D in Prompt Builder, USER_PROMPT and manifests.",
+    "triggers": [
+      "feature_last_git_commit_reference plan selection",
+      "refactor_last_git_commit_hardening plan selection",
+      "Export-tab LAST-GIT-COMMIT checkbox"
+    ],
+    "allowed_fields": [
+      "repo availability",
+      "git root",
+      "branch",
+      "dirty state",
+      "changed entry count",
+      "last commit short hash",
+      "commit date",
+      "commit subject"
+    ],
+    "forbidden_fields": [
+      "diff body",
+      "remote URL",
+      "secrets",
+      "Git write/stage/commit operations"
+    ]
+  },
+  "prompt_builder_tasks_sidecar_rule": {
+    "artifact": "TASKS.TXT",
+    "owner": "Prompt Builder tab export hook",
+    "automatic": true,
+    "not_create_catalog_entry": true,
+    "not_user_selectable": true,
+    "rule": "The left CUSTOM_USER_PROMPT input is parsed as JSON/list/plain text and exported as TASKS.TXT sidecar when present. Create Tab must not expose it as a plan, slice, catalog entry or module."
+  },
+  "user_prompt_shortcut_command_rule": {
+    "owner": "USER_PROMPT export hook",
+    "automatic": true,
+    "not_create_catalog_entry": true,
+    "not_user_selectable": true,
+    "commands": [
+      "RESTART",
+      "START",
+      "REFACTOR",
+      "SKIP",
+      "EXTEND",
+      "SHRINK",
+      "FIX",
+      "STATUS"
+    ],
+    "rule": "USER_PROMPT.txt must introduce these commands so the receiving AI immediately applies the matching meaning when the user sends the CMD. The commands do not alter scope, validation, permissions or safety boundaries.",
+    "shared_surfaces": [
+      "Prompt Builder preview",
+      "Create Preview pipeline config",
+      "USER_PROMPT.txt",
+      "CMD.json"
+    ],
+    "manifest_file": "CMD.json"
+  },
+  "prompt_builder_export_hooks": {
+    "user_prompt_chain_export_boundary": "USER_PROMPT includes only the selected Create chain/catalog entry by default. Additional Feature/Refactor plan references require explicit Create-tab Prompt-tab mapping chaining with concrete chain-entry ids; export intelligence controls detail depth, not catalog activation."
+  },
+  "create_cmd_manifest_rule": {
+    "summary": "USER_PROMPT shortcut commands are mirrored into CMD.json as a machine-readable export artifact.",
+    "commands": [
+      "START",
+      "RESTART",
+      "REFACTOR",
+      "SKIP",
+      "EXTEND",
+      "SHRINK",
+      "FIX",
+      "STATUS"
+    ],
+    "not_create_catalog_entry": true,
+    "guardrail": "Commands do not expand tool rights, repository access, safety limits, scope or validation boundaries.",
+    "always_write_policy": "Create export writes the CMD manifest after generator completion, including compact/ZIP mode."
+  },
+  "create_abstraction_pipeline_extension_rule": {
+    "routine": "create_new_abstraction",
+    "summary": "New abstraction schemas are first-class new_project_abstraction entries; Feature/Refactor starts only after a verified existing project or Build.complete."
+  },
+  "feature_refactor_catalog_examples_rule": {
+    "feature_examples": [
+      "Project To Windows.exe",
+      "Project to Linux/Debian.pkg",
+      "Project to IOS/Android",
+      "I18n Multilanguage + Language Switcher",
+      "Math Utils Library",
+      "Redesign Project to Material Design"
+    ],
+    "refactor_examples": [
+      "Search & Destroy"
+    ],
+    "boundary": "These are existing-project Feature/Refactor plans only; they do not define create_new_abstraction itself."
+  },
+  "create_new_abstraction_plan_library_rule": {
+    "owner_mode": "new_project_abstraction",
+    "routine": "create_new_abstraction",
+    "examples": [
+      "Visual Studio Utils",
+      "Game Program",
+      "PDF Program",
+      "AI Prompt Image Editing Tool",
+      "3D-Tool",
+      "Blender-Viewer",
+      "PDF-SLICER"
+    ],
+    "rule": "New abstraction entries are selectable Create-mode plans/schemas, not Feature or Refactor slices.",
+    "mode": "new_project_abstraction",
+    "standalone_entry_rule": "Visual Studio Utils, Game Program, PDF Program, AI Prompt Image Editing Tool, 3D-Tool, Blender-Viewer and PDF-SLICER are separate Create New Abstraction plans, not grouped pseudo-plans and not Feature/Refactor entries.",
+    "stack_category_rule": "Each standalone plan has a matching create_stack_nodes entry under its own Stack Category and a matching create_chain_boilerplates entry referenced by chain_boilerplate_ids.",
+    "schema_files": [
+      "schema/create_node_catalog.json",
+      "schema/create_chain_boilerplates.json",
+      "schema/create_abstraction_pipeline_extensions.json"
+    ]
+  },
+  "last_git_commit_manifest_rule": {
+    "summary": "LAST_GIT_COMMIT.json is emitted when the Last-Git-Commit export checkbox or Last-Git-Commit plan is active.",
+    "high_export_intelligence": "High export intelligence includes changed-file title + description rows in Prompt Builder/USER_PROMPT and stores full commit metadata in the manifest.",
+    "path_policy": "Absolute project paths checkbox compiles manifest paths to absolute project paths while preserving relative_* originals.",
+    "guardrail": "Read-only Git context only; no Git write authorization and no claim that current files equal the commit."
+  },
+  "absolute_project_path_export_rule": {
+    "owner": "Export tab",
+    "checkbox": "Absolute project paths in export",
+    "rule": "When enabled, relative project paths in exported manifests and compact working-tree context are compiled to absolute project paths.",
+    "traceability": "Relative originals are preserved in relative_* fields; ZIP member names remain project-relative for portability."
+  },
+  "patch_tab_target_mode_rule": {
+    "owner": "Patch Tab",
+    "select": "Patch Target combobox switches between Create Temp Preview and Working/Project Tree.",
+    "use_git_to_patch": "USE-GIT-TO-PATCH enables git apply with detected -pN strip level when a repo is mapped; absolute diff -ruN patches are normalized to project-relative stage paths.",
+    "guardrail": "Stage files live outside the target root until Commit; generated prompt/export manifests are filtered from staged commits."
+  }
+}

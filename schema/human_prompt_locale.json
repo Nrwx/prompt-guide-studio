@@ -1,0 +1,336 @@
+{
+  "human_prompt_texts": [
+    {
+      "id": "prompt_intro",
+      "purpose": "Opening paragraph for the human-facing Create export prompt.",
+      "translations": {
+        "GERMAN": "Du erhältst einen menschlich kompilierten Create-Prompt. Verarbeite ihn wie einen klaren Arbeitsauftrag: zuerst Kontext und Operator-Flow verstehen, dann den ausgewählten Plan anwenden, anschließend Validierung, Rollback und bekannte Lücken dokumentieren. Die JSON-Manifeste bleiben als Nachweis im Export, aber dieser Text ist die lesbare Handlungsanweisung.",
+        "ENGLISH": "You receive a human-compiled Create prompt. Treat it as a clear work order: understand context and operator flow first, apply the selected plan, then document validation, rollback and known gaps. JSON manifests stay in the export as evidence, but this text is the readable instruction layer."
+      }
+    },
+    {
+      "id": "operator_confirm_then_execute",
+      "purpose": "Operator flow explanation for confirm-then-execute mode.",
+      "translations": {
+        "GERMAN": "Nenne zuerst die aktiven Operator-Rollen, die Zielgrenze und den geplanten kleinsten Änderungsschnitt. Beginne erst mit der Umsetzung, wenn diese Auswahl bestätigt oder durch den Prompt ausdrücklich freigegeben ist.",
+        "ENGLISH": "First state the active operator roles, target boundary and smallest intended change slice. Start implementation only after that selection is confirmed or explicitly authorized by the prompt."
+      }
+    },
+    {
+      "id": "operator_start_immediately",
+      "purpose": "Operator flow explanation for immediate mode.",
+      "translations": {
+        "GERMAN": "Du darfst direkt mit den ausgewählten Operator-Rollen starten. Halte trotzdem kurz fest, welche Rolle den nächsten Schritt führt und welche Projekt-Evidenz die Änderung rechtfertigt.",
+        "ENGLISH": "You may start directly with the selected operator roles. Still briefly record which role leads the next step and what project evidence justifies the change."
+      }
+    },
+    {
+      "id": "operator_sequential_roles",
+      "purpose": "Operator flow explanation for sequential roles mode.",
+      "translations": {
+        "GERMAN": "Bearbeite Rollen und Referenzen nacheinander. Schließe jeden Schritt mit einer kurzen Erkenntnis, einer Kontextentscheidung und einer klaren Übergabe an den nächsten Schritt ab.",
+        "ENGLISH": "Process roles and references one by one. Close each step with a short finding, a context decision and a clear handoff to the next step."
+      }
+    },
+    {
+      "id": "research_required",
+      "purpose": "Research gate text when sequential schema/boilerplate research is enabled.",
+      "translations": {
+        "GERMAN": "Vor der Umsetzung ist Recherche Pflicht: Prüfe aktuelle, belastbare Quellen für relevante Rollen, Referenzen oder Standards. Zitiere nur relevante Erkenntnisse und markiere nicht gefundene oder nicht benötigte Recherche explizit.",
+        "ENGLISH": "Research is required before implementation: check current reliable sources for relevant roles, references or standards. Cite only relevant findings and explicitly mark anything not found or not needed."
+      }
+    },
+    {
+      "id": "research_not_required",
+      "purpose": "Research gate text when explicit sequential research is disabled.",
+      "translations": {
+        "GERMAN": "Eine verpflichtende Rollen-/Referenzrecherche ist nicht aktiviert. Prüfe dennoch aktuelle oder unsichere Fakten, bevor du daraus Anforderungen, Versionen, Standards oder externe Regeln ableitest.",
+        "ENGLISH": "Mandatory role/reference research is not enabled. Still verify current or uncertain facts before deriving requirements, versions, standards or external rules from them."
+      }
+    },
+    {
+      "id": "chain_intro",
+      "purpose": "Introduction for compiled schema-chain references.",
+      "translations": {
+        "GERMAN": "Die folgende Schema-Chain ist als menschliche Planreferenz kompiliert. Sie erklärt Zweck, Grenzen, Eingaben, Akzeptanz und Validierung der verfügbaren Feature-/Refactor-Pläne; exakte IDs und vollständige Rohdaten stehen in den Manifesten.",
+        "ENGLISH": "The following schema chain is compiled as a human plan reference. It explains purpose, boundaries, inputs, acceptance, and validation for available feature/refactor plans; exact IDs and full raw data remain in the manifests."
+      }
+    },
+    {
+      "id": "validation_intro",
+      "purpose": "Validation section intro for generated prompts.",
+      "translations": {
+        "GERMAN": "Akzeptiere das Ergebnis erst, wenn Ziel, Scope, geänderte Dateien, Validierung, Rollback und bekannte Lücken nachvollziehbar sind. Bei schwacher Evidenz lieber Vorschlag oder Known Gap statt erfundener Implementierung.",
+        "ENGLISH": "Accept the result only when goal, scope, changed files, validation, rollback and known gaps are traceable. With weak evidence, prefer a proposal or known gap over invented implementation."
+      }
+    },
+    {
+      "id": "surface_user_prompt_export_intro",
+      "purpose": "Opening for final USER_PROMPT.txt export surface.",
+      "translations": {
+        "GERMAN": "Dieser Prompt ist die finale, menschlich kompilierte Übergabe aus allen relevanten Tabs. Er erklärt Aufgabe, Operator-Flow, Export-Intelligenz, rekursive Projektverarbeitung und Validierungsvertrag; technische Listen, IDs und Rohkonfigurationen bleiben in den mitgelieferten Manifestdateien.",
+        "ENGLISH": "This prompt is the final human-compiled handoff from all relevant tabs. It explains task, operator flow, export intelligence, recursive project processing, and validation contract; technical lists, IDs, and raw configuration remain in the accompanying manifest files."
+      }
+    },
+    {
+      "id": "surface_create_preview_intro",
+      "purpose": "Opening for Preview Create contract preview.",
+      "translations": {
+        "GERMAN": "Diese Create-Preview zeigt denselben menschlich kompilierten Arbeitsauftrag, der beim Export als USER_PROMPT.txt entsteht. Änderungen an Operator-Flow oder Export-Intelligenz wirken hier reaktiv, damit die Vorschau die spätere Übergabe realistisch abbildet.",
+        "ENGLISH": "This Create preview shows the same human-compiled work order that is exported as USER_PROMPT.txt. Changes to operator flow or export intelligence update this preview reactively so it mirrors the final handoff."
+      }
+    },
+    {
+      "id": "surface_prompt_builder_intro",
+      "purpose": "Generic Prompt Builder human intro.",
+      "translations": {
+        "GERMAN": "Der Prompt Builder erzeugt keinen isolierten Rohprompt mehr. Er rahmt den generierten Text mit menschlichem Kontext, Operator-Flow und Export-Intelligenz, damit Preview, Export und Prompt Builder dieselbe Arbeitslogik verwenden.",
+        "ENGLISH": "The Prompt Builder no longer produces an isolated raw prompt. It frames generated text with human context, operator flow and export intelligence so preview, export and Prompt Builder share the same work logic."
+      }
+    },
+    {
+      "id": "surface_prompt_builder_operator_intro",
+      "purpose": "Prompt Builder intro for generated operator role prompt.",
+      "translations": {
+        "GERMAN": "Dies ist ein generierter Operator-/Rollenprompt. Lies zuerst die menschliche Einordnung, dann den eigentlichen Rollenprompt. Die Rolle ist nur im aufgelösten Projektkontext gültig und darf keine Tab- oder Exportgrenzen umgehen.",
+        "ENGLISH": "This is a generated operator/role prompt. Read the human context first, then the actual role prompt. The role is only valid inside the resolved project context and must not bypass tab or export boundaries."
+      }
+    },
+    {
+      "id": "surface_prompt_builder_custom_intro",
+      "purpose": "Prompt Builder intro for custom weighted prompt.",
+      "translations": {
+        "GERMAN": "Dies ist ein nutzerbasierter Prompt, der mit Projektkontext, Gewichtung, Operator-Flow und Export-Intelligenz kompiliert wurde. Behandle den Nutzertext als Aufgabe, aber nutze die kompilierten Grenzen als Schreibautorität.",
+        "ENGLISH": "This is a user-authored prompt compiled with project context, weights, operator flow and export intelligence. Treat the user text as the task, but use the compiled boundaries as write authority."
+      }
+    },
+    {
+      "id": "surface_prompt_builder_shortcut_intro",
+      "purpose": "Prompt Builder intro for shortcut compile.",
+      "translations": {
+        "GERMAN": "Die @-Shortcuts wurden in konkrete Projektwerte übersetzt. Prüfe die aufgelösten Pfade wie Evidenz, nicht wie freie Variablen; wenn ein Wert nicht aufgelöst wurde, kennzeichne ihn als Known Gap statt ihn zu erraten.",
+        "ENGLISH": "@ shortcuts have been translated into concrete project values. Treat resolved paths as evidence, not free variables; if a value was not resolved, mark it as a known gap instead of guessing it."
+      }
+    },
+    {
+      "id": "surface_create_mapping_intro",
+      "purpose": "Human intro for Create project mapping preview.",
+      "translations": {
+        "GERMAN": "Diese Mapping-Ansicht ist die technische Nachweisschicht zur menschlichen Prompt-Preview. Sie zeigt, welche Tabs und Projektquellen den Prompt steuern; sie ist nicht als USER_PROMPT-Rohtext gedacht.",
+        "ENGLISH": "This mapping view is the technical evidence layer behind the human prompt preview. It shows which tabs and project sources control the prompt; it is not intended as raw USER_PROMPT text."
+      }
+    },
+    {
+      "id": "export_intelligence_context",
+      "purpose": "Human explanation of selected export intelligence.",
+      "translations": {
+        "GERMAN": "Export-Intelligenz: {level}. {description} Diese Stufe verändert nicht die Wahrheit der Manifeste, sondern nur, wie viel davon als menschlicher Text in Preview, Prompt Builder und USER_PROMPT erklärt wird.",
+        "ENGLISH": "Export intelligence: {level}. {description} This level does not change manifest truth; it only controls how much of it is explained as human text in preview, Prompt Builder and USER_PROMPT."
+      }
+    },
+    {
+      "id": "tab_control_intro",
+      "purpose": "Intro for tab-spanning state section.",
+      "translations": {
+        "GERMAN": "Die folgenden Punkte fassen die tabübergreifende Steuerung zusammen. Sie verhindern, dass Prompt Builder, Create Preview und Export unterschiedliche Arbeitsaufträge erzeugen.",
+        "ENGLISH": "The following points summarize tab-spanning control. They prevent Prompt Builder, Create Preview and export from producing conflicting work orders."
+      }
+    },
+    {
+      "id": "prompt_builder_tab_context",
+      "purpose": "Prompt Builder cross-tab context line.",
+      "translations": {
+        "GERMAN": "Dieser Prompt wurde aus dem Prompt-Builder-Tab erzeugt, verwendet aber die Create-/Export-Einstellungen als gemeinsame Steuerung. Änderungen an Export-Intelligenz oder Operator-Flow müssen vor dem Verwenden erneut kompiliert werden.",
+        "ENGLISH": "This prompt was generated from the Prompt Builder tab, but uses Create/export settings as shared control. Changes to export intelligence or operator flow require recompilation before use."
+      }
+    },
+    {
+      "id": "boilerplate_reference_intro",
+      "purpose": "Intro for boilerplate references.",
+      "translations": {
+        "GERMAN": "Jede Boilerplate-Referenz wird als menschlicher Zweck, Eingabe, Kontextbindung, Akzeptanz und Nicht-Ziel beschrieben. Die Rohfelder bleiben in den Manifesten, werden aber hier als Arbeitslogik erklärt.",
+        "ENGLISH": "Each boilerplate reference is described as human purpose, inputs, context alignment, acceptance and non-goals. Raw fields stay in manifests but are explained here as work logic."
+      }
+    },
+    {
+      "id": "selected_entry_decision_intro",
+      "purpose": "Intro for selected entry decision.",
+      "translations": {
+        "GERMAN": "Der ausgewählte Chain-Eintrag ist der primäre Plan. Weitere Einträge sind nur Referenzmaterial und dürfen den ausgewählten Plan nicht still überschreiben.",
+        "ENGLISH": "The selected chain entry is the primary plan. Additional entries are reference material only and must not silently override the selected plan."
+      }
+    },
+    {
+      "id": "low_intelligence_contract",
+      "purpose": "Low intelligence detailed wording.",
+      "translations": {
+        "GERMAN": "Niedrige Intelligenz bedeutet: kurze Übergabe, ein Plan, harte Grenzen, keine Zusatzreferenzen außer zwingender Validierung.",
+        "ENGLISH": "Low intelligence means: short handoff, one plan, hard boundaries, no extra references beyond required validation."
+      }
+    },
+    {
+      "id": "medium_intelligence_contract",
+      "purpose": "Medium intelligence detailed wording.",
+      "translations": {
+        "GERMAN": "Mittlere Intelligenz bedeutet: Der Prompt enthält den ausgewählten Plan, alle relevanten deklarierten Nachbarpläne, eine echte Rollen-/Referenz-Einleitung, die vorhandenen Manifestdateien mit Zweckbeschreibung, Parameterpriorität und einen klaren Validierungsvertrag. Er bleibt lesbar, aber verliert keine belegte Ausführungslogik.",
+        "ENGLISH": "Medium intelligence means: the prompt includes the selected plan, all relevant declared neighboring plans, a real role/reference introduction, the actual manifest files with purpose descriptions, parameter priority, and a clear validation contract. It stays readable without losing evidenced execution logic."
+      }
+    },
+    {
+      "id": "high_intelligence_contract",
+      "purpose": "High intelligence detailed wording.",
+      "translations": {
+        "GERMAN": "Hohe Intelligenz bedeutet: Der Prompt extrahiert aus Manifesten und lokalen Schemas eine ausführliche menschliche Referenz. Er beschreibt verfügbare Pläne, Rollen, Referenzen, Rekursion, Scope, Parameter, Validierung und Known-Gap-Regeln so präzise wie möglich, nennt aber weiterhin nichts, was nicht deklariert oder exportiert ist.",
+        "ENGLISH": "High intelligence means: the prompt extracts a detailed human reference from manifests and local schemas. It describes available plans, roles, references, recursion, scope, parameters, validation, and known-gap rules as precisely as possible while still naming nothing that is not declared or exported."
+      }
+    },
+    {
+      "id": "manifest_guided_intro",
+      "translations": {
+        "GERMAN": "Nutze die mitgelieferten Manifestdateien als maschinenlesbare Nachweisschicht. Dieser Prompt erklärt menschlich, wie sie zu verwenden sind: Die Details werden nicht gelöscht, sondern aus den tatsächlich deklarierten Manifesten und Schemas in lesbare Ausführungsregeln übersetzt.",
+        "ENGLISH": "Use the accompanying manifest files as the machine-readable evidence layer. This prompt explains in human language how to use them: details are not removed, but translated from the actually declared manifests and schemas into readable execution rules."
+      },
+      "purpose": "Manifest-guided prompt intro."
+    },
+    {
+      "id": "recursive_manifest_processing",
+      "translations": {
+        "GERMAN": "Verarbeite die im Export- und Projektbaum-Manifest zugelassenen Dateien rekursiv: Starte bei den manifestierten Wurzeln, folge Unterordnern und Abhängigkeitshinweisen, beachte Scope- und Changed-files-only-Grenzen und nutze nur belegte Dateien als Evidenz.",
+        "ENGLISH": "Process the files allowed by the export and project-tree manifests recursively: start at the manifested roots, follow subfolders and dependency hints, respect scope and changed-files-only boundaries, and use only evidenced files."
+      }
+    },
+    {
+      "id": "manifest_operator_reference_intro",
+      "translations": {
+        "GERMAN": "Die Operator-, Rollen-, Referenz-, Hook- und Weight-Details werden nicht als Rohkonfiguration in USER_PROMPT.txt eingebettet. Lies sie bei Bedarf aus den Prompt-, Rollen- und Exportmanifesten und setze sie als Ausführungsgrenze um.",
+        "ENGLISH": "Operator, role, reference, hook, and weight details are not embedded as raw configuration in USER_PROMPT.txt. Read them from the prompt, role, and export manifests when needed and apply them as execution boundaries."
+      }
+    },
+    {
+      "id": "operator_flow_manifest_contract",
+      "translations": {
+        "GERMAN": "Der Operator-Flow ist verbindlich: USER_PROMPT.txt erklärt ihn menschlich, PROMPT_MANIFEST.json und ROLE_OPERATOR_BOILERPLATE_MANIFEST.json enthalten die exakten maschinenlesbaren Details.",
+        "ENGLISH": "The operator flow is binding: USER_PROMPT.txt explains it in human language, while PROMPT_MANIFEST.json and ROLE_OPERATOR_BOILERPLATE_MANIFEST.json contain the exact machine-readable details."
+      }
+    },
+    {
+      "id": "operator_mode_enforcement",
+      "translations": {
+        "GERMAN": "Halte den aktiven Modus exakt ein: Bei Bestätigungsmodus erst Rollen und Änderungsschnitt nennen und warten; bei Sofortstart kurz Rollen und Grenze nennen und fortfahren; bei sequenziellen Rollen jede Rolle nacheinander sichtbar abschließen.",
+        "ENGLISH": "Follow the active mode exactly: in confirmation mode, state roles and change slice and wait; in start-immediately mode, state roles and boundary briefly and proceed; in sequential mode, complete each role visibly in order."
+      }
+    },
+    {
+      "id": "remember_execution_contract",
+      "translations": {
+        "GERMAN": "Lies zuerst die menschliche Aufgabe. Prüfe danach rekursiv die in den Manifesten zugelassenen Projektdateien und verwende die Manifeste als technische Wahrheit für Scope, Rollen, Referenzen, Hooks, Gewichte, Validierung und Exportartefakte. Wenn der Operator-Flow eine Bestätigung verlangt, darf keine Implementierung beginnen, bevor Rollen, Zielgrenze und kleinster Änderungsschnitt bestätigt sind. Wenn Sofortstart erlaubt ist, beginne trotzdem nur innerhalb des manifestierten Scopes und dokumentiere die verwendeten Rollen. Wenn sequenzielle Rollen aktiv sind, arbeite Rolle für Rolle und halte pro Schritt Evidenz, Entscheidung und Ergebnis fest. Erfinde keine Dateien, Commands, Frameworks oder Standards; schwache Evidenz ist ein Known Gap. USER_PROMPT.txt bleibt menschlich, die vollständigen technischen Details bleiben in den Manifesten.",
+        "ENGLISH": "Read the human task first. Then recursively inspect the project files allowed by the manifests and use the manifests as the technical truth for scope, roles, references, hooks, weights, validation, and export artifacts. If the operator flow requires confirmation, no implementation may start until roles, target boundary, and smallest change slice are confirmed. If immediate start is allowed, still work only inside the manifested scope and document the roles used. If sequential roles are active, work role by role and record evidence, decision, and result for each step. Do not invent files, commands, frameworks, or standards; weak evidence is a known gap. USER_PROMPT.txt stays human-readable, while full technical details remain in the manifests."
+      }
+    },
+    {
+      "id": "all_plan_catalog_intro",
+      "translations": {
+        "GERMAN": "Die folgenden Pläne sind menschliche Referenzen zu den verfügbaren Feature- und Refactor-Möglichkeiten. Je nach Export-Intelligenz werden nur der ausgewählte Plan oder zusätzlich passende Nachbarpläne erklärt; die vollständige maschinenlesbare Liste bleibt im Prompt-Manifest.",
+        "ENGLISH": "The following plans are human references for available feature and refactor options. Depending on export intelligence, only the selected plan or additional neighboring plans are explained; the full machine-readable list remains in the prompt manifest."
+      }
+    },
+    {
+      "id": "declared_manifest_files_intro",
+      "purpose": "Intro for manifest file descriptions that must not invent undeclared sidecars.",
+      "translations": {
+        "GERMAN": "Die folgenden Dateien sind im aktuellen Exportmodus deklariert und dürfen im USER_PROMPT als Referenzschicht erwähnt werden. Nenne keine weiteren Manifeste oder Module, wenn sie nicht in EXPORT_MANIFEST.json beziehungsweise im tatsächlichen Export vorhanden sind.",
+        "ENGLISH": "The following files are declared by the current export mode and may be mentioned in USER_PROMPT as the reference layer. Do not name additional manifests or modules unless they are present in EXPORT_MANIFEST.json or in the actual export."
+      }
+    },
+    {
+      "id": "declared_only_text_rule",
+      "purpose": "Strict evidence rule for human prompt compilation.",
+      "translations": {
+        "GERMAN": "Erwähne als Text nur deklarierte Dateien, Rollen, Referenzen, Pläne und Schemafelder. Wenn ein Detail nicht im Manifest, im geladenen Schema oder im exportierten Projektkontext belegt ist, beschreibe es nicht als vorhandenes Modul, sondern markiere es höchstens als Known Gap.",
+        "ENGLISH": "Mention only declared files, roles, references, plans, and schema fields. If a detail is not evidenced by the manifest, loaded schema, or exported project context, do not describe it as an existing module; at most mark it as a known gap."
+      }
+    },
+    {
+      "id": "role_planning_intro",
+      "purpose": "Intro for compiled role/reference planning.",
+      "translations": {
+        "GERMAN": "Die Rollenplanung wird aus den deklarierten Operation-Roles und Referenzdomänen kompiliert. Sie erklärt Zweck, Reihenfolge, Grenzen und Prüfhaltung menschlich, ohne die Rohlisten aus den Manifesten zu kopieren.",
+        "ENGLISH": "Role planning is compiled from declared operation roles and reference domains. It explains purpose, order, boundaries, and validation posture in human language without copying raw manifest lists."
+      }
+    }
+  ],
+  "export_intelligence_profiles": [
+    {
+      "id": "niedrig",
+      "label": "Low",
+      "description": "Kompakte Übergabe: nur ausgewählter Plan, deklarierte Manifestdateien als kurze Referenz und harte Regeln.",
+      "chain_entry_limit": 1,
+      "include_available_entries": false,
+      "include_roles": false,
+      "include_parameter_context": false,
+      "include_tree_preview": false,
+      "rule_limit": 6,
+      "detail_limit": 2,
+      "human_contract_text_id": "low_intelligence_contract",
+      "prompt_builder_detail_limit": 2,
+      "include_cross_tab_roots": false,
+      "compile_surfaces": [
+        "user_prompt_export",
+        "create_preview",
+        "prompt_builder"
+      ],
+      "role_reference_limit": 0,
+      "include_manifest_file_details": false,
+      "include_role_planning_details": false
+    },
+    {
+      "id": "mittel",
+      "label": "Medium",
+      "description": "Standard-Prompt: ausgewählte Planreferenz, echte Rollen-/Referenzplanung, Manifestdateien mit Zweckbeschreibung, Scope-Rekursion und Validierung als menschlicher Text. Weitere Planreferenzen nur bei explizitem Prompt-Tab-Mapping-Chaining.",
+      "chain_entry_limit": 12,
+      "include_available_entries": false,
+      "include_roles": true,
+      "include_parameter_context": true,
+      "include_tree_preview": true,
+      "rule_limit": 10,
+      "detail_limit": 6,
+      "human_contract_text_id": "medium_intelligence_contract",
+      "prompt_builder_detail_limit": 4,
+      "include_cross_tab_roots": true,
+      "compile_surfaces": [
+        "user_prompt_export",
+        "create_preview",
+        "prompt_builder",
+        "shortcut_compile"
+      ],
+      "role_reference_limit": 6,
+      "include_manifest_file_details": true,
+      "include_role_planning_details": true
+    },
+    {
+      "id": "hoch",
+      "label": "High",
+      "description": "Ausführlicher Prompt: vollständige manifestgetreue Erläuterung des ausgewählten Plans plus Rollen, Referenzen, rekursivem Scope, Parameterpriorität, Validierungs- und Known-Gap-Vertrag. Weitere Planreferenzen nur bei explizitem Prompt-Tab-Mapping-Chaining.",
+      "chain_entry_limit": 50,
+      "include_available_entries": false,
+      "include_roles": true,
+      "include_parameter_context": true,
+      "include_tree_preview": true,
+      "rule_limit": 20,
+      "detail_limit": 10,
+      "human_contract_text_id": "high_intelligence_contract",
+      "prompt_builder_detail_limit": 8,
+      "include_cross_tab_roots": true,
+      "compile_surfaces": [
+        "user_prompt_export",
+        "create_preview",
+        "prompt_builder",
+        "shortcut_compile",
+        "mapping_preview"
+      ],
+      "role_reference_limit": 12,
+      "include_manifest_file_details": true,
+      "include_role_planning_details": true
+    }
+  ]
+}

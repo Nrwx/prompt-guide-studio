@@ -1,0 +1,1620 @@
+{
+  "create_mode_parameter_schemas": [
+    {
+      "id": "create_parameter_precision_schema",
+      "parameter_id": "precision",
+      "label": "Precision Parameter Schema Boilerplate",
+      "modes": [
+        "feature_for_existing_project",
+        "refactor_existing_stack"
+      ],
+      "schema_contract": {
+        "required_fields": [
+          "id",
+          "label",
+          "value",
+          "max",
+          "normalized",
+          "context_bucket",
+          "operator_role_id",
+          "reference_id",
+          "weight_operator_id"
+        ],
+        "value_range": {
+          "min": 0,
+          "max": 100
+        },
+        "export_keys": [
+          "create_mode_parameters",
+          "create_parameter_boilerplates",
+          "create_parameter_context",
+          "PROMPT_MANIFEST.json",
+          "PROMPT_MANIFEST.json"
+        ],
+        "validation": [
+          "value stays inside declared range",
+          "unknown fields are preserved",
+          "schema is exported before Create context sorting"
+        ]
+      },
+      "resolve_before": [
+        "create_context_sorting",
+        "create_prompt_rendering",
+        "compact_export"
+      ],
+      "emits": [
+        "create_parameter_boilerplates",
+        "create_parameter_context",
+        "operation_roles",
+        "weight_operators"
+      ],
+      "reference_id": "create_parameter_precision_reference",
+      "operator_role_id": "create_parameter_precision_operator",
+      "weight_operator_id": "create_parameter_precision_weight_operator"
+    },
+    {
+      "id": "create_parameter_architecture_schema",
+      "parameter_id": "architecture",
+      "label": "Architecture Parameter Schema Boilerplate",
+      "modes": [
+        "feature_for_existing_project",
+        "refactor_existing_stack"
+      ],
+      "schema_contract": {
+        "required_fields": [
+          "id",
+          "label",
+          "value",
+          "max",
+          "normalized",
+          "context_bucket",
+          "operator_role_id",
+          "reference_id",
+          "weight_operator_id"
+        ],
+        "value_range": {
+          "min": 0,
+          "max": 100
+        },
+        "export_keys": [
+          "create_mode_parameters",
+          "create_parameter_boilerplates",
+          "create_parameter_context",
+          "PROMPT_MANIFEST.json",
+          "PROMPT_MANIFEST.json"
+        ],
+        "validation": [
+          "value stays inside declared range",
+          "unknown fields are preserved",
+          "schema is exported before Create context sorting"
+        ]
+      },
+      "resolve_before": [
+        "create_context_sorting",
+        "create_prompt_rendering",
+        "compact_export"
+      ],
+      "emits": [
+        "create_parameter_boilerplates",
+        "create_parameter_context",
+        "operation_roles",
+        "weight_operators"
+      ],
+      "reference_id": "create_parameter_architecture_reference",
+      "operator_role_id": "create_parameter_architecture_operator",
+      "weight_operator_id": "create_parameter_architecture_weight_operator"
+    },
+    {
+      "id": "create_parameter_documentation_level_schema",
+      "parameter_id": "documentation_level",
+      "label": "DocumentationLevel Parameter Schema Boilerplate",
+      "modes": [
+        "feature_for_existing_project",
+        "refactor_existing_stack"
+      ],
+      "schema_contract": {
+        "required_fields": [
+          "id",
+          "label",
+          "value",
+          "max",
+          "normalized",
+          "context_bucket",
+          "operator_role_id",
+          "reference_id",
+          "weight_operator_id"
+        ],
+        "value_range": {
+          "min": 0,
+          "max": 5
+        },
+        "export_keys": [
+          "create_mode_parameters",
+          "create_parameter_boilerplates",
+          "create_parameter_context",
+          "PROMPT_MANIFEST.json",
+          "PROMPT_MANIFEST.json"
+        ],
+        "validation": [
+          "value stays inside declared range",
+          "unknown fields are preserved",
+          "schema is exported before Create context sorting"
+        ]
+      },
+      "resolve_before": [
+        "create_context_sorting",
+        "create_prompt_rendering",
+        "compact_export"
+      ],
+      "emits": [
+        "create_parameter_boilerplates",
+        "create_parameter_context",
+        "operation_roles",
+        "weight_operators"
+      ],
+      "reference_id": "create_parameter_documentation_reference",
+      "operator_role_id": "create_parameter_documentation_operator",
+      "weight_operator_id": "create_parameter_documentation_weight_operator"
+    },
+    {
+      "id": "create_parameter_usability_schema",
+      "parameter_id": "usability",
+      "label": "Usability Parameter Schema Boilerplate",
+      "modes": [
+        "feature_for_existing_project",
+        "refactor_existing_stack"
+      ],
+      "schema_contract": {
+        "required_fields": [
+          "id",
+          "label",
+          "value",
+          "max",
+          "normalized",
+          "context_bucket",
+          "operator_role_id",
+          "reference_id",
+          "weight_operator_id"
+        ],
+        "value_range": {
+          "min": 0,
+          "max": 10
+        },
+        "export_keys": [
+          "create_mode_parameters",
+          "create_parameter_boilerplates",
+          "create_parameter_context",
+          "PROMPT_MANIFEST.json",
+          "PROMPT_MANIFEST.json"
+        ],
+        "validation": [
+          "value stays inside declared range",
+          "unknown fields are preserved",
+          "schema is exported before Create context sorting"
+        ]
+      },
+      "resolve_before": [
+        "create_context_sorting",
+        "create_prompt_rendering",
+        "compact_export"
+      ],
+      "emits": [
+        "create_parameter_boilerplates",
+        "create_parameter_context",
+        "operation_roles",
+        "weight_operators"
+      ],
+      "reference_id": "create_parameter_usability_reference",
+      "operator_role_id": "create_parameter_usability_operator",
+      "weight_operator_id": "create_parameter_usability_weight_operator"
+    },
+    {
+      "id": "create_parameter_security_schema",
+      "parameter_id": "security",
+      "label": "Security Parameter Schema Boilerplate",
+      "modes": [
+        "feature_for_existing_project",
+        "refactor_existing_stack"
+      ],
+      "schema_contract": {
+        "required_fields": [
+          "id",
+          "label",
+          "value",
+          "max",
+          "normalized",
+          "context_bucket",
+          "operator_role_id",
+          "reference_id",
+          "weight_operator_id"
+        ],
+        "value_range": {
+          "min": 0,
+          "max": 10
+        },
+        "export_keys": [
+          "create_mode_parameters",
+          "create_parameter_boilerplates",
+          "create_parameter_context",
+          "PROMPT_MANIFEST.json",
+          "PROMPT_MANIFEST.json"
+        ],
+        "validation": [
+          "value stays inside declared range",
+          "unknown fields are preserved",
+          "schema is exported before Create context sorting"
+        ]
+      },
+      "resolve_before": [
+        "create_context_sorting",
+        "create_prompt_rendering",
+        "compact_export"
+      ],
+      "emits": [
+        "create_parameter_boilerplates",
+        "create_parameter_context",
+        "operation_roles",
+        "weight_operators"
+      ],
+      "reference_id": "create_parameter_security_reference",
+      "operator_role_id": "create_parameter_security_operator",
+      "weight_operator_id": "create_parameter_security_weight_operator"
+    },
+    {
+      "id": "create_parameter_weight_schema",
+      "parameter_id": "weight",
+      "label": "Weight Parameter Schema Boilerplate",
+      "modes": [
+        "feature_for_existing_project",
+        "refactor_existing_stack"
+      ],
+      "schema_contract": {
+        "required_fields": [
+          "id",
+          "label",
+          "value",
+          "max",
+          "normalized",
+          "context_bucket",
+          "operator_role_id",
+          "reference_id",
+          "weight_operator_id"
+        ],
+        "value_range": {
+          "min": 0,
+          "max": 10
+        },
+        "export_keys": [
+          "create_mode_parameters",
+          "create_parameter_boilerplates",
+          "create_parameter_context",
+          "PROMPT_MANIFEST.json",
+          "PROMPT_MANIFEST.json"
+        ],
+        "validation": [
+          "value stays inside declared range",
+          "unknown fields are preserved",
+          "schema is exported before Create context sorting"
+        ]
+      },
+      "resolve_before": [
+        "create_context_sorting",
+        "create_prompt_rendering",
+        "compact_export"
+      ],
+      "emits": [
+        "create_parameter_boilerplates",
+        "create_parameter_context",
+        "operation_roles",
+        "weight_operators"
+      ],
+      "reference_id": "create_parameter_weight_reference",
+      "operator_role_id": "create_parameter_weight_operator",
+      "weight_operator_id": "create_parameter_weight_weight_operator"
+    }
+  ],
+  "create_mode_parameter_boilerplates": [
+    {
+      "id": "create_parameter_precision_schema",
+      "parameter_id": "precision",
+      "label": "Precision Parameter Schema Boilerplate",
+      "modes": [
+        "feature_for_existing_project",
+        "refactor_existing_stack"
+      ],
+      "boilerplate_profile_id": "CreateParameterPrecision",
+      "type": "create_mode_parameter_schema",
+      "slider": {
+        "id": "precision",
+        "label": "Precision",
+        "min": 0,
+        "max": 100,
+        "default": 75
+      },
+      "purpose": "Controls exactness against mapping, schema and existing structure.",
+      "context_bucket": "boundary",
+      "resolution_order": 10,
+      "schema_contract": {
+        "required_fields": [
+          "id",
+          "label",
+          "value",
+          "max",
+          "normalized",
+          "context_bucket",
+          "operator_role_id",
+          "reference_id",
+          "weight_operator_id"
+        ],
+        "value_range": {
+          "min": 0,
+          "max": 100
+        },
+        "export_keys": [
+          "create_mode_parameters",
+          "create_parameter_boilerplates",
+          "create_parameter_context",
+          "PROMPT_MANIFEST.json",
+          "PROMPT_MANIFEST.json"
+        ],
+        "validation": [
+          "value stays inside declared range",
+          "unknown fields are preserved",
+          "schema is exported before Create context sorting"
+        ]
+      },
+      "boilerplate_template": "Resolve Precision before selecting Create context. Use its normalized value to shape boundary priority, validation posture and feature/refactor thickness.",
+      "reference_id": "create_parameter_precision_reference",
+      "operator_role_id": "create_parameter_precision_operator",
+      "weight_operator_id": "create_parameter_precision_weight_operator",
+      "rules": [
+        "Resolve slider value before prompt/context sorting.",
+        "Do not activate in new_project_abstraction mode.",
+        "Keep output changed-files-only unless the user explicitly expands scope."
+      ]
+    },
+    {
+      "id": "create_parameter_architecture_schema",
+      "parameter_id": "architecture",
+      "label": "Architecture Parameter Schema Boilerplate",
+      "modes": [
+        "feature_for_existing_project",
+        "refactor_existing_stack"
+      ],
+      "boilerplate_profile_id": "CreateParameterArchitecture",
+      "type": "create_mode_parameter_schema",
+      "slider": {
+        "id": "architecture",
+        "label": "Architecture",
+        "min": 0,
+        "max": 100,
+        "default": 70
+      },
+      "purpose": "Controls target boundaries, module separation and architecture evidence.",
+      "context_bucket": "architecture",
+      "resolution_order": 20,
+      "schema_contract": {
+        "required_fields": [
+          "id",
+          "label",
+          "value",
+          "max",
+          "normalized",
+          "context_bucket",
+          "operator_role_id",
+          "reference_id",
+          "weight_operator_id"
+        ],
+        "value_range": {
+          "min": 0,
+          "max": 100
+        },
+        "export_keys": [
+          "create_mode_parameters",
+          "create_parameter_boilerplates",
+          "create_parameter_context",
+          "PROMPT_MANIFEST.json",
+          "PROMPT_MANIFEST.json"
+        ],
+        "validation": [
+          "value stays inside declared range",
+          "unknown fields are preserved",
+          "schema is exported before Create context sorting"
+        ]
+      },
+      "boilerplate_template": "Resolve Architecture before selecting Create context. Use its normalized value to shape architecture priority, validation posture and feature/refactor thickness.",
+      "reference_id": "create_parameter_architecture_reference",
+      "operator_role_id": "create_parameter_architecture_operator",
+      "weight_operator_id": "create_parameter_architecture_weight_operator",
+      "rules": [
+        "Resolve slider value before prompt/context sorting.",
+        "Do not activate in new_project_abstraction mode.",
+        "Keep output changed-files-only unless the user explicitly expands scope."
+      ]
+    },
+    {
+      "id": "create_parameter_documentation_level_schema",
+      "parameter_id": "documentation_level",
+      "label": "DocumentationLevel Parameter Schema Boilerplate",
+      "modes": [
+        "feature_for_existing_project",
+        "refactor_existing_stack"
+      ],
+      "boilerplate_profile_id": "CreateParameterDocumentation",
+      "type": "create_mode_parameter_schema",
+      "slider": {
+        "id": "documentation_level",
+        "label": "DocumentationLevel",
+        "min": 0,
+        "max": 5,
+        "default": 3
+      },
+      "purpose": "Controls documentation depth in prompt contracts, handoff notes and validation gaps.",
+      "context_bucket": "documentation",
+      "resolution_order": 30,
+      "schema_contract": {
+        "required_fields": [
+          "id",
+          "label",
+          "value",
+          "max",
+          "normalized",
+          "context_bucket",
+          "operator_role_id",
+          "reference_id",
+          "weight_operator_id"
+        ],
+        "value_range": {
+          "min": 0,
+          "max": 5
+        },
+        "export_keys": [
+          "create_mode_parameters",
+          "create_parameter_boilerplates",
+          "create_parameter_context",
+          "PROMPT_MANIFEST.json",
+          "PROMPT_MANIFEST.json"
+        ],
+        "validation": [
+          "value stays inside declared range",
+          "unknown fields are preserved",
+          "schema is exported before Create context sorting"
+        ]
+      },
+      "boilerplate_template": "Resolve DocumentationLevel before selecting Create context. Use its normalized value to shape documentation priority, validation posture and feature/refactor thickness.",
+      "reference_id": "create_parameter_documentation_reference",
+      "operator_role_id": "create_parameter_documentation_operator",
+      "weight_operator_id": "create_parameter_documentation_weight_operator",
+      "rules": [
+        "Resolve slider value before prompt/context sorting.",
+        "Do not activate in new_project_abstraction mode.",
+        "Keep output changed-files-only unless the user explicitly expands scope."
+      ]
+    },
+    {
+      "id": "create_parameter_usability_schema",
+      "parameter_id": "usability",
+      "label": "Usability Parameter Schema Boilerplate",
+      "modes": [
+        "feature_for_existing_project",
+        "refactor_existing_stack"
+      ],
+      "boilerplate_profile_id": "CreateParameterUsability",
+      "type": "create_mode_parameter_schema",
+      "slider": {
+        "id": "usability",
+        "label": "Usability",
+        "min": 0,
+        "max": 10,
+        "default": 7
+      },
+      "purpose": "Controls user-facing flow, messages, ergonomics and discoverability.",
+      "context_bucket": "ux",
+      "resolution_order": 40,
+      "schema_contract": {
+        "required_fields": [
+          "id",
+          "label",
+          "value",
+          "max",
+          "normalized",
+          "context_bucket",
+          "operator_role_id",
+          "reference_id",
+          "weight_operator_id"
+        ],
+        "value_range": {
+          "min": 0,
+          "max": 10
+        },
+        "export_keys": [
+          "create_mode_parameters",
+          "create_parameter_boilerplates",
+          "create_parameter_context",
+          "PROMPT_MANIFEST.json",
+          "PROMPT_MANIFEST.json"
+        ],
+        "validation": [
+          "value stays inside declared range",
+          "unknown fields are preserved",
+          "schema is exported before Create context sorting"
+        ]
+      },
+      "boilerplate_template": "Resolve Usability before selecting Create context. Use its normalized value to shape UX priority, validation posture and feature/refactor thickness.",
+      "reference_id": "create_parameter_usability_reference",
+      "operator_role_id": "create_parameter_usability_operator",
+      "weight_operator_id": "create_parameter_usability_weight_operator",
+      "rules": [
+        "Resolve slider value before prompt/context sorting.",
+        "Do not activate in new_project_abstraction mode.",
+        "Keep output changed-files-only unless the user explicitly expands scope."
+      ]
+    },
+    {
+      "id": "create_parameter_security_schema",
+      "parameter_id": "security",
+      "label": "Security Parameter Schema Boilerplate",
+      "modes": [
+        "feature_for_existing_project",
+        "refactor_existing_stack"
+      ],
+      "boilerplate_profile_id": "CreateParameterSecurity",
+      "type": "create_mode_parameter_schema",
+      "slider": {
+        "id": "security",
+        "label": "Security",
+        "min": 0,
+        "max": 10,
+        "default": 8
+      },
+      "purpose": "Controls prompt-injection boundaries, export safety and destructive-action refusal.",
+      "context_bucket": "security",
+      "resolution_order": 5,
+      "schema_contract": {
+        "required_fields": [
+          "id",
+          "label",
+          "value",
+          "max",
+          "normalized",
+          "context_bucket",
+          "operator_role_id",
+          "reference_id",
+          "weight_operator_id"
+        ],
+        "value_range": {
+          "min": 0,
+          "max": 10
+        },
+        "export_keys": [
+          "create_mode_parameters",
+          "create_parameter_boilerplates",
+          "create_parameter_context",
+          "PROMPT_MANIFEST.json",
+          "PROMPT_MANIFEST.json"
+        ],
+        "validation": [
+          "value stays inside declared range",
+          "unknown fields are preserved",
+          "schema is exported before Create context sorting"
+        ]
+      },
+      "boilerplate_template": "Resolve Security before selecting Create context. Use its normalized value to shape security priority, validation posture and feature/refactor thickness.",
+      "reference_id": "create_parameter_security_reference",
+      "operator_role_id": "create_parameter_security_operator",
+      "weight_operator_id": "create_parameter_security_weight_operator",
+      "rules": [
+        "Resolve slider value before prompt/context sorting.",
+        "Do not activate in new_project_abstraction mode.",
+        "Keep output changed-files-only unless the user explicitly expands scope."
+      ]
+    },
+    {
+      "id": "create_parameter_weight_schema",
+      "parameter_id": "weight",
+      "label": "Weight Parameter Schema Boilerplate",
+      "modes": [
+        "feature_for_existing_project",
+        "refactor_existing_stack"
+      ],
+      "boilerplate_profile_id": "CreateParameterWeight",
+      "type": "create_mode_parameter_schema",
+      "slider": {
+        "id": "weight",
+        "label": "Weight",
+        "min": 0,
+        "max": 10,
+        "default": 5
+      },
+      "purpose": "Controls implementation thickness; lower values produce thinner, lighter feature/refactor slices.",
+      "context_bucket": "context_budget",
+      "resolution_order": 1,
+      "schema_contract": {
+        "required_fields": [
+          "id",
+          "label",
+          "value",
+          "max",
+          "normalized",
+          "context_bucket",
+          "operator_role_id",
+          "reference_id",
+          "weight_operator_id"
+        ],
+        "value_range": {
+          "min": 0,
+          "max": 10
+        },
+        "export_keys": [
+          "create_mode_parameters",
+          "create_parameter_boilerplates",
+          "create_parameter_context",
+          "PROMPT_MANIFEST.json",
+          "PROMPT_MANIFEST.json"
+        ],
+        "validation": [
+          "value stays inside declared range",
+          "unknown fields are preserved",
+          "schema is exported before Create context sorting"
+        ]
+      },
+      "boilerplate_template": "Resolve Weight before selecting Create context. Use its normalized value to shape context_budget priority, validation posture and feature/refactor thickness.",
+      "reference_id": "create_parameter_weight_reference",
+      "operator_role_id": "create_parameter_weight_operator",
+      "weight_operator_id": "create_parameter_weight_weight_operator",
+      "rules": [
+        "Resolve slider value before prompt/context sorting.",
+        "Do not activate in new_project_abstraction mode.",
+        "Keep output changed-files-only unless the user explicitly expands scope."
+      ]
+    }
+  ],
+  "boilerplate_profiles": [
+    {
+      "id": "CreateParameterPrecision",
+      "label": "Precision Parameter Boilerplate",
+      "purpose": "Controls exactness against mapping, schema and existing structure.",
+      "keywords": [
+        "precision",
+        "Precision",
+        "create parameter",
+        "feature",
+        "refactor"
+      ],
+      "allowed_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated",
+        "custom"
+      ],
+      "default_enabled": false,
+      "rules": [
+        "Enabled only through Feature/Refactor parameter resolution.",
+        "Carries schema and prompt weighting; it is not a standalone stack boilerplate."
+      ]
+    },
+    {
+      "id": "CreateParameterArchitecture",
+      "label": "Architecture Parameter Boilerplate",
+      "purpose": "Controls target boundaries, module separation and architecture evidence.",
+      "keywords": [
+        "architecture",
+        "Architecture",
+        "create parameter",
+        "feature",
+        "refactor"
+      ],
+      "allowed_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated",
+        "custom"
+      ],
+      "default_enabled": false,
+      "rules": [
+        "Enabled only through Feature/Refactor parameter resolution.",
+        "Carries schema and prompt weighting; it is not a standalone stack boilerplate."
+      ]
+    },
+    {
+      "id": "CreateParameterDocumentation",
+      "label": "DocumentationLevel Parameter Boilerplate",
+      "purpose": "Controls documentation depth in prompt contracts, handoff notes and validation gaps.",
+      "keywords": [
+        "documentation_level",
+        "DocumentationLevel",
+        "create parameter",
+        "feature",
+        "refactor"
+      ],
+      "allowed_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated",
+        "custom"
+      ],
+      "default_enabled": false,
+      "rules": [
+        "Enabled only through Feature/Refactor parameter resolution.",
+        "Carries schema and prompt weighting; it is not a standalone stack boilerplate."
+      ]
+    },
+    {
+      "id": "CreateParameterUsability",
+      "label": "Usability Parameter Boilerplate",
+      "purpose": "Controls user-facing flow, messages, ergonomics and discoverability.",
+      "keywords": [
+        "usability",
+        "Usability",
+        "create parameter",
+        "feature",
+        "refactor"
+      ],
+      "allowed_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated",
+        "custom"
+      ],
+      "default_enabled": false,
+      "rules": [
+        "Enabled only through Feature/Refactor parameter resolution.",
+        "Carries schema and prompt weighting; it is not a standalone stack boilerplate."
+      ]
+    },
+    {
+      "id": "CreateParameterSecurity",
+      "label": "Security Parameter Boilerplate",
+      "purpose": "Controls prompt-injection boundaries, export safety and destructive-action refusal.",
+      "keywords": [
+        "security",
+        "Security",
+        "create parameter",
+        "feature",
+        "refactor"
+      ],
+      "allowed_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated",
+        "custom"
+      ],
+      "default_enabled": false,
+      "rules": [
+        "Enabled only through Feature/Refactor parameter resolution.",
+        "Carries schema and prompt weighting; it is not a standalone stack boilerplate."
+      ]
+    },
+    {
+      "id": "CreateParameterWeight",
+      "label": "Weight Parameter Boilerplate",
+      "purpose": "Controls implementation thickness; lower values produce thinner, lighter feature/refactor slices.",
+      "keywords": [
+        "weight",
+        "Weight",
+        "create parameter",
+        "feature",
+        "refactor"
+      ],
+      "allowed_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated",
+        "custom"
+      ],
+      "default_enabled": false,
+      "rules": [
+        "Enabled only through Feature/Refactor parameter resolution.",
+        "Carries schema and prompt weighting; it is not a standalone stack boilerplate."
+      ]
+    }
+  ],
+  "reference_domains": [
+    {
+      "id": "create_parameter_precision_reference",
+      "label": "Precision Parameter Reference",
+      "category": "Create Parameter Abstraction",
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated",
+        "custom"
+      ],
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "yaml",
+        "py",
+        "dockerfile",
+        "env"
+      ],
+      "applies_to_profiles": [
+        "CreateParameterPrecision",
+        "Create",
+        "DevelopFeatures",
+        "Refactor"
+      ],
+      "trigger_keywords": [
+        "precision",
+        "Precision",
+        "parameter",
+        "slider",
+        "feature",
+        "refactor"
+      ],
+      "source_refs": [
+        "schema/create_mode_parameters.json#create_mode_parameter_boilerplates/precision"
+      ],
+      "rules": [
+        "Use Precision value as a bounded parameter, not as free-form prose.",
+        "State the active value and its effect on context selection.",
+        "Preserve project evidence boundaries before expanding work."
+      ],
+      "guardrails": [
+        "No hidden broadening of scope.",
+        "No fake validation success."
+      ]
+    },
+    {
+      "id": "create_parameter_architecture_reference",
+      "label": "Architecture Parameter Reference",
+      "category": "Create Parameter Abstraction",
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated",
+        "custom"
+      ],
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "yaml",
+        "py",
+        "dockerfile",
+        "env"
+      ],
+      "applies_to_profiles": [
+        "CreateParameterArchitecture",
+        "Create",
+        "DevelopFeatures",
+        "Refactor"
+      ],
+      "trigger_keywords": [
+        "architecture",
+        "Architecture",
+        "parameter",
+        "slider",
+        "feature",
+        "refactor"
+      ],
+      "source_refs": [
+        "schema/create_mode_parameters.json#create_mode_parameter_boilerplates/architecture"
+      ],
+      "rules": [
+        "Use Architecture value as a bounded parameter, not as free-form prose.",
+        "State the active value and its effect on context selection.",
+        "Preserve project evidence boundaries before expanding work."
+      ],
+      "guardrails": [
+        "No hidden broadening of scope.",
+        "No fake validation success."
+      ]
+    },
+    {
+      "id": "create_parameter_documentation_reference",
+      "label": "DocumentationLevel Parameter Reference",
+      "category": "Create Parameter Abstraction",
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated",
+        "custom"
+      ],
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "yaml",
+        "py",
+        "dockerfile",
+        "env"
+      ],
+      "applies_to_profiles": [
+        "CreateParameterDocumentation",
+        "Create",
+        "DevelopFeatures",
+        "Refactor"
+      ],
+      "trigger_keywords": [
+        "documentation_level",
+        "DocumentationLevel",
+        "parameter",
+        "slider",
+        "feature",
+        "refactor"
+      ],
+      "source_refs": [
+        "schema/create_mode_parameters.json#create_mode_parameter_boilerplates/documentation_level"
+      ],
+      "rules": [
+        "Use DocumentationLevel value as a bounded parameter, not as free-form prose.",
+        "State the active value and its effect on context selection.",
+        "Preserve project evidence boundaries before expanding work."
+      ],
+      "guardrails": [
+        "No hidden broadening of scope.",
+        "No fake validation success."
+      ]
+    },
+    {
+      "id": "create_parameter_usability_reference",
+      "label": "Usability Parameter Reference",
+      "category": "Create Parameter Abstraction",
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated",
+        "custom"
+      ],
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "yaml",
+        "py",
+        "dockerfile",
+        "env"
+      ],
+      "applies_to_profiles": [
+        "CreateParameterUsability",
+        "Create",
+        "DevelopFeatures",
+        "Refactor"
+      ],
+      "trigger_keywords": [
+        "usability",
+        "Usability",
+        "parameter",
+        "slider",
+        "feature",
+        "refactor"
+      ],
+      "source_refs": [
+        "schema/create_mode_parameters.json#create_mode_parameter_boilerplates/usability"
+      ],
+      "rules": [
+        "Use Usability value as a bounded parameter, not as free-form prose.",
+        "State the active value and its effect on context selection.",
+        "Preserve project evidence boundaries before expanding work."
+      ],
+      "guardrails": [
+        "No hidden broadening of scope.",
+        "No fake validation success."
+      ]
+    },
+    {
+      "id": "create_parameter_security_reference",
+      "label": "Security Parameter Reference",
+      "category": "Create Parameter Abstraction",
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated",
+        "custom"
+      ],
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "yaml",
+        "py",
+        "dockerfile",
+        "env"
+      ],
+      "applies_to_profiles": [
+        "CreateParameterSecurity",
+        "Create",
+        "DevelopFeatures",
+        "Refactor"
+      ],
+      "trigger_keywords": [
+        "security",
+        "Security",
+        "parameter",
+        "slider",
+        "feature",
+        "refactor"
+      ],
+      "source_refs": [
+        "schema/create_mode_parameters.json#create_mode_parameter_boilerplates/security"
+      ],
+      "rules": [
+        "Use Security value as a bounded parameter, not as free-form prose.",
+        "State the active value and its effect on context selection.",
+        "Preserve project evidence boundaries before expanding work."
+      ],
+      "guardrails": [
+        "No hidden broadening of scope.",
+        "No fake validation success."
+      ]
+    },
+    {
+      "id": "create_parameter_weight_reference",
+      "label": "Weight Parameter Reference",
+      "category": "Create Parameter Abstraction",
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated",
+        "custom"
+      ],
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "yaml",
+        "py",
+        "dockerfile",
+        "env"
+      ],
+      "applies_to_profiles": [
+        "CreateParameterWeight",
+        "Create",
+        "DevelopFeatures",
+        "Refactor"
+      ],
+      "trigger_keywords": [
+        "weight",
+        "Weight",
+        "parameter",
+        "slider",
+        "feature",
+        "refactor"
+      ],
+      "source_refs": [
+        "schema/create_mode_parameters.json#create_mode_parameter_boilerplates/weight"
+      ],
+      "rules": [
+        "Use Weight value as a bounded parameter, not as free-form prose.",
+        "State the active value and its effect on context selection.",
+        "Preserve project evidence boundaries before expanding work."
+      ],
+      "guardrails": [
+        "No hidden broadening of scope.",
+        "No fake validation success."
+      ]
+    }
+  ],
+  "operation_roles": [
+    {
+      "id": "create_parameter_precision_operator",
+      "label": "Precision Parameter Operator",
+      "category": "Create Parameter Operator",
+      "reference_domains": [
+        "create_parameter_precision_reference"
+      ],
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated",
+        "custom"
+      ],
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "yaml",
+        "py",
+        "dockerfile",
+        "env"
+      ],
+      "applies_to_profiles": [
+        "CreateParameterPrecision",
+        "Create",
+        "DevelopFeatures",
+        "Refactor"
+      ],
+      "rules": [
+        "Resolve Precision from the slider schema before composing the Create prompt.",
+        "Translate the numeric value into context ordering, validation posture and output thickness.",
+        "Refuse to apply the parameter outside Feature/Refactor modes."
+      ],
+      "validation_focus": [
+        "parameter range checked",
+        "parameter effect appears in create_parameter_context",
+        "operator role is discoverable in exported manifests"
+      ]
+    },
+    {
+      "id": "create_parameter_architecture_operator",
+      "label": "Architecture Parameter Operator",
+      "category": "Create Parameter Operator",
+      "reference_domains": [
+        "create_parameter_architecture_reference"
+      ],
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated",
+        "custom"
+      ],
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "yaml",
+        "py",
+        "dockerfile",
+        "env"
+      ],
+      "applies_to_profiles": [
+        "CreateParameterArchitecture",
+        "Create",
+        "DevelopFeatures",
+        "Refactor"
+      ],
+      "rules": [
+        "Resolve Architecture from the slider schema before composing the Create prompt.",
+        "Translate the numeric value into context ordering, validation posture and output thickness.",
+        "Refuse to apply the parameter outside Feature/Refactor modes."
+      ],
+      "validation_focus": [
+        "parameter range checked",
+        "parameter effect appears in create_parameter_context",
+        "operator role is discoverable in exported manifests"
+      ]
+    },
+    {
+      "id": "create_parameter_documentation_operator",
+      "label": "DocumentationLevel Parameter Operator",
+      "category": "Create Parameter Operator",
+      "reference_domains": [
+        "create_parameter_documentation_reference"
+      ],
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated",
+        "custom"
+      ],
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "yaml",
+        "py",
+        "dockerfile",
+        "env"
+      ],
+      "applies_to_profiles": [
+        "CreateParameterDocumentation",
+        "Create",
+        "DevelopFeatures",
+        "Refactor"
+      ],
+      "rules": [
+        "Resolve DocumentationLevel from the slider schema before composing the Create prompt.",
+        "Translate the numeric value into context ordering, validation posture and output thickness.",
+        "Refuse to apply the parameter outside Feature/Refactor modes."
+      ],
+      "validation_focus": [
+        "parameter range checked",
+        "parameter effect appears in create_parameter_context",
+        "operator role is discoverable in exported manifests"
+      ]
+    },
+    {
+      "id": "create_parameter_usability_operator",
+      "label": "Usability Parameter Operator",
+      "category": "Create Parameter Operator",
+      "reference_domains": [
+        "create_parameter_usability_reference"
+      ],
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated",
+        "custom"
+      ],
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "yaml",
+        "py",
+        "dockerfile",
+        "env"
+      ],
+      "applies_to_profiles": [
+        "CreateParameterUsability",
+        "Create",
+        "DevelopFeatures",
+        "Refactor"
+      ],
+      "rules": [
+        "Resolve Usability from the slider schema before composing the Create prompt.",
+        "Translate the numeric value into context ordering, validation posture and output thickness.",
+        "Refuse to apply the parameter outside Feature/Refactor modes."
+      ],
+      "validation_focus": [
+        "parameter range checked",
+        "parameter effect appears in create_parameter_context",
+        "operator role is discoverable in exported manifests"
+      ]
+    },
+    {
+      "id": "create_parameter_security_operator",
+      "label": "Security Parameter Operator",
+      "category": "Create Parameter Operator",
+      "reference_domains": [
+        "create_parameter_security_reference"
+      ],
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated",
+        "custom"
+      ],
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "yaml",
+        "py",
+        "dockerfile",
+        "env"
+      ],
+      "applies_to_profiles": [
+        "CreateParameterSecurity",
+        "Create",
+        "DevelopFeatures",
+        "Refactor"
+      ],
+      "rules": [
+        "Resolve Security from the slider schema before composing the Create prompt.",
+        "Translate the numeric value into context ordering, validation posture and output thickness.",
+        "Refuse to apply the parameter outside Feature/Refactor modes."
+      ],
+      "validation_focus": [
+        "parameter range checked",
+        "parameter effect appears in create_parameter_context",
+        "operator role is discoverable in exported manifests"
+      ]
+    },
+    {
+      "id": "create_parameter_weight_operator",
+      "label": "Weight Parameter Operator",
+      "category": "Create Parameter Operator",
+      "reference_domains": [
+        "create_parameter_weight_reference"
+      ],
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated",
+        "custom"
+      ],
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "yaml",
+        "py",
+        "dockerfile",
+        "env"
+      ],
+      "applies_to_profiles": [
+        "CreateParameterWeight",
+        "Create",
+        "DevelopFeatures",
+        "Refactor"
+      ],
+      "rules": [
+        "Resolve Weight from the slider schema before composing the Create prompt.",
+        "Translate the numeric value into context ordering, validation posture and output thickness.",
+        "Refuse to apply the parameter outside Feature/Refactor modes."
+      ],
+      "validation_focus": [
+        "parameter range checked",
+        "parameter effect appears in create_parameter_context",
+        "operator role is discoverable in exported manifests"
+      ]
+    }
+  ],
+  "weight_operators": [
+    {
+      "id": "create_parameter_precision_weight_operator",
+      "label": "Precision Parameter Weight Operator",
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "yaml",
+        "py",
+        "dockerfile",
+        "env"
+      ],
+      "applies_to_profiles": [
+        "CreateParameterPrecision",
+        "Create",
+        "DevelopFeatures",
+        "Refactor"
+      ],
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated",
+        "custom"
+      ],
+      "minimal_change_bias": 0.8,
+      "risk_sensitivity": 0.75,
+      "evidence_required": true,
+      "schema_compatibility": "preserve_unknown_fields_and_flat_id_arrays",
+      "manifest_traceability": true,
+      "rules": [
+        "Numeric slider value must be visible in context sorting.",
+        "Prefer smaller reversible patches when parameter confidence is low.",
+        "Export the applied operator id with the parameter boilerplate."
+      ]
+    },
+    {
+      "id": "create_parameter_architecture_weight_operator",
+      "label": "Architecture Parameter Weight Operator",
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "yaml",
+        "py",
+        "dockerfile",
+        "env"
+      ],
+      "applies_to_profiles": [
+        "CreateParameterArchitecture",
+        "Create",
+        "DevelopFeatures",
+        "Refactor"
+      ],
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated",
+        "custom"
+      ],
+      "minimal_change_bias": 0.6,
+      "risk_sensitivity": 0.75,
+      "evidence_required": true,
+      "schema_compatibility": "preserve_unknown_fields_and_flat_id_arrays",
+      "manifest_traceability": true,
+      "rules": [
+        "Numeric slider value must be visible in context sorting.",
+        "Prefer smaller reversible patches when parameter confidence is low.",
+        "Export the applied operator id with the parameter boilerplate."
+      ]
+    },
+    {
+      "id": "create_parameter_documentation_weight_operator",
+      "label": "DocumentationLevel Parameter Weight Operator",
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "yaml",
+        "py",
+        "dockerfile",
+        "env"
+      ],
+      "applies_to_profiles": [
+        "CreateParameterDocumentation",
+        "Create",
+        "DevelopFeatures",
+        "Refactor"
+      ],
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated",
+        "custom"
+      ],
+      "minimal_change_bias": 0.6,
+      "risk_sensitivity": 0.75,
+      "evidence_required": true,
+      "schema_compatibility": "preserve_unknown_fields_and_flat_id_arrays",
+      "manifest_traceability": true,
+      "rules": [
+        "Numeric slider value must be visible in context sorting.",
+        "Prefer smaller reversible patches when parameter confidence is low.",
+        "Export the applied operator id with the parameter boilerplate."
+      ]
+    },
+    {
+      "id": "create_parameter_usability_weight_operator",
+      "label": "Usability Parameter Weight Operator",
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "yaml",
+        "py",
+        "dockerfile",
+        "env"
+      ],
+      "applies_to_profiles": [
+        "CreateParameterUsability",
+        "Create",
+        "DevelopFeatures",
+        "Refactor"
+      ],
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated",
+        "custom"
+      ],
+      "minimal_change_bias": 0.6,
+      "risk_sensitivity": 0.75,
+      "evidence_required": true,
+      "schema_compatibility": "preserve_unknown_fields_and_flat_id_arrays",
+      "manifest_traceability": true,
+      "rules": [
+        "Numeric slider value must be visible in context sorting.",
+        "Prefer smaller reversible patches when parameter confidence is low.",
+        "Export the applied operator id with the parameter boilerplate."
+      ]
+    },
+    {
+      "id": "create_parameter_security_weight_operator",
+      "label": "Security Parameter Weight Operator",
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "yaml",
+        "py",
+        "dockerfile",
+        "env"
+      ],
+      "applies_to_profiles": [
+        "CreateParameterSecurity",
+        "Create",
+        "DevelopFeatures",
+        "Refactor"
+      ],
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated",
+        "custom"
+      ],
+      "minimal_change_bias": 0.8,
+      "risk_sensitivity": 0.9,
+      "evidence_required": true,
+      "schema_compatibility": "preserve_unknown_fields_and_flat_id_arrays",
+      "manifest_traceability": true,
+      "rules": [
+        "Numeric slider value must be visible in context sorting.",
+        "Prefer smaller reversible patches when parameter confidence is low.",
+        "Export the applied operator id with the parameter boilerplate."
+      ]
+    },
+    {
+      "id": "create_parameter_weight_weight_operator",
+      "label": "Weight Parameter Weight Operator",
+      "applies_to_file_types": [
+        "json",
+        "md",
+        "yaml",
+        "py",
+        "dockerfile",
+        "env"
+      ],
+      "applies_to_profiles": [
+        "CreateParameterWeight",
+        "Create",
+        "DevelopFeatures",
+        "Refactor"
+      ],
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated",
+        "custom"
+      ],
+      "minimal_change_bias": 0.8,
+      "risk_sensitivity": 0.75,
+      "evidence_required": true,
+      "schema_compatibility": "preserve_unknown_fields_and_flat_id_arrays",
+      "manifest_traceability": true,
+      "rules": [
+        "Numeric slider value must be visible in context sorting.",
+        "Prefer smaller reversible patches when parameter confidence is low.",
+        "Export the applied operator id with the parameter boilerplate."
+      ]
+    }
+  ],
+  "weight_table": [
+    {
+      "id": "create_parameter_abstraction_standard",
+      "label": "Create Parameter Abstraction Standard",
+      "ai_targets": [
+        "ChatGPT",
+        "Codex"
+      ],
+      "applies_to_hooks": [
+        "create_parameter_abstraction_gate"
+      ],
+      "weights": {
+        "parameter_resolution_first": 10,
+        "context_sorting_by_intensity": 10,
+        "changed_files_only": 8,
+        "schema_traceability": 9,
+        "validation_honesty": 10
+      },
+      "rules": [
+        "Resolve parameter schemas before Create context is sorted.",
+        "Use Weight as context budget, not as confidence.",
+        "Include parameter boilerplates and active context drivers in export manifests."
+      ]
+    }
+  ],
+  "hooks": [
+    {
+      "id": "create_parameter_abstraction_gate",
+      "label": "Create Parameter Abstraction Gate",
+      "lifecycle_phase": "create_context_build",
+      "priority": 93,
+      "target_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "generated",
+        "custom"
+      ],
+      "ai_targets": [
+        "ChatGPT",
+        "Codex"
+      ],
+      "boilerplate_profiles": [
+        "Create",
+        "DevelopFeatures",
+        "Refactor",
+        "CreateParameterPrecision",
+        "CreateParameterArchitecture",
+        "CreateParameterDocumentation",
+        "CreateParameterUsability",
+        "CreateParameterSecurity",
+        "CreateParameterWeight"
+      ],
+      "file_types": [
+        "json",
+        "md",
+        "yaml",
+        "py",
+        "dockerfile",
+        "env"
+      ],
+      "weight_profile": "create_parameter_abstraction_standard",
+      "weight_operator": "create_parameter_precision_weight_operator",
+      "inject_into": [
+        "create_prompt_contract",
+        "create_project_mapping",
+        "compact_export"
+      ],
+      "rules": [
+        "Run after mode is known and before context chunks are sorted.",
+        "Only active in feature_for_existing_project and refactor_existing_stack.",
+        "Parameter boilerplates must be present for every declared slider."
+      ]
+    }
+  ],
+  "parameter_abstraction_rule": "Every Feature/Refactor slider owns one schema boilerplate, one reference, one operator role and one weight operator. The resolved values feed create_parameter_context before Create context sorting."
+}

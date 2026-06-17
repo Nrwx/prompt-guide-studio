@@ -1,0 +1,47 @@
+{
+  "delegation": [
+    {
+      "id": "wrapper",
+      "description": "The wrapper classifies the user task and delegates to exactly one target AI-RULES.json.",
+      "confidence_threshold": 3,
+      "priority_order": [
+        "backend",
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "fallback_question": "Which area should be changed: frontend, backend, assets or generated code?",
+      "rules": [
+        "Score each WRITE_AI_RULES_TO target with schema keywords and hooks.",
+        "Prefer explicit file paths over generic keywords.",
+        "Select exactly one target.",
+        "Select exactly one AI target.",
+        "Load the selected target rules_path.",
+        "Apply matching hooks, special routines and active weight table.",
+        "If no target is confident, ask fallback_question in AI_LANGUAGE.",
+        "If the task is only to define an operator role, do not delegate into implementation work.",
+        "When multiple targets score similarly, prefer explicit path evidence over keyword guesses.",
+        "Report low confidence instead of inventing a target."
+      ]
+    }
+  ],
+  "classifier_fields": [
+    "task_text",
+    "current_path",
+    "available_targets",
+    "selected_path",
+    "selected_path_type",
+    "selected_rules_path",
+    "selected_ai_target",
+    "selected_boilerplate_profile",
+    "selected_hooks",
+    "active_weight_table",
+    "confidence",
+    "reason",
+    "clarification_question",
+    "evidence_strength",
+    "access_boundary",
+    "target_mismatch",
+    "validation_plan"
+  ]
+}

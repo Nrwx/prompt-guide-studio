@@ -1,0 +1,34 @@
+{
+  "plugin_reference_entries": [],
+  "plugin_manager_contract": [
+    {
+      "id": "plugin_reference_pipeline_contract",
+      "label": "Plugin Reference Pipeline Contract",
+      "rules": [
+        "A plugin entry is stored as plugin_reference_entries and projected into reference_domains at schema load time.",
+        "Plugin references are selected exactly like native references in the References tab and can be consumed by Create stack nodes.",
+        "Plugin entries must keep category, node_ids, authority, source_refs, rules and guardrails explicit.",
+        "User/plugin references cannot override system, schema, access, validation or export boundaries."
+      ],
+      "entry_contract": {
+        "id": "stable entry id",
+        "label": "human label",
+        "category": "reference category or selected node category",
+        "node_ids": [
+          "create_node_or_stack_node_id"
+        ],
+        "url": "optional source URL",
+        "authority": "official|vendor|project|user_supplied",
+        "keywords": [
+          "routing keywords"
+        ],
+        "rules": [
+          "behavioral guidance"
+        ],
+        "guardrails": [
+          "what must not be inferred"
+        ]
+      }
+    }
+  ]
+}

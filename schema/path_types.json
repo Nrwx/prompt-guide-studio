@@ -1,0 +1,185 @@
+{
+  "path_types": [
+    {
+      "id": "wrapper",
+      "label": "Wrapper",
+      "description": "Root delegation layer. It does not implement frontend/backend logic directly.",
+      "keywords": [
+        "root",
+        "wrapper",
+        "monorepo",
+        "repo",
+        "project",
+        "delegate",
+        "decide",
+        "detect"
+      ],
+      "inspect_before_edit": [
+        ".gitignore",
+        "AI_MANAGER.json",
+        "AI-RULES.json",
+        "backend/AI-RULES.json",
+        "frontend/AI-RULES.json",
+        "schema/"
+      ],
+      "rules": [
+        "Do not solve target-specific work inside the wrapper.",
+        "Classify the user task with schema keywords, file types, project metadata and hooks.",
+        "Select exactly one target from WRITE_AI_RULES_TO.",
+        "Load the selected target AI-RULES.json.",
+        "Use exactly one AI_TARGET from the selected target.",
+        "If the decision is ambiguous, ask one short clarification in AI_LANGUAGE.",
+        "Brutal honesty rule: do not pretend certainty when project metadata is incomplete."
+      ],
+      "quality_commands": [
+        "python -m compileall backend",
+        "npm --prefix frontend run lint",
+        "npm --prefix frontend run build"
+      ]
+    },
+    {
+      "id": "backend",
+      "label": "Backend",
+      "description": "Python Flask backend rules.",
+      "keywords": [
+        "backend",
+        "flask",
+        "python",
+        "api",
+        "route",
+        "controller",
+        "model",
+        "view",
+        "queue",
+        "upload",
+        "export",
+        "render",
+        "ai",
+        "local-ai",
+        "material",
+        "mesh",
+        "shader",
+        "tile"
+      ],
+      "inspect_before_edit": [
+        ".gitignore",
+        "build.json",
+        "requirements.txt",
+        "core/",
+        "generated/"
+      ],
+      "rules": [
+        "Treat this as production-sensitive backend code.",
+        "Never bypass queue/dispatch/controller/model/view flow without explicit evidence.",
+        "Prefer minimal reversible backend changes.",
+        "Validate all external inputs and file paths.",
+        "Do not hardcode local absolute paths, secrets or machine-specific assumptions."
+      ],
+      "quality_commands": [
+        "python -m compileall .",
+        "pytest"
+      ]
+    },
+    {
+      "id": "frontend",
+      "label": "Frontend",
+      "description": "Frontend application rules based on detected framework/tooling evidence.",
+      "keywords": [
+        "frontend",
+        "vue",
+        "component",
+        "ui",
+        "ux",
+        "service",
+        "css",
+        "sass",
+        "build",
+        "lint",
+        "toolbar",
+        "editor"
+      ],
+      "inspect_before_edit": [
+        ".gitignore",
+        "package.json",
+        "src/",
+        "public/"
+      ],
+      "rules": [
+        "Treat this as a modern app/game UI frontend.",
+        "Use Vue build-only conventions unless metadata proves a different build system.",
+        "Use ES module boundaries and shared API services.",
+        "For SCSS, use shared modules and @use/@forward.",
+        "Do not add npm run serve or npm run dev to this project by default.",
+        "Avoid ad-hoc global class sprawl."
+      ],
+      "quality_commands": [
+        "npm run lint",
+        "npm run build"
+      ]
+    },
+    {
+      "id": "assets",
+      "label": "Assets",
+      "description": "Assets, generated media, uploads, exports, textures and prompt assets.",
+      "keywords": [
+        "asset",
+        "assets",
+        "texture",
+        "image",
+        "png",
+        "jpg",
+        "webp",
+        "export",
+        "upload",
+        "prompt",
+        "metadata",
+        "video",
+        "mp4",
+        "cache",
+        "package"
+      ],
+      "inspect_before_edit": [
+        ".gitignore",
+        "assets/",
+        "uploads/",
+        "exports/",
+        "prompts/"
+      ],
+      "rules": [
+        "Do not commit generated textures, uploads, exports, videos, model weights or caches unless explicitly intended.",
+        "Preserve source assets and metadata.",
+        "Keep generated asset metadata in English."
+      ],
+      "quality_commands": []
+    },
+    {
+      "id": "generated",
+      "label": "Generated",
+      "description": "Generated controller/model/view module rules.",
+      "keywords": [
+        "generated",
+        "generated controller",
+        "generated model",
+        "generated view",
+        "method_map",
+        "dispatch",
+        "blueprint"
+      ],
+      "inspect_before_edit": [
+        ".gitignore",
+        "build.json",
+        "generated/controller/",
+        "generated/model/",
+        "generated/view/"
+      ],
+      "rules": [
+        "Keep generated controller/model/view patterns consistent.",
+        "Do not manually create duplicate generated modules.",
+        "Prefer method_map extension when a blueprint already exists."
+      ],
+      "quality_commands": [
+        "python -m compileall ."
+      ]
+    }
+  ]
+}

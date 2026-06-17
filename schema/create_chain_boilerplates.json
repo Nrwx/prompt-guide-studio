@@ -1,0 +1,3226 @@
+{
+  "create_chain_boilerplates": [
+    {
+      "id": "feature_implementation_slice",
+      "label": "Implement Feature",
+      "display_name": "Implement Feature",
+      "modes": [
+        "feature_for_existing_project"
+      ],
+      "group": "Feature",
+      "order": 10,
+      "applies_to_domains": [
+        "generic_project",
+        "frontend_ui",
+        "backend_api",
+        "fullstack_contract",
+        "node_runtime",
+        "docs_content"
+      ],
+      "applies_to_targets": [
+        "any"
+      ],
+      "intent": "Implement new or extended behavior in the existing project as the smallest useful, validatable slice.",
+      "template": "Implement the feature in the existing project. Goal: {$feature_goal}. Target path: {$target_path:@wrapper}. Resolve mapping, existing entry points, affected files and validation first. Change only the smallest useful slice and provide patch, validation, rollback and known gaps.",
+      "example": "Implement the feature in the existing project. Goal: Export manifest shows a clear warning when validation is missing.",
+      "fields": [
+        {
+          "id": "feature_goal",
+          "type": "text",
+          "required": true,
+          "description": "Which new or improved behavior should be visible?"
+        },
+        {
+          "id": "target_path",
+          "type": "path",
+          "required": false,
+          "default": "@wrapper",
+          "description": "Evidence-backed target path or @target shortcut from mapping."
+        },
+        {
+          "id": "resource_reuse_scope",
+          "type": "enum",
+          "required": false,
+          "options": [
+            "selected_scope",
+            "import_graph",
+            "project_tree",
+            "dependency_layer"
+          ],
+          "default": "selected_scope",
+          "description": "Which local resources should be checked before new implementation."
+        },
+        {
+          "id": "test_expectation",
+          "type": "enum",
+          "required": false,
+          "options": [
+            "none",
+            "manual_gap",
+            "unit_plan",
+            "best_available"
+          ],
+          "default": "best_available",
+          "description": "Which test/validation plan the feature slice should provide."
+        }
+      ],
+      "tokens": [
+        "{$feature_goal}",
+        "{$target_path}",
+        "{$resource_reuse_scope:selected_scope|import_graph|project_tree|dependency_layer}",
+        "{$test_expectation:none|manual_gap|unit_plan|best_available}"
+      ],
+      "timeline_tokens": [
+        "{$write_project_mapping}",
+        "{$write_dependency_layer}",
+        "{$compiler_run}",
+        "{$write_export_manifest}"
+      ],
+      "references": [
+        "professional_solution_engineering_reference",
+        "create_project_mapping_reference",
+        "prompt_eval_reference"
+      ],
+      "roles": [
+        "repository_management_prompt_operator",
+        "create_project_mapping_operator",
+        "create_export_boundary_operator",
+        "prompt_eval_operator"
+      ],
+      "validation_focus": [
+        "existing entry point",
+        "smallest useful slice",
+        "user-visible behavior",
+        "target-scoped validation"
+      ],
+      "acceptance_criteria": [
+        "The new behavior is clearly described and bound to existing project paths.",
+        "The patch changes only the evidenced feature slice.",
+        "Validation or manual gap is provided."
+      ],
+      "non_goals": [
+        "Parallelarchitektur",
+        "unevidenced dependency installation",
+        "Big-Bang-Rewrite"
+      ],
+      "output_contract": [
+        "changed_files",
+        "validation_result",
+        "rollback_note",
+        "known_gaps",
+        "export_manifest_delta"
+      ],
+      "professional_guardrails": [
+        "Use only evidenced project paths from mapping, Build.complete, Start-tab goal or selected scope as write authority.",
+        "Reuse local resources when they demonstrably fit; do not create a second implementation beside existing utilities/docs/tests.",
+        "Do not infer legal/compliance/certification claims from generated documentation or tests.",
+        "Preserve unknown JSON fields and id-addressable arrays.",
+        "If validation cannot be executed, name the reason as manual gap instead of claiming success.",
+        "Suggest new dependencies only when existing project manifest evidence already indicates them."
+      ],
+      "source_policy": "Mapping/Build.complete/selected scope are write authority; stack boilerplate is context only.",
+      "context_hint": "Small feature slice with mapping, resource and test context",
+      "resource_reuse_policy": {
+        "scan_order": [
+          "selected scope",
+          "local import graph/relation cache",
+          "existing utilities/services/components",
+          "existing tests/fixtures",
+          "dependency layer"
+        ],
+        "reuse_before_create": true,
+        "report_required": [
+          "reused_files",
+          "created_files",
+          "why_new_code_was_needed"
+        ]
+      },
+      "test_strategy": {
+        "default": "best_available",
+        "rules": [
+          "Use an existing test framework if detected.",
+          "Prefer a unit-level regression or small smoke check over broad end-to-end scaffolding."
+        ]
+      }
+    },
+    {
+      "id": "fix_defect_repair",
+      "label": "Fix Bug",
+      "display_name": "Fix Bug",
+      "modes": [
+        "feature_for_existing_project"
+      ],
+      "group": "Fix",
+      "order": 20,
+      "applies_to_domains": [
+        "generic_project",
+        "frontend_ui",
+        "backend_api",
+        "fullstack_contract",
+        "node_runtime"
+      ],
+      "applies_to_targets": [
+        "any"
+      ],
+      "intent": "Minimally fix an evidenced defect without reframing it as refactor work or a new feature.",
+      "template": "Fix the reported bug. Bug: {$bug_report}. Expected behavior: {$expected_behavior}. Reproduction/evidence: {$reproduction}. Find the smallest faulty unit, change only the necessary location and provide regression validation, rollback and known gaps.",
+      "example": "Fix the reported bug. Bug: Compact Export contains duplicate catalog entries. Expected: each entry appears exactly once.",
+      "fields": [
+        {
+          "id": "bug_report",
+          "type": "text",
+          "required": true,
+          "description": "Kurzbeschreibung des Defekts."
+        },
+        {
+          "id": "expected_behavior",
+          "type": "text",
+          "required": false,
+          "description": "What should happen instead?"
+        },
+        {
+          "id": "reproduction",
+          "type": "text",
+          "required": false,
+          "description": "Reproduction step, log, file or observed evidence."
+        }
+      ],
+      "tokens": [
+        "{$bug_report}",
+        "{$expected_behavior}",
+        "{$reproduction}"
+      ],
+      "timeline_tokens": [
+        "{$write_project_mapping}",
+        "{$write_dependency_layer}",
+        "{$compiler_run}",
+        "{$write_export_manifest}"
+      ],
+      "references": [
+        "professional_solution_engineering_reference",
+        "prompt_eval_reference"
+      ],
+      "roles": [
+        "micro_task_operator",
+        "create_export_boundary_operator",
+        "prompt_eval_operator"
+      ],
+      "validation_focus": [
+        "defect evidence",
+        "minimal repair",
+        "regression check",
+        "no hidden feature expansion"
+      ],
+      "acceptance_criteria": [
+        "Defect and expected behavior are recorded before the patch.",
+        "The fix is smaller than a general restructuring.",
+        "Regression validation or manual gap is documented."
+      ],
+      "non_goals": [
+        "Refactor work without structural goal",
+        "new behavior without assignment",
+        "unevidenced cleanup"
+      ],
+      "output_contract": [
+        "changed_files",
+        "validation_result",
+        "rollback_note",
+        "known_gaps",
+        "export_manifest_delta"
+      ],
+      "professional_guardrails": [
+        "Change only files, that are evidenced by mapping, Build.complete, Start-tab goal or selected scope.",
+        "Do not invent commands, dependencies, folders or architecture claims.",
+        "Preserve unknown JSON fields and id-addressable arrays.",
+        "If validation cannot be executed, name the reason as manual gap instead of claiming success."
+      ],
+      "source_policy": "A fix changes only what is required to make the evidenced defect pass."
+    },
+    {
+      "id": "feature_software_documentation",
+      "label": "Update Software Documentation by PTB Schema",
+      "display_name": "Software Documentation by PTB Schema",
+      "modes": [
+        "feature_for_existing_project"
+      ],
+      "group": "Feature / Documentation",
+      "order": 30,
+      "applies_to_domains": [
+        "generic_project",
+        "docs_content",
+        "frontend_ui",
+        "backend_api",
+        "fullstack_contract",
+        "node_runtime",
+        "data_ai"
+      ],
+      "applies_to_targets": [
+        "any"
+      ],
+      "context_hint": "PTB/WELMEC-oriented documentation with evidence matrix and update plan",
+      "intent": "Create or update software documentation as a feature. The structure must explicitly align to exactly one selected PTB/WELMEC schema and contain a traceable update plan.",
+      "template": "Update the software documentation as a feature. PTB-Schema: {$ptb_schema_profile:ptb_mb01_software_documentation|welmec_7_2_software_guide|ptb_mb06_update_lifecycle|ptb_mb04_risk_assessment|ptb_mb07_software_separation}. Goal: {$doc_target:readme|architecture|api|developer_notes|changelog|validation_report|ptb_software_documentation|update_plan|traceability_matrix|test_plan}. Depth: {$doc_depth:brief|normal|detailed}. Target audience: {$doc_audience:developer|operator|maintainer|user|auditor}. Check existing documentation and local resources via {$resource_reuse_scope:selected_scope|import_graph|project_tree|dependency_layer}; write only evidenced facts, evidence matrix, update plan, validation and known gaps.",
+      "example": "Update the software documentation as a feature. PTB-Schema: ptb_mb01_software_documentation. Goal: traceability_matrix. Depth: normal. Target audience: maintainer.",
+      "fields": [
+        {
+          "id": "ptb_schema_profile",
+          "type": "enum",
+          "required": true,
+          "options": [
+            "ptb_mb01_software_documentation",
+            "welmec_7_2_software_guide",
+            "ptb_mb06_update_lifecycle",
+            "ptb_mb04_risk_assessment",
+            "ptb_mb07_software_separation"
+          ],
+          "default": "ptb_mb01_software_documentation",
+          "description": "Genau ein PTB/WELMEC-orientierter Dokumentationsrahmen."
+        },
+        {
+          "id": "doc_target",
+          "type": "enum",
+          "required": false,
+          "options": [
+            "readme",
+            "architecture",
+            "api",
+            "developer_notes",
+            "changelog",
+            "validation_report",
+            "ptb_software_documentation",
+            "update_plan",
+            "traceability_matrix",
+            "test_plan"
+          ],
+          "default": "ptb_software_documentation",
+          "description": "Which documentation artifact is updated."
+        },
+        {
+          "id": "doc_depth",
+          "type": "enum",
+          "required": false,
+          "options": [
+            "brief",
+            "normal",
+            "detailed"
+          ],
+          "default": "normal",
+          "description": "Dokumentationsumfang."
+        },
+        {
+          "id": "doc_audience",
+          "type": "enum",
+          "required": false,
+          "options": [
+            "developer",
+            "operator",
+            "maintainer",
+            "user",
+            "auditor"
+          ],
+          "default": "maintainer",
+          "description": "Target audience of the documentation."
+        },
+        {
+          "id": "update_scope",
+          "type": "enum",
+          "required": false,
+          "options": [
+            "documentation_only",
+            "docs_and_manifest",
+            "docs_tests_and_manifest"
+          ],
+          "default": "docs_and_manifest",
+          "description": "Which artifacts the update plan should cover."
+        },
+        {
+          "id": "resource_reuse_scope",
+          "type": "enum",
+          "required": false,
+          "options": [
+            "selected_scope",
+            "import_graph",
+            "project_tree",
+            "dependency_layer"
+          ],
+          "default": "selected_scope",
+          "description": "Source for reusing existing resources."
+        }
+      ],
+      "tokens": [
+        "{$ptb_schema_profile:ptb_mb01_software_documentation|welmec_7_2_software_guide|ptb_mb06_update_lifecycle|ptb_mb04_risk_assessment|ptb_mb07_software_separation}",
+        "{$doc_target:readme|architecture|api|developer_notes|changelog|validation_report|ptb_software_documentation|update_plan|traceability_matrix|test_plan}",
+        "{$doc_depth:brief|normal|detailed}",
+        "{$doc_audience:developer|operator|maintainer|user|auditor}",
+        "{$update_scope:documentation_only|docs_and_manifest|docs_tests_and_manifest}",
+        "{$resource_reuse_scope:selected_scope|import_graph|project_tree|dependency_layer}"
+      ],
+      "timeline_tokens": [
+        "{$write_project_mapping}",
+        "{$write_dependency_layer}",
+        "{$compiler_run}",
+        "{$write_export_manifest}"
+      ],
+      "references": [
+        "ptb_software_documentation_reference",
+        "welmec_software_guide",
+        "ptb_software_update_reference",
+        "ptb_software_risk_assessment_reference",
+        "ptb_software_separation_reference",
+        "summary_documentation_reference",
+        "readme_tree_reference",
+        "process_log_reference",
+        "documentation_planning_reference"
+      ],
+      "roles": [
+        "software_documentation_operator",
+        "ptb_documentation_evidence_operator",
+        "ptb_update_lifecycle_operator",
+        "documentation_update_planning_operator",
+        "create_export_boundary_operator"
+      ],
+      "weights": [
+        "ptb_documentation_traceability_standard",
+        "documentation_traceability_standard",
+        "export_traceability_standard"
+      ],
+      "validation_focus": [
+        "PTB schema profile selected exactly once",
+        "evidence matrix contains stable file/section references",
+        "update plan distinguishes doc-only vs code/test impact",
+        "missing evidence is visible"
+      ],
+      "ptb_schema_alignment": {
+        "selection_rule": "Exactly one ptb_schema_profile drives document sections; do not mix all PTB schemas into one generic checklist.",
+        "profiles": {
+          "ptb_mb01_software_documentation": [
+            "document metadata",
+            "system hardware/software structure",
+            "measuring process or functional process",
+            "software identification",
+            "interfaces",
+            "configuration/resources",
+            "additional documents"
+          ],
+          "welmec_7_2_software_guide": [
+            "instrument/software type classification",
+            "risk class assumptions",
+            "requirement block references",
+            "checklist mapping",
+            "validation guidance"
+          ],
+          "ptb_mb06_update_lifecycle": [
+            "organizational update process",
+            "technical update suitability",
+            "authenticity/integrity",
+            "permanent update logging",
+            "approval/consent assumptions"
+          ],
+          "ptb_mb04_risk_assessment": [
+            "assets",
+            "security properties",
+            "generic threats",
+            "type-specific threats",
+            "mitigations",
+            "residual gaps"
+          ],
+          "ptb_mb07_software_separation": [
+            "legally relevant vs non-relevant boundary",
+            "interfaces/data flows",
+            "non-influence evidence",
+            "update boundary"
+          ]
+        },
+        "claim_boundary": "Generated docs are review scaffolding and traceability aids, not proof of conformity, certification or legal approval."
+      },
+      "doc_structure": [
+        "Title, scope, version/date and source files",
+        "Selected PTB/WELMEC schema profile and why it applies",
+        "Evidence matrix: topic -> project file/section -> remark/gap",
+        "Update plan: affected docs, manifests, tests and validation steps",
+        "Known gaps and assumptions"
+      ],
+      "update_plan_contract": {
+        "required_sections": [
+          "change objective",
+          "affected documentation artifacts",
+          "affected code/test artifacts if any",
+          "reuse sources",
+          "validation commands or manual gaps",
+          "rollback"
+        ],
+        "manifest_rule": "Every generated or changed documentation artifact must appear in EXPORT_MANIFEST.json or export_manifest_delta."
+      },
+      "resource_reuse_policy": {
+        "scan_order": [
+          "existing README/SUMMARY/PROCESS_LOG",
+          "schema/reference domains and PTB operators",
+          "selected scope files",
+          "project tree import relations",
+          "dependency layer manifests"
+        ],
+        "reuse_before_create": true,
+        "report_required": [
+          "reused_docs",
+          "reused_schema_ids",
+          "created_docs"
+        ]
+      },
+      "acceptance_criteria": [
+        "Exactly one PTB/WELMEC schema is selected as structure frame.",
+        "Documentation contains an evidence matrix with file/section reference or gap.",
+        "An update plan is included and separated from validation evidence.",
+        "Documentation remains a feature plan and does not appear in the refactor catalog."
+      ],
+      "non_goals": [
+        "Legal conformity claim",
+        "Certification claim",
+        "Documentation as refactor",
+        "Invented project commands or architecture"
+      ],
+      "output_contract": [
+        "changed_files",
+        "evidence_matrix",
+        "validation_result",
+        "rollback_note",
+        "known_gaps",
+        "export_manifest_delta",
+        "documentation_update_plan"
+      ],
+      "professional_guardrails": [
+        "Use only evidenced project paths from mapping, Build.complete, Start-tab goal or selected scope as write authority.",
+        "Reuse local resources when they demonstrably fit; do not create a second implementation beside existing utilities/docs/tests.",
+        "Do not infer legal/compliance/certification claims from generated documentation or tests.",
+        "Preserve unknown JSON fields and id-addressable arrays.",
+        "If validation cannot be executed, name the reason as manual gap instead of claiming success.",
+        "Do not normalize PTB/WELMEC terms when they come from local schema references."
+      ],
+      "source_policy": "Local project evidence, selected scope and PTB/WELMEC schema references are source authority; generated prose must expose assumptions."
+    },
+    {
+      "id": "feature_context_opportunity_discovery",
+      "label": "Derive Context-Based Feature Idea",
+      "display_name": "Derive Context-Based Feature Idea",
+      "modes": [
+        "feature_for_existing_project"
+      ],
+      "group": "Feature / Discovery",
+      "order": 40,
+      "applies_to_domains": [
+        "generic_project",
+        "frontend_ui",
+        "backend_api",
+        "fullstack_contract",
+        "node_runtime",
+        "docs_content",
+        "data_ai"
+      ],
+      "applies_to_targets": [
+        "any"
+      ],
+      "intent": "Derive a small suitable feature idea from the existing project context and formulate it as an evidence-backed implementation proposal.",
+      "template": "Derive a suitable feature idea from project context. Context goal: {$context_goal}. Search scope: {$discovery_scope:selected_scope|mapping|build_complete|project_tree}. Selection mode: {$selection_mode:context_ranked|seeded_tiebreaker}. First create candidates with evidence, choose exactly one small feature slice and provide goal, affected paths, non-goals, validation and risk. Write code only, wenn {$autonomy_level:proposal_only|plan_then_patch} plan_then_patch and the slice is clearly low-risk.",
+      "example": "Derive a suitable feature idea from project context. Context goal: Bedienbarkeit des Compact Export verbessern. Search scope: selected_scope. Selection mode: context_ranked.",
+      "fields": [
+        {
+          "id": "context_goal",
+          "type": "text",
+          "required": false,
+          "default": "find useful small feature from project context",
+          "description": "Which benefit or area should the autonomous search prioritize?"
+        },
+        {
+          "id": "discovery_scope",
+          "type": "enum",
+          "options": [
+            "selected_scope",
+            "mapping",
+            "build_complete",
+            "project_tree"
+          ],
+          "default": "selected_scope",
+          "required": false,
+          "description": "Which context source may serve as evidence for candidates?"
+        },
+        {
+          "id": "selection_mode",
+          "type": "enum",
+          "options": [
+            "context_ranked",
+            "seeded_tiebreaker"
+          ],
+          "default": "context_ranked",
+          "required": false,
+          "description": "context_ranked prioritizes evidence; seeded_tiebreaker may only choose between equally good low-risk candidates."
+        },
+        {
+          "id": "autonomy_level",
+          "type": "enum",
+          "options": [
+            "proposal_only",
+            "plan_then_patch"
+          ],
+          "default": "proposal_only",
+          "required": false,
+          "description": "proposal_only creates only plan/candidates; plan_then_patch may implement one small evidenced slice."
+        }
+      ],
+      "tokens": [
+        "{$context_goal}",
+        "{$discovery_scope}",
+        "{$selection_mode}",
+        "{$autonomy_level}"
+      ],
+      "timeline_tokens": [
+        "{$write_project_mapping}",
+        "{$compiler_run}",
+        "{$write_export_manifest}"
+      ],
+      "references": [
+        "professional_solution_engineering_reference",
+        "create_project_mapping_reference",
+        "prompt_eval_reference"
+      ],
+      "roles": [
+        "repository_management_prompt_operator",
+        "create_project_mapping_operator",
+        "micro_task_operator",
+        "create_export_boundary_operator",
+        "prompt_eval_operator"
+      ],
+      "validation_focus": [
+        "candidate evidence",
+        "smallest useful slice",
+        "risk ranking",
+        "no arbitrary random work"
+      ],
+      "context_alignment": [
+        "Candidates must be derived from observed files, mapping, Build.complete or selected scope.",
+        "Every candidate needs benefit, evidence, affected paths, risk and non-goals.",
+        "Randomness is at most a tie-breaker between equally evidenced low-risk candidates."
+      ],
+      "context_resolution_order": [
+        "selected_scope",
+        "mapping",
+        "project_tree",
+        "schema contracts",
+        "existing validation commands",
+        "risk ranking"
+      ],
+      "acceptance_criteria": [
+        "At least two candidates are checked or a single candidate is justified when context is narrow.",
+        "The selected slice names evidence, benefit, target paths, non-goals and validation.",
+        "Without sufficient evidence, no patch is created; a manual gap is reported instead."
+      ],
+      "non_goals": [
+        "beliebiges Random-Feature",
+        "breiter Rewrite",
+        "Dependency installation without evidence",
+        "Refactor or bugfix work without matching change-type selection"
+      ],
+      "output_contract": [
+        "candidate_list",
+        "selected_feature_slice",
+        "selection_reason",
+        "affected_paths",
+        "validation_plan",
+        "risk_note",
+        "known_gaps"
+      ],
+      "professional_guardrails": [
+        "Change only files, that are evidenced by mapping, Build.complete, Start-tab goal or selected scope.",
+        "Do not invent commands, dependencies, folders or architecture claims.",
+        "Preserve unknown JSON fields and id-addressable arrays.",
+        "If validation cannot be executed, name the reason as manual gap instead of claiming success.",
+        "Do not implement a feature idea that cannot be evidenced by existing context.",
+        "When multiple candidates exist, the smallest validatable benefit wins, not the most creative redesign."
+      ],
+      "source_policy": "Autonomous discovery may propose work from evidence; it may not invent project needs or write outside the selected context."
+    },
+    {
+      "id": "feature_autonomous_development_slice",
+      "label": "Develop Autonomous Feature Slice",
+      "display_name": "Develop Autonomous Feature Slice",
+      "modes": [
+        "feature_for_existing_project"
+      ],
+      "group": "Feature / Autonomous",
+      "order": 50,
+      "applies_to_domains": [
+        "generic_project",
+        "frontend_ui",
+        "backend_api",
+        "fullstack_contract",
+        "node_runtime",
+        "docs_content",
+        "data_ai"
+      ],
+      "applies_to_targets": [
+        "any"
+      ],
+      "intent": "After context analysis, independently plan and implement exactly one small low-risk feature slice when evidence and validation are sufficient.",
+      "template": "Independently develop a suitable feature slice from the project context. Goal frame: {$context_goal}. Boundary: {$scope_limit:one_file|one_module|auto}. Risk: {$risk_threshold:low|medium}. Process: Read context, evaluate candidates, choose exactly one slice, justify the selection before patching, change only evidenced files and provide validation/rollback/known gaps.",
+      "example": "Independently develop a suitable feature slice from the project context. Goal frame: Create Export besser nachvollziehbar machen. Boundary: one_module. Risk: low.",
+      "fields": [
+        {
+          "id": "context_goal",
+          "type": "text",
+          "required": false,
+          "default": "develop a suitable small benefit from project context",
+          "description": "Utility value or product area the autonomous development should target."
+        },
+        {
+          "id": "scope_limit",
+          "type": "enum",
+          "options": [
+            "one_file",
+            "one_module",
+            "auto"
+          ],
+          "default": "one_module",
+          "required": false,
+          "description": "Maximum intervention width for the autonomous patch."
+        },
+        {
+          "id": "risk_threshold",
+          "type": "enum",
+          "options": [
+            "low",
+            "medium"
+          ],
+          "default": "low",
+          "required": false,
+          "description": "Maximum accepted risk for autonomous implementation."
+        }
+      ],
+      "tokens": [
+        "{$context_goal}",
+        "{$scope_limit}",
+        "{$risk_threshold}"
+      ],
+      "timeline_tokens": [
+        "{$write_project_mapping}",
+        "{$write_dependency_layer}",
+        "{$compiler_run}",
+        "{$write_export_manifest}"
+      ],
+      "references": [
+        "professional_solution_engineering_reference",
+        "create_project_mapping_reference",
+        "prompt_eval_reference"
+      ],
+      "roles": [
+        "repository_management_prompt_operator",
+        "create_project_mapping_operator",
+        "micro_task_operator",
+        "create_export_boundary_operator",
+        "prompt_eval_operator"
+      ],
+      "validation_focus": [
+        "context scan",
+        "candidate ranking",
+        "bounded patch",
+        "rollback-ready implementation"
+      ],
+      "context_alignment": [
+        "The patch must be derivable from existing structures, TODOs, missing UX hints, export gaps or schema gaps.",
+        "The plan may only be implemented when target path, acceptance and validation are fixed beforehand.",
+        "When uncertain, downgrade to proposal_only and write no code."
+      ],
+      "context_resolution_order": [
+        "selected_scope",
+        "mapping",
+        "existing entry points",
+        "schema contracts",
+        "validation commands",
+        "export boundary"
+      ],
+      "acceptance_criteria": [
+        "Before patching, the selected feature idea is justified with evidence and risk.",
+        "Exactly one small feature slice is implemented.",
+        "Patch, validation, rollback and known gaps remain traceable as changed-files-only."
+      ],
+      "non_goals": [
+        "random file changes",
+        "multiple features in one run",
+        "API/UX break without assignment",
+        "Refactor without feature benefit"
+      ],
+      "output_contract": [
+        "context_summary",
+        "candidate_ranking",
+        "selected_feature_slice",
+        "changed_files",
+        "validation_result",
+        "rollback_note",
+        "known_gaps",
+        "export_manifest_delta"
+      ],
+      "professional_guardrails": [
+        "Change only files, that are evidenced by mapping, Build.complete, Start-tab goal or selected scope.",
+        "Do not invent commands, dependencies, folders or architecture claims.",
+        "Preserve unknown JSON fields and id-addressable arrays.",
+        "If validation cannot be executed, name the reason as manual gap instead of claiming success.",
+        "Autonomous implementation may only happen when the slice is small, evidenced and validatable.",
+        "At medium risk the patch must be especially narrow; at high risk stop and output a proposal."
+      ],
+      "source_policy": "Autonomous development is evidence-first and bounded; it chooses one small feature slice and never treats randomness as authority."
+    },
+    {
+      "id": "feature_unit_test_plan",
+      "label": "Create Unit Test Plan or Add Tests",
+      "display_name": "Unit test plan / small tests",
+      "modes": [
+        "feature_for_existing_project"
+      ],
+      "group": "Feature / Testing",
+      "order": 60,
+      "applies_to_domains": [
+        "generic_project",
+        "frontend_ui",
+        "backend_api",
+        "fullstack_contract",
+        "node_runtime",
+        "data_ai"
+      ],
+      "applies_to_targets": [
+        "any"
+      ],
+      "context_hint": "Detect existing test framework, derive unit plan, optionally patch small tests",
+      "intent": "Derive a small unit-test plan from project context or add existing unit tests without inventing new test architecture.",
+      "template": "Create a unit-test plan or add small tests. Test goal: {$test_goal}. Target path: {$test_target_path:@wrapper}. Framework-Policy: {$test_framework_policy:detect_existing|pytest|vitest|jest|node_test|unittest|manual_plan}. Write mode: {$test_write_mode:plan_only|add_or_update_tests}. Use local resources through {$resource_reuse_scope:selected_scope|import_graph|project_tree|dependency_layer}; prefer existing fixtures, test folders and package/pyproject scripts. Provide test matrix, changed files, validation/rollback or manual gap.",
+      "fields": [
+        {
+          "id": "test_goal",
+          "type": "text",
+          "required": true,
+          "description": "Which behavior should be covered with unit tests?"
+        },
+        {
+          "id": "test_target_path",
+          "type": "path",
+          "required": false,
+          "default": "@wrapper",
+          "description": "Evidence-backed target path or shortcut."
+        },
+        {
+          "id": "test_framework_policy",
+          "type": "enum",
+          "required": false,
+          "options": [
+            "detect_existing",
+            "pytest",
+            "vitest",
+            "jest",
+            "node_test",
+            "unittest",
+            "manual_plan"
+          ],
+          "default": "detect_existing",
+          "description": "How the test framework is selected."
+        },
+        {
+          "id": "test_write_mode",
+          "type": "enum",
+          "required": false,
+          "options": [
+            "plan_only",
+            "add_or_update_tests"
+          ],
+          "default": "plan_only",
+          "description": "Only plan or also patch tests."
+        },
+        {
+          "id": "resource_reuse_scope",
+          "type": "enum",
+          "required": false,
+          "options": [
+            "selected_scope",
+            "import_graph",
+            "project_tree",
+            "dependency_layer"
+          ],
+          "default": "selected_scope",
+          "description": "Where existing test resources are searched."
+        }
+      ],
+      "tokens": [
+        "{$test_goal}",
+        "{$test_target_path}",
+        "{$test_framework_policy:detect_existing|pytest|vitest|jest|node_test|unittest|manual_plan}",
+        "{$test_write_mode:plan_only|add_or_update_tests}",
+        "{$resource_reuse_scope:selected_scope|import_graph|project_tree|dependency_layer}"
+      ],
+      "timeline_tokens": [
+        "{$write_project_mapping}",
+        "{$write_dependency_layer}",
+        "{$compiler_run}",
+        "{$write_export_manifest}"
+      ],
+      "references": [
+        "unit_testing_reference",
+        "professional_solution_engineering_reference",
+        "create_project_mapping_reference",
+        "prompt_eval_reference"
+      ],
+      "roles": [
+        "unit_test_planning_operator",
+        "create_project_mapping_operator",
+        "prompt_eval_operator",
+        "create_export_boundary_operator"
+      ],
+      "weights": [
+        "unit_test_planning_standard",
+        "prompt_evaluation_standard",
+        "export_traceability_standard"
+      ],
+      "test_strategy": {
+        "size_rule": "Prefer small/unit tests for isolated behavior; use integration/smoke only when unit boundaries are not evidenced.",
+        "framework_detection": [
+          "package.json scripts and devDependencies",
+          "pyproject/requirements imports",
+          "existing test directories",
+          "dependency layer validation tokens"
+        ],
+        "write_gate": "Only write tests when target behavior, existing framework or manual framework choice, and expected assertions are clear."
+      },
+      "resource_reuse_policy": {
+        "scan_order": [
+          "existing tests",
+          "fixtures/mocks",
+          "local utilities/components/services",
+          "package/pyproject scripts",
+          "import graph"
+        ],
+        "reuse_before_create": true,
+        "report_required": [
+          "reused_tests_or_fixtures",
+          "new_tests",
+          "framework_reason"
+        ]
+      },
+      "validation_focus": [
+        "existing test framework or manual gap",
+        "small deterministic assertions",
+        "no broad E2E scaffold",
+        "test command evidence"
+      ],
+      "acceptance_criteria": [
+        "Test goal and expected assertions are provided.",
+        "Existing test structure is reused or a manual gap is explained.",
+        "In patch mode only small unit/regression tests are added.",
+        "Validation command or manual gap is documented."
+      ],
+      "non_goals": [
+        "New test framework installation without evidence",
+        "Large E2E suite",
+        "Snapshot spam",
+        "Production code rewrite just for tests"
+      ],
+      "output_contract": [
+        "changed_files",
+        "evidence_matrix",
+        "validation_result",
+        "rollback_note",
+        "known_gaps",
+        "export_manifest_delta",
+        "test_matrix"
+      ],
+      "professional_guardrails": [
+        "Use only evidenced project paths from mapping, Build.complete, Start-tab goal or selected scope as write authority.",
+        "Reuse local resources when they demonstrably fit; do not create a second implementation beside existing utilities/docs/tests.",
+        "Do not infer legal/compliance/certification claims from generated documentation or tests.",
+        "Preserve unknown JSON fields and id-addressable arrays.",
+        "If validation cannot be executed, name the reason as manual gap instead of claiming success.",
+        "Tests may document behavior but must not change product behavior without request."
+      ],
+      "source_policy": "Existing test resources and project manifests are preferred over generic testing boilerplate."
+    },
+    {
+      "id": "feature_last_git_commit_reference",
+      "label": "Last-Git-Commit-Feature-Slice",
+      "display_name": "Last-Git-Commit-Feature-Slice",
+      "modes": [
+        "feature_for_existing_project"
+      ],
+      "group": "Feature / Git Reference",
+      "order": 65,
+      "applies_to_domains": [
+        "generic_project",
+        "repository_management",
+        "prompt_engineering"
+      ],
+      "applies_to_targets": [
+        "any"
+      ],
+      "intent": "The last Git commit becomes visible as read-only Reference D in Prompt Builder, USER_PROMPT and manifests when the plan is selected or LAST-GIT-COMMIT is enabled.",
+      "template": "Develop the Last Git Commit feature. Goal: {$git_reference_goal}. Target path: {$target_path:@wrapper}. When the plan is selected, run the read-only Patch-tab Git scan before Prompt Builder compile, embed Reference D visibly and export it only as structured manifest/USER_PROMPT data.",
+      "example": "Last-Git-Commit-Feature-Slice: Prompt Builder shows the last commit after plan selection and USER_PROMPT contains Reference D.",
+      "fields": [
+        {
+          "id": "git_reference_goal",
+          "type": "text",
+          "required": true,
+          "default": "Make the last Git commit visible as Reference D in Prompt Builder and USER_PROMPT.",
+          "description": "Which Git reference benefit should become visible through the slice?"
+        },
+        {
+          "id": "target_path",
+          "type": "path",
+          "required": false,
+          "default": "@wrapper",
+          "description": "Evidence-backed target path or @target shortcut from mapping."
+        },
+        {
+          "id": "include_status",
+          "type": "enum",
+          "required": false,
+          "options": [
+            "branch_only",
+            "branch_and_dirty_status",
+            "branch_status_and_last_commit"
+          ],
+          "default": "branch_status_and_last_commit",
+          "description": "Which read-only Git status parts are allowed as context."
+        },
+        {
+          "id": "reference_write_mode",
+          "type": "enum",
+          "required": false,
+          "options": [
+            "prompt_builder_visible",
+            "export_manifest_only",
+            "prompt_builder_and_export"
+          ],
+          "default": "prompt_builder_and_export",
+          "description": "Where the reference should be embedded."
+        }
+      ],
+      "tokens": [
+        "{$git_reference_goal}",
+        "{$target_path}",
+        "{$include_status:branch_only|branch_and_dirty_status|branch_status_and_last_commit}",
+        "{$reference_write_mode:prompt_builder_visible|export_manifest_only|prompt_builder_and_export}",
+        "{$LAST_GIT_COMMIT_REFERENCE_D}"
+      ],
+      "timeline_tokens": [
+        "{$scan_patch_tab_git_reference}",
+        "{$write_project_mapping}",
+        "{$write_export_manifest}",
+        "{$write_user_prompt_reference_d}"
+      ],
+      "references": [
+        "professional_solution_engineering_reference",
+        "create_project_mapping_reference",
+        "prompt_eval_reference",
+        "tool_wide_prompt_engineering_reference"
+      ],
+      "roles": [
+        "repository_management_prompt_operator",
+        "create_project_mapping_operator",
+        "create_export_boundary_operator",
+        "prompt_eval_operator",
+        "tool_wide_prompt_architect_operator"
+      ],
+      "validation_focus": [
+        "plan selection triggers scan before prompt compile",
+        "read-only Patch-tab Git routine reuse",
+        "Prompt Builder visible reference",
+        "USER_PROMPT reference D",
+        "manifest consistency"
+      ],
+      "acceptance_criteria": [
+        "When the plan is selected, the Git scan runs before Prompt Builder compilation.",
+        "Prompt Builder displays the Last-Git-Commit reference visibly and traceably.",
+        "USER_PROMPT.txt contains Reference D structurally, without diff, remote URL or secrets.",
+        "Missing Git repository is manifested as a known gap, not invented."
+      ],
+      "non_goals": [
+        "Git-Repository schreiben",
+        "Diffs exportieren",
+        "store remote URLs, emails or secrets",
+        "build a second Git detection routine beside Patch tab"
+      ],
+      "output_contract": [
+        "changed_files",
+        "last_git_commit_reference",
+        "validation_result",
+        "rollback_note",
+        "known_gaps",
+        "export_manifest_delta"
+      ],
+      "professional_guardrails": [
+        "Run Git commands read-only only and with timeout.",
+        "Reuse the Patch-tab Git routine.",
+        "Treat commit data as context, not write authority.",
+        "When Git evidence is missing, report a known gap instead of a fake commit."
+      ],
+      "source_policy": "Patch-tab Git repository detection is the only Git source; exported commit reference is context only, not write authority.",
+      "context_hint": "Last-Git-Commit reference is pre-scanned on plan selection and visibly embedded in Prompt Builder."
+    },
+    {
+      "id": "feature_system_plan_expansion",
+      "label": "Extend System and Pipeline Plans",
+      "display_name": "Extend System and Pipeline Plans",
+      "modes": [
+        "feature_for_existing_project"
+      ],
+      "group": "Feature / Planning",
+      "order": 68,
+      "applies_to_domains": [
+        "generic_project",
+        "create_project",
+        "prompt_engineering"
+      ],
+      "applies_to_targets": [
+        "any"
+      ],
+      "intent": "Feature/refactor pipelines offer more slice types and larger system plans but remain plan-first and small-patch capable.",
+      "template": "Extend system plans with plan-first larger development plans and additional slice types. Every plan needs acceptance, validation, non-goals and rollback.",
+      "fields": [
+        {
+          "id": "system_plan_goal",
+          "type": "text",
+          "required": true,
+          "description": "Which larger development plan or slice family should become possible?"
+        },
+        {
+          "id": "system_plan_write_mode",
+          "type": "enum",
+          "required": false,
+          "options": [
+            "plan_only",
+            "catalog_entry_only",
+            "small_patch_after_plan"
+          ],
+          "default": "plan_only",
+          "description": "How much implementation the system plan may allow."
+        }
+      ],
+      "tokens": [
+        "{$system_plan_goal}",
+        "{$system_plan_write_mode:plan_only|catalog_entry_only|small_patch_after_plan}"
+      ],
+      "timeline_tokens": [
+        "{$write_project_mapping}",
+        "{$write_export_manifest}"
+      ],
+      "references": [
+        "professional_solution_engineering_reference",
+        "create_stack_reference",
+        "prompt_eval_reference"
+      ],
+      "roles": [
+        "professional_solution_engineering_operator",
+        "create_context_build_operator",
+        "prompt_eval_operator"
+      ],
+      "validation_focus": [
+        "plan-first boundary",
+        "no generated scale duplicates",
+        "large plan decomposition",
+        "rollback-ready outputs"
+      ],
+      "acceptance_criteria": [
+        "New slice types are selectable.",
+        "Larger plans do not force a big-bang patch.",
+        "Every plan has acceptance, validation, non-goals and rollback."
+      ],
+      "non_goals": [
+        "automatische breite Projektmigration",
+        "duplizierte Skalenvarianten",
+        "unevidenced dependencies"
+      ],
+      "output_contract": [
+        "candidate_plan_matrix",
+        "selected_slice",
+        "validation_plan",
+        "known_gaps"
+      ]
+    },
+    {
+      "id": "feature_resource_reuse_integration",
+      "label": "Develop Feature with Existing Resources",
+      "display_name": "Feature through Resource Reuse",
+      "modes": [
+        "feature_for_existing_project"
+      ],
+      "group": "Feature / Resource Reuse",
+      "order": 70,
+      "applies_to_domains": [
+        "generic_project",
+        "frontend_ui",
+        "backend_api",
+        "fullstack_contract",
+        "node_runtime",
+        "docs_content",
+        "data_ai"
+      ],
+      "applies_to_targets": [
+        "any"
+      ],
+      "context_hint": "Deliberately reuse local utilities, components, docs, tests and schemas",
+      "intent": "Plan or implement a feature so existing project resources are identified and reused first.",
+      "template": "Develop the feature by reusing existing resources. Goal: {$reuse_goal}. Target path: {$target_path:@wrapper}. Search scope: {$resource_reuse_scope:selected_scope|import_graph|project_tree|dependency_layer}. Write mode: {$reuse_write_mode:plan_only|patch_small_slice}. Find suitable local resources, justify reuse or new creation, change only the smallest slice and provide validation/rollback/known gaps.",
+      "fields": [
+        {
+          "id": "reuse_goal",
+          "type": "text",
+          "required": true,
+          "description": "Which capability should be supported by existing resources?"
+        },
+        {
+          "id": "target_path",
+          "type": "path",
+          "required": false,
+          "default": "@wrapper"
+        },
+        {
+          "id": "resource_reuse_scope",
+          "type": "enum",
+          "required": false,
+          "options": [
+            "selected_scope",
+            "import_graph",
+            "project_tree",
+            "dependency_layer"
+          ],
+          "default": "import_graph"
+        },
+        {
+          "id": "reuse_write_mode",
+          "type": "enum",
+          "required": false,
+          "options": [
+            "plan_only",
+            "patch_small_slice"
+          ],
+          "default": "plan_only"
+        }
+      ],
+      "tokens": [
+        "{$reuse_goal}",
+        "{$target_path}",
+        "{$resource_reuse_scope:selected_scope|import_graph|project_tree|dependency_layer}",
+        "{$reuse_write_mode:plan_only|patch_small_slice}"
+      ],
+      "timeline_tokens": [
+        "{$write_project_mapping}",
+        "{$write_dependency_layer}",
+        "{$compiler_run}",
+        "{$write_export_manifest}"
+      ],
+      "references": [
+        "resource_reuse_reference",
+        "create_project_mapping_reference",
+        "professional_solution_engineering_reference"
+      ],
+      "roles": [
+        "resource_reuse_operator",
+        "create_project_mapping_operator",
+        "create_export_boundary_operator"
+      ],
+      "weights": [
+        "resource_reuse_standard",
+        "professional_solution_engineering_standard",
+        "export_traceability_standard"
+      ],
+      "resource_reuse_policy": {
+        "scan_order": [
+          "selected scope",
+          "Project Tree import relation cache",
+          "dependency layer",
+          "schema references/operators",
+          "existing docs/tests"
+        ],
+        "reuse_before_create": true,
+        "report_required": [
+          "candidate_resources",
+          "selected_reuse",
+          "new_resource_reason"
+        ]
+      },
+      "local_resource_detection": [
+        "same-module helpers",
+        "import-related files",
+        "existing tests/fixtures",
+        "schema reference/operator ids",
+        "dependency manifest files",
+        "README/SUMMARY/PROCESS_LOG"
+      ],
+      "acceptance_criteria": [
+        "At least one local resource search is documented.",
+        "Reused and newly created files are separated.",
+        "No parallel utility/schema copy is created without justification."
+      ],
+      "validation_focus": [
+        "resource fit",
+        "no duplicate implementation",
+        "small patch boundary",
+        "rollback"
+      ],
+      "non_goals": [
+        "Blind copy/paste",
+        "Global deduplication rewrite",
+        "New dependency because a resource is missing"
+      ],
+      "output_contract": [
+        "changed_files",
+        "evidence_matrix",
+        "validation_result",
+        "rollback_note",
+        "known_gaps",
+        "export_manifest_delta",
+        "resource_reuse_report"
+      ],
+      "professional_guardrails": [
+        "Use only evidenced project paths from mapping, Build.complete, Start-tab goal or selected scope as write authority.",
+        "Reuse local resources when they demonstrably fit; do not create a second implementation beside existing utilities/docs/tests.",
+        "Do not infer legal/compliance/certification claims from generated documentation or tests.",
+        "Preserve unknown JSON fields and id-addressable arrays.",
+        "If validation cannot be executed, name the reason as manual gap instead of claiming success."
+      ],
+      "source_policy": "Project Tree/import relations and schema ids can suggest reuse, but only selected/mapped files authorize writes."
+    },
+    {
+      "id": "refactor_behavior_preserving_structure",
+      "label": "Refactor without Behavior Change",
+      "display_name": "Refactor without Behavior Change",
+      "modes": [
+        "refactor_existing_stack"
+      ],
+      "group": "Refactor",
+      "order": 10,
+      "applies_to_domains": [
+        "generic_project",
+        "frontend_ui",
+        "backend_api",
+        "fullstack_contract",
+        "node_runtime",
+        "data_ai"
+      ],
+      "applies_to_targets": [
+        "any"
+      ],
+      "intent": "Structure, simplify or decouple existing code without silently changing observable behavior.",
+      "template": "Refactor the existing project area without behavior change. Goal: {$refactor_goal}. Target path: {$target_path:@wrapper}. Document preserved behavior beforehand, choose the smallest reversible change and provide validation, rollback and known gaps.",
+      "example": "Refactor the existing project area without behavior change. Goal: move duplicate export manifest formatting into a helper function.",
+      "fields": [
+        {
+          "id": "refactor_goal",
+          "type": "text",
+          "required": true,
+          "description": "Which internal structure should be improved?"
+        },
+        {
+          "id": "target_path",
+          "type": "path",
+          "required": false,
+          "default": "@wrapper"
+        },
+        {
+          "id": "preserved_behavior",
+          "type": "text",
+          "required": true,
+          "description": "Which visible behavior must remain unchanged?"
+        },
+        {
+          "id": "resource_reuse_scope",
+          "type": "enum",
+          "required": false,
+          "options": [
+            "selected_scope",
+            "import_graph",
+            "project_tree",
+            "dependency_layer"
+          ],
+          "default": "selected_scope"
+        },
+        {
+          "id": "safety_check",
+          "type": "enum",
+          "required": false,
+          "options": [
+            "manual_gap",
+            "unit_test",
+            "existing_validation",
+            "best_available"
+          ],
+          "default": "best_available"
+        }
+      ],
+      "tokens": [
+        "{$refactor_goal}",
+        "{$target_path}",
+        "{$preserved_behavior}",
+        "{$resource_reuse_scope:selected_scope|import_graph|project_tree|dependency_layer}",
+        "{$safety_check:manual_gap|unit_test|existing_validation|best_available}"
+      ],
+      "timeline_tokens": [
+        "{$write_project_mapping}",
+        "{$write_dependency_layer}",
+        "{$compiler_run}",
+        "{$write_export_manifest}"
+      ],
+      "references": [
+        "professional_solution_engineering_reference",
+        "create_project_mapping_reference",
+        "clean_project_reference"
+      ],
+      "roles": [
+        "repository_management_prompt_operator",
+        "create_project_mapping_operator",
+        "create_export_boundary_operator",
+        "prompt_eval_operator"
+      ],
+      "validation_focus": [
+        "behavior preservation",
+        "small reversible step",
+        "unknown fields preserved",
+        "target-scoped validation"
+      ],
+      "acceptance_criteria": [
+        "Preserved behavior is described before the patch.",
+        "Refactor reduces complexity/duplication or clarifies boundaries.",
+        "No new function, bugfix or documentation work is classified as refactor."
+      ],
+      "non_goals": [
+        "Bugfix",
+        "Feature extension",
+        "Documentation feature",
+        "API/UX break without assignment"
+      ],
+      "output_contract": [
+        "changed_files",
+        "preserved_behavior",
+        "validation_result",
+        "rollback_note",
+        "known_gaps",
+        "export_manifest_delta"
+      ],
+      "professional_guardrails": [
+        "Use only evidenced project paths from mapping, Build.complete, Start-tab goal or selected scope as write authority.",
+        "Reuse local resources when they demonstrably fit; do not create a second implementation beside existing utilities/docs/tests.",
+        "Do not infer legal/compliance/certification claims from generated documentation or tests.",
+        "Preserve unknown JSON fields and id-addressable arrays.",
+        "If validation cannot be executed, name the reason as manual gap instead of claiming success.",
+        "Refactor must not contain feature, bugfix or documentation work."
+      ],
+      "source_policy": "Refactor means internal restructuring with preserved observable behavior.",
+      "context_hint": "Behavior-preserving structural improvement with test/reuse gate",
+      "resource_reuse_policy": {
+        "scan_order": [
+          "existing abstractions/interfaces",
+          "import-related local files",
+          "tests/fixtures",
+          "schema contracts"
+        ],
+        "reuse_before_create": true,
+        "report_required": [
+          "preserved_behavior",
+          "reused_resources",
+          "validation_or_gap"
+        ]
+      },
+      "test_strategy": {
+        "default": "best_available",
+        "rule": "Use existing tests or add only behavior-locking unit tests when the project has a clear framework and the user allows test changes."
+      }
+    },
+    {
+      "id": "refactor_resource_reuse_without_behavior_change",
+      "label": "Reuse Resources without Behavior Change",
+      "display_name": "Refactor: Reuse Local Resources",
+      "modes": [
+        "refactor_existing_stack"
+      ],
+      "group": "Refactor",
+      "order": 20,
+      "applies_to_domains": [
+        "generic_project",
+        "frontend_ui",
+        "backend_api",
+        "fullstack_contract",
+        "node_runtime",
+        "data_ai"
+      ],
+      "applies_to_targets": [
+        "any"
+      ],
+      "context_hint": "Replace duplicates/parallel code with evidenced local resource",
+      "intent": "Replace internal duplication or parallel structure with existing resources without changing observable behavior.",
+      "template": "Refactor to reuse existing resources without behavior change. Goal: {$refactor_goal}. Target path: {$target_path:@wrapper}. Preserved behavior: {$preserved_behavior}. Search scope: {$resource_reuse_scope:selected_scope|import_graph|project_tree|dependency_layer}. Identify existing resource, replace only the smallest suitable area and provide behavior preservation, validation, rollback and known gaps.",
+      "fields": [
+        {
+          "id": "refactor_goal",
+          "type": "text",
+          "required": true
+        },
+        {
+          "id": "target_path",
+          "type": "path",
+          "required": false,
+          "default": "@wrapper"
+        },
+        {
+          "id": "preserved_behavior",
+          "type": "text",
+          "required": true
+        },
+        {
+          "id": "resource_reuse_scope",
+          "type": "enum",
+          "required": false,
+          "options": [
+            "selected_scope",
+            "import_graph",
+            "project_tree",
+            "dependency_layer"
+          ],
+          "default": "import_graph"
+        }
+      ],
+      "tokens": [
+        "{$refactor_goal}",
+        "{$target_path}",
+        "{$preserved_behavior}",
+        "{$resource_reuse_scope:selected_scope|import_graph|project_tree|dependency_layer}"
+      ],
+      "timeline_tokens": [
+        "{$write_project_mapping}",
+        "{$write_dependency_layer}",
+        "{$compiler_run}",
+        "{$write_export_manifest}"
+      ],
+      "references": [
+        "resource_reuse_reference",
+        "create_project_mapping_reference",
+        "professional_solution_engineering_reference",
+        "prompt_eval_reference"
+      ],
+      "roles": [
+        "resource_reuse_operator",
+        "create_project_mapping_operator",
+        "prompt_eval_operator",
+        "create_export_boundary_operator"
+      ],
+      "weights": [
+        "resource_reuse_standard",
+        "clean_project_standard",
+        "prompt_evaluation_standard"
+      ],
+      "resource_reuse_policy": {
+        "scan_order": [
+          "duplicate/parallel implementation",
+          "existing utility/service/component",
+          "import relation cache",
+          "tests/fixtures"
+        ],
+        "reuse_before_create": true,
+        "report_required": [
+          "old_path",
+          "reused_resource",
+          "behavior_lock"
+        ]
+      },
+      "validation_focus": [
+        "observable behavior preserved",
+        "no feature change",
+        "reuse candidate is project-local",
+        "rollback path"
+      ],
+      "acceptance_criteria": [
+        "Before/after behavior is named and remains unchanged.",
+        "Reused resource exists in the local project context.",
+        "Patch is smaller than a rewrite and reversible."
+      ],
+      "non_goals": [
+        "New behavior",
+        "Bugfix",
+        "Documentation update",
+        "Global architecture rewrite"
+      ],
+      "output_contract": [
+        "changed_files",
+        "evidence_matrix",
+        "validation_result",
+        "rollback_note",
+        "known_gaps",
+        "export_manifest_delta",
+        "resource_reuse_report",
+        "behavior_preservation_note"
+      ],
+      "professional_guardrails": [
+        "Use only evidenced project paths from mapping, Build.complete, Start-tab goal or selected scope as write authority.",
+        "Reuse local resources when they demonstrably fit; do not create a second implementation beside existing utilities/docs/tests.",
+        "Do not infer legal/compliance/certification claims from generated documentation or tests.",
+        "Preserve unknown JSON fields and id-addressable arrays.",
+        "If validation cannot be executed, name the reason as manual gap instead of claiming success.",
+        "Do not use a local resource only because names are similar; interface and context must match."
+      ],
+      "source_policy": "Reuse candidates must come from selected scope, import graph, project tree or dependency layer."
+    },
+    {
+      "id": "refactor_testability_seam_without_behavior_change",
+      "label": "Improve Testability without Behavior Change",
+      "display_name": "Refactor: Testbarkeit verbessern",
+      "modes": [
+        "refactor_existing_stack"
+      ],
+      "group": "Refactor",
+      "order": 30,
+      "applies_to_domains": [
+        "generic_project",
+        "frontend_ui",
+        "backend_api",
+        "fullstack_contract",
+        "node_runtime",
+        "data_ai"
+      ],
+      "applies_to_targets": [
+        "any"
+      ],
+      "context_hint": "Small test seams/decoupling for unit tests, behavior stays the same",
+      "intent": "Decouple code so unit tests become easier without changing public behavior or building a feature.",
+      "template": "Improve testability without behavior change. Goal: {$refactor_goal}. Target path: {$target_path:@wrapper}. Preserved behavior: {$preserved_behavior}. Test goal: {$test_goal}. Framework-Policy: {$test_framework_policy:detect_existing|pytest|vitest|jest|node_test|unittest|manual_plan}. Introduce only small seams/extractions, use existing tests/resources and provide behavior preservation, validation or manual gap.",
+      "fields": [
+        {
+          "id": "refactor_goal",
+          "type": "text",
+          "required": true
+        },
+        {
+          "id": "target_path",
+          "type": "path",
+          "required": false,
+          "default": "@wrapper"
+        },
+        {
+          "id": "preserved_behavior",
+          "type": "text",
+          "required": true
+        },
+        {
+          "id": "test_goal",
+          "type": "text",
+          "required": true
+        },
+        {
+          "id": "test_framework_policy",
+          "type": "enum",
+          "required": false,
+          "options": [
+            "detect_existing",
+            "pytest",
+            "vitest",
+            "jest",
+            "node_test",
+            "unittest",
+            "manual_plan"
+          ],
+          "default": "detect_existing"
+        }
+      ],
+      "tokens": [
+        "{$refactor_goal}",
+        "{$target_path}",
+        "{$preserved_behavior}",
+        "{$test_goal}",
+        "{$test_framework_policy:detect_existing|pytest|vitest|jest|node_test|unittest|manual_plan}"
+      ],
+      "timeline_tokens": [
+        "{$write_project_mapping}",
+        "{$write_dependency_layer}",
+        "{$compiler_run}",
+        "{$write_export_manifest}"
+      ],
+      "references": [
+        "unit_testing_reference",
+        "resource_reuse_reference",
+        "create_project_mapping_reference",
+        "professional_solution_engineering_reference"
+      ],
+      "roles": [
+        "unit_test_planning_operator",
+        "resource_reuse_operator",
+        "create_project_mapping_operator",
+        "prompt_eval_operator"
+      ],
+      "weights": [
+        "unit_test_planning_standard",
+        "clean_project_standard",
+        "prompt_evaluation_standard"
+      ],
+      "test_strategy": {
+        "allowed_changes": [
+          "extract pure helper",
+          "inject dependency seam",
+          "split side-effect boundary",
+          "reuse existing fixture/mock"
+        ],
+        "forbidden_changes": [
+          "change public behavior",
+          "install new framework without evidence",
+          "convert architecture wholesale"
+        ]
+      },
+      "resource_reuse_policy": {
+        "scan_order": [
+          "existing tests/fixtures",
+          "local helpers",
+          "dependency layer scripts",
+          "import relations"
+        ],
+        "reuse_before_create": true,
+        "report_required": [
+          "test_seam",
+          "reused_test_resources",
+          "behavior_lock"
+        ]
+      },
+      "validation_focus": [
+        "behavior lock",
+        "test seam minimality",
+        "existing test framework",
+        "rollback"
+      ],
+      "acceptance_criteria": [
+        "Public behavior stays the same.",
+        "Testability improves through a small internal seam or extraction.",
+        "Existing test resources are preferred."
+      ],
+      "non_goals": [
+        "Feature implementation",
+        "Bugfix without defect report",
+        "Broad architecture rewrite",
+        "Docs-only work"
+      ],
+      "output_contract": [
+        "changed_files",
+        "evidence_matrix",
+        "validation_result",
+        "rollback_note",
+        "known_gaps",
+        "export_manifest_delta",
+        "testability_note"
+      ],
+      "professional_guardrails": [
+        "Use only evidenced project paths from mapping, Build.complete, Start-tab goal or selected scope as write authority.",
+        "Reuse local resources when they demonstrably fit; do not create a second implementation beside existing utilities/docs/tests.",
+        "Do not infer legal/compliance/certification claims from generated documentation or tests.",
+        "Preserve unknown JSON fields and id-addressable arrays.",
+        "If validation cannot be executed, name the reason as manual gap instead of claiming success.",
+        "If no test-framework evidence exists, provide a test plan instead of framework installation."
+      ],
+      "source_policy": "Existing tests/framework evidence controls testability refactors."
+    },
+    {
+      "id": "refactor_last_git_commit_hardening",
+      "label": "Last-Git-Commit-Hardening-Slice",
+      "display_name": "Last-Git-Commit-Hardening-Slice",
+      "modes": [
+        "refactor_existing_stack"
+      ],
+      "group": "Refactor / Git Reference",
+      "order": 65,
+      "applies_to_domains": [
+        "generic_project",
+        "repository_management",
+        "prompt_engineering"
+      ],
+      "applies_to_targets": [
+        "any"
+      ],
+      "intent": "The Last Git Commit reference is hardened behavior-preserving: one-time scan, cache, error cases, manifest consistency and Prompt Builder visibility.",
+      "template": "Refactor the Last Git Commit feature behavior-preserving. Use the Patch-tab Git routine, harden scan signature, timeout, known gaps and manifest synchronization without introducing Git write operations.",
+      "fields": [
+        {
+          "id": "hardening_goal",
+          "type": "text",
+          "required": true,
+          "default": "Harden Last Git Commit reference read-only.",
+          "description": "What should be hardened in the Git reference flow?"
+        },
+        {
+          "id": "hardening_scope",
+          "type": "enum",
+          "required": false,
+          "options": [
+            "scan_cache",
+            "manifest_alignment",
+            "prompt_builder_visibility",
+            "all"
+          ],
+          "default": "all",
+          "description": "Which area is hardened."
+        }
+      ],
+      "tokens": [
+        "{$hardening_goal}",
+        "{$hardening_scope:scan_cache|manifest_alignment|prompt_builder_visibility|all}",
+        "{$LAST_GIT_COMMIT_REFERENCE_D}"
+      ],
+      "timeline_tokens": [
+        "{$scan_patch_tab_git_reference}",
+        "{$write_export_manifest}"
+      ],
+      "references": [
+        "professional_solution_engineering_reference",
+        "create_project_mapping_reference",
+        "prompt_eval_reference",
+        "tool_wide_prompt_engineering_reference"
+      ],
+      "roles": [
+        "repository_management_prompt_operator",
+        "create_project_mapping_operator",
+        "create_export_boundary_operator",
+        "prompt_eval_operator",
+        "tool_wide_prompt_architect_operator"
+      ],
+      "validation_focus": [
+        "behavior preservation",
+        "no duplicate Git utility",
+        "scan once per signature",
+        "manifest alignment",
+        "Prompt Builder visible reference"
+      ],
+      "acceptance_criteria": [
+        "Refactor does not create a second Git detection routine.",
+        "Plan selection and export checkbox use the same payload.",
+        "Error cases remain visible as known gaps.",
+        "No diff, no remote URL and no Git write operation."
+      ],
+      "non_goals": [
+        "Change feature semantics",
+        "globaler Git-Client-Refactor",
+        "Repository mutieren"
+      ],
+      "output_contract": [
+        "changed_files",
+        "last_git_commit_reference",
+        "validation_result",
+        "rollback_note",
+        "known_gaps"
+      ]
+    },
+    {
+      "id": "refactor_prompt_pipeline_boundary_hardening",
+      "label": "Harden Prompt Pipeline Boundaries",
+      "display_name": "Harden Prompt Pipeline Boundaries",
+      "modes": [
+        "refactor_existing_stack"
+      ],
+      "group": "Refactor / Prompt Pipeline",
+      "order": 65,
+      "applies_to_domains": [
+        "generic_project",
+        "prompt_engineering"
+      ],
+      "applies_to_targets": [
+        "any"
+      ],
+      "intent": "Prompt Builder, Create Preview, USER_PROMPT and manifest output are aligned behavior-preserving to clear boundaries between plans, export hooks and CMDs.",
+      "template": "Harden prompt-pipeline boundaries. Separate selectable plans from export hooks such as TASKS.TXT and CMD.json and keep scope, validation and known gaps consistent.",
+      "fields": [
+        {
+          "id": "prompt_pipeline_boundary",
+          "type": "text",
+          "required": true,
+          "description": "Which prompt/manifest boundary should be hardened?"
+        }
+      ],
+      "tokens": [
+        "{$prompt_pipeline_boundary}"
+      ],
+      "timeline_tokens": [
+        "{$write_export_manifest}"
+      ],
+      "references": [
+        "repository_management_prompt_reference",
+        "tool_wide_prompt_engineering_reference",
+        "prompt_eval_reference"
+      ],
+      "roles": [
+        "repository_management_prompt_operator",
+        "tool_wide_prompt_architect_operator",
+        "prompt_eval_operator"
+      ],
+      "validation_focus": [
+        "authority separation",
+        "export hook not catalog entry",
+        "cmd manifest traceability",
+        "known-gap consistency"
+      ],
+      "acceptance_criteria": [
+        "CMDs are manifested in CMD.json but are not Create catalog entries.",
+        "USER_PROMPT, Prompt Builder and Create Preview explain the same boundaries.",
+        "Validation, scope and tool rights are not expanded by shortcuts."
+      ],
+      "non_goals": [
+        "Shortcut-CMDs als Feature-Slice",
+        "Prompt-Authority erweitern",
+        "bypass validation"
+      ],
+      "output_contract": [
+        "changed_files",
+        "prompt_boundary_delta",
+        "cmd_manifest_delta",
+        "validation_result",
+        "rollback_note",
+        "known_gaps"
+      ]
+    },
+    {
+      "id": "refactor_slice_catalog_consolidation",
+      "label": "Consolidate Slice Catalog",
+      "display_name": "Consolidate Slice Catalog",
+      "modes": [
+        "refactor_existing_stack"
+      ],
+      "group": "Refactor / Catalog",
+      "order": 66,
+      "applies_to_domains": [
+        "generic_project",
+        "prompt_engineering"
+      ],
+      "applies_to_targets": [
+        "any"
+      ],
+      "intent": "Feature/refactor plan sources are consolidated so new slice types do not become duplicate parallel catalogs.",
+      "template": "Consolidate the slice catalogs. Align built-in plans, chain boilerplates, specializations and target modules to the same IDs and avoid generated scale duplicates.",
+      "fields": [
+        {
+          "id": "catalog_consolidation_goal",
+          "type": "text",
+          "required": true,
+          "description": "Which plan sources should be consolidated?"
+        }
+      ],
+      "tokens": [
+        "{$catalog_consolidation_goal}"
+      ],
+      "timeline_tokens": [
+        "{$write_project_mapping}",
+        "{$write_export_manifest}"
+      ],
+      "references": [
+        "tool_wide_prompt_engineering_reference",
+        "structured_output_reference",
+        "prompt_eval_reference"
+      ],
+      "roles": [
+        "tool_wide_prompt_architect_operator",
+        "repository_management_prompt_operator",
+        "prompt_eval_operator"
+      ],
+      "validation_focus": [
+        "single entry per change type",
+        "id alignment",
+        "unknown JSON preservation",
+        "no scale variants"
+      ],
+      "acceptance_criteria": [
+        "Every slice has a domain-specific entry ID.",
+        "Catalog, Prompt Builder and export use the same plan identity.",
+        "Unbekannte JSON-Felder bleiben erhalten."
+      ],
+      "non_goals": [
+        "create new pseudo-scales",
+        "Mixing feature and refactor"
+      ],
+      "output_contract": [
+        "changed_files",
+        "catalog_delta",
+        "validation_result",
+        "known_gaps"
+      ]
+    },
+    {
+      "id": "new_abstraction_visual_studio_utils",
+      "label": "Visual Studio Utils",
+      "display_name": "Visual Studio Utils",
+      "modes": [
+        "new_project_abstraction"
+      ],
+      "routine": "create_new_abstraction",
+      "category": "Create New Abstraction / Developer Tools",
+      "stack_category": "Create New Abstraction / Developer Tools",
+      "catalog_category": "Create New Abstraction / Developer Tools",
+      "group": "Create New Abstraction / Developer Tools",
+      "stack_node_id": "stack_visual_studio_utils",
+      "order": 10,
+      "applies_to_domains": [
+        "generic_project",
+        "create_project"
+      ],
+      "applies_to_targets": [
+        "any"
+      ],
+      "intent": "Creates a standalone new abstraction for Visual Studio utility tools with clear tool/extension boundary, manifest evidence and a small validatable start slice.",
+      "template": "Plan a standalone Visual Studio Utils abstraction for {$abstraction_goal}. Separate IDE integration, local tooling logic, configuration and validation; do not invent extension APIs without manifest or user evidence.",
+      "fields": [
+        {
+          "id": "abstraction_goal",
+          "type": "text",
+          "required": true,
+          "description": "Which Visual Studio utility or developer tool should be created?"
+        },
+        {
+          "id": "tool_profile",
+          "type": "enum",
+          "required": false,
+          "description": "Which utility type is in focus?",
+          "options": [
+            "extension_helper",
+            "project_template_tool",
+            "debug_build_helper",
+            "code_generation_helper"
+          ],
+          "default": "extension_helper"
+        }
+      ],
+      "tokens": [
+        "{$abstraction_goal}",
+        "{$tool_profile:extension_helper|project_template_tool|debug_build_helper|code_generation_helper}"
+      ],
+      "timeline_tokens": [
+        "{$write_project_mapping}",
+        "{$write_dependency_layer}",
+        "{$compiler_run}",
+        "{$write_export_manifest}"
+      ],
+      "references": [
+        "create_stack_reference",
+        "professional_solution_engineering_reference",
+        "structured_output_reference",
+        "prompt_eval_reference"
+      ],
+      "roles": [
+        "create_stack_operator",
+        "create_context_build_operator",
+        "professional_solution_engineering_operator",
+        "prompt_eval_operator"
+      ],
+      "validation_focus": [
+        "IDE/tool boundary",
+        "manifest evidence",
+        "local developer workflow",
+        "small utility slice"
+      ],
+      "acceptance_criteria": [
+        "Visual Studio utility goal and boundaries are clear.",
+        "IDE/extension dependencies are evidenced or known gap.",
+        "Start slice remains small, rollbackable and validatable."
+      ],
+      "non_goals": [
+        "patching an existing project as feature/refactor",
+        "broad automatic migration without Build.complete",
+        "invent unevidenced dependencies or runtime versions"
+      ],
+      "output_contract": [
+        "utility_blueprint",
+        "tool_boundary",
+        "target_tree",
+        "dependency_layer",
+        "validation_plan",
+        "known_gaps"
+      ],
+      "source_policy": "create_new_abstraction owns this standalone plan; Feature/Refactor modes may only continue from a completed or verified project base."
+    },
+    {
+      "id": "new_abstraction_game_program",
+      "label": "Game Program",
+      "display_name": "Game Program",
+      "modes": [
+        "new_project_abstraction"
+      ],
+      "routine": "create_new_abstraction",
+      "category": "Create New Abstraction / Game Tools",
+      "stack_category": "Create New Abstraction / Game Tools",
+      "catalog_category": "Create New Abstraction / Game Tools",
+      "group": "Create New Abstraction / Game Tools",
+      "stack_node_id": "stack_game_program",
+      "order": 20,
+      "applies_to_domains": [
+        "generic_project",
+        "create_project"
+      ],
+      "applies_to_targets": [
+        "any"
+      ],
+      "intent": "Creates a standalone new game-program abstraction with engine/runtime boundary, asset flow, scene structure and a small playable or manually checkable start slice.",
+      "template": "Plan a standalone game-program abstraction for {$abstraction_goal}. Keep runtime/engine, assets, scenes, input and validation separate and start with a small manual test/save point.",
+      "fields": [
+        {
+          "id": "abstraction_goal",
+          "type": "text",
+          "required": true,
+          "description": "Which game program abstraction should be created?"
+        },
+        {
+          "id": "game_profile",
+          "type": "enum",
+          "required": false,
+          "description": "Which game direction is in focus?",
+          "options": [
+            "prototype_game",
+            "tooling_game",
+            "2d_game",
+            "3d_game",
+            "engine_evidence_only"
+          ],
+          "default": "prototype_game"
+        }
+      ],
+      "tokens": [
+        "{$abstraction_goal}",
+        "{$game_profile:prototype_game|tooling_game|2d_game|3d_game|engine_evidence_only}"
+      ],
+      "timeline_tokens": [
+        "{$write_project_mapping}",
+        "{$write_dependency_layer}",
+        "{$compiler_run}",
+        "{$write_export_manifest}"
+      ],
+      "references": [
+        "create_stack_reference",
+        "professional_solution_engineering_reference",
+        "structured_output_reference",
+        "prompt_eval_reference"
+      ],
+      "roles": [
+        "create_stack_operator",
+        "create_context_build_operator",
+        "professional_solution_engineering_operator",
+        "prompt_eval_operator"
+      ],
+      "validation_focus": [
+        "runtime/engine boundary",
+        "asset flow",
+        "manual playcheck point",
+        "small playable slice"
+      ],
+      "acceptance_criteria": [
+        "Game goal and runtime boundary are clear.",
+        "Assets/scenes are manifested or marked as known gap.",
+        "Ein logischer Manual-Test-/Save-Punkt ist beschrieben."
+      ],
+      "non_goals": [
+        "patching an existing project as feature/refactor",
+        "broad automatic migration without Build.complete",
+        "invent unevidenced dependencies or runtime versions"
+      ],
+      "output_contract": [
+        "game_blueprint",
+        "runtime_boundary",
+        "asset_flow",
+        "target_tree",
+        "manual_test_plan",
+        "known_gaps"
+      ],
+      "source_policy": "create_new_abstraction owns this standalone plan; Feature/Refactor modes may only continue from a completed or verified project base."
+    },
+    {
+      "id": "new_abstraction_pdf_program",
+      "label": "PDF Program",
+      "display_name": "PDF Program",
+      "modes": [
+        "new_project_abstraction"
+      ],
+      "routine": "create_new_abstraction",
+      "category": "Create New Abstraction / Document Tools",
+      "stack_category": "Create New Abstraction / Document Tools",
+      "catalog_category": "Create New Abstraction / Document Tools",
+      "group": "Create New Abstraction / Document Tools",
+      "stack_node_id": "stack_pdf_program",
+      "order": 30,
+      "applies_to_domains": [
+        "generic_project",
+        "create_project"
+      ],
+      "applies_to_targets": [
+        "any"
+      ],
+      "intent": "Creates a standalone new PDF program abstraction for local PDF processing with clear file I/O, security and validation boundaries.",
+      "template": "Plan a standalone PDF program abstraction for {$abstraction_goal}. Prioritize local processing, file safety, clear I/O boundaries and manifested dependencies.",
+      "fields": [
+        {
+          "id": "abstraction_goal",
+          "type": "text",
+          "required": true,
+          "description": "Which PDF program should be created?"
+        },
+        {
+          "id": "pdf_program_profile",
+          "type": "enum",
+          "required": false,
+          "description": "Which PDF program type is primary?",
+          "options": [
+            "reader_tool",
+            "edit_tool",
+            "conversion_tool",
+            "automation_tool",
+            "manifest_evidence_only"
+          ],
+          "default": "automation_tool"
+        }
+      ],
+      "tokens": [
+        "{$abstraction_goal}",
+        "{$pdf_program_profile:reader_tool|edit_tool|conversion_tool|automation_tool|manifest_evidence_only}"
+      ],
+      "timeline_tokens": [
+        "{$write_project_mapping}",
+        "{$write_dependency_layer}",
+        "{$compiler_run}",
+        "{$write_export_manifest}"
+      ],
+      "references": [
+        "create_stack_reference",
+        "professional_solution_engineering_reference",
+        "structured_output_reference",
+        "prompt_eval_reference"
+      ],
+      "roles": [
+        "create_stack_operator",
+        "create_context_build_operator",
+        "professional_solution_engineering_operator",
+        "prompt_eval_operator"
+      ],
+      "validation_focus": [
+        "local file safety",
+        "PDF IO contract",
+        "dependency evidence",
+        "manual file-processing validation"
+      ],
+      "acceptance_criteria": [
+        "PDF input/output boundaries are explicit.",
+        "Local file safety is described.",
+        "Dependencies are evidenced or marked as known gap."
+      ],
+      "non_goals": [
+        "patching an existing project as feature/refactor",
+        "broad automatic migration without Build.complete",
+        "invent unevidenced dependencies or runtime versions"
+      ],
+      "output_contract": [
+        "pdf_program_blueprint",
+        "pdf_io_contract",
+        "target_tree",
+        "dependency_layer",
+        "validation_plan",
+        "known_gaps"
+      ],
+      "source_policy": "create_new_abstraction owns this standalone plan; Feature/Refactor modes may only continue from a completed or verified project base."
+    },
+    {
+      "id": "new_abstraction_ai_prompt_image_editor",
+      "label": "AI Prompt Image Editing Tool",
+      "display_name": "AI Prompt Image Editing Tool",
+      "modes": [
+        "new_project_abstraction"
+      ],
+      "routine": "create_new_abstraction",
+      "category": "Create New Abstraction / AI Image Tools",
+      "stack_category": "Create New Abstraction / AI Image Tools",
+      "catalog_category": "Create New Abstraction / AI Image Tools",
+      "group": "Create New Abstraction / AI Image Tools",
+      "stack_node_id": "stack_ai_prompt_image_editor",
+      "order": 40,
+      "applies_to_domains": [
+        "generic_project",
+        "create_project"
+      ],
+      "applies_to_targets": [
+        "any"
+      ],
+      "intent": "Creates a standalone new abstraction for an AI Prompt Image Editing Tool with prompt, asset, adapter, UI and export boundaries.",
+      "template": "Plan a standalone AI prompt image editing abstraction for {$abstraction_goal}. Separate prompt templates, image assets, adapters, UI and export; do not invent external AI services or API keys.",
+      "fields": [
+        {
+          "id": "abstraction_goal",
+          "type": "text",
+          "required": true,
+          "description": "Which AI prompt image editing function should be created?"
+        },
+        {
+          "id": "image_editor_profile",
+          "type": "enum",
+          "required": false,
+          "description": "Which image/prompt pipeline is in focus?",
+          "options": [
+            "prompt_to_image",
+            "image_editing",
+            "batch_prompt_assets",
+            "local_stub_first"
+          ],
+          "default": "local_stub_first"
+        }
+      ],
+      "tokens": [
+        "{$abstraction_goal}",
+        "{$image_editor_profile:prompt_to_image|image_editing|batch_prompt_assets|local_stub_first}"
+      ],
+      "timeline_tokens": [
+        "{$write_project_mapping}",
+        "{$write_dependency_layer}",
+        "{$compiler_run}",
+        "{$write_export_manifest}"
+      ],
+      "references": [
+        "create_stack_reference",
+        "professional_solution_engineering_reference",
+        "structured_output_reference",
+        "prompt_eval_reference"
+      ],
+      "roles": [
+        "create_stack_operator",
+        "create_context_build_operator",
+        "professional_solution_engineering_operator",
+        "prompt_eval_operator"
+      ],
+      "validation_focus": [
+        "prompt/asset boundary",
+        "no invented AI service",
+        "local stub strategy",
+        "UI/export separation"
+      ],
+      "acceptance_criteria": [
+        "Prompt, asset and adapter boundaries are visible.",
+        "No API keys, services or models are invented.",
+        "A local stub/fallback path is described."
+      ],
+      "non_goals": [
+        "patching an existing project as feature/refactor",
+        "broad automatic migration without Build.complete",
+        "invent unevidenced dependencies or runtime versions"
+      ],
+      "output_contract": [
+        "image_editor_blueprint",
+        "prompt_asset_contract",
+        "adapter_boundary",
+        "target_tree",
+        "validation_plan",
+        "known_gaps"
+      ],
+      "source_policy": "create_new_abstraction owns this standalone plan; Feature/Refactor modes may only continue from a completed or verified project base."
+    },
+    {
+      "id": "new_abstraction_3d_tool",
+      "label": "3D-Tool",
+      "display_name": "3D-Tool",
+      "modes": [
+        "new_project_abstraction"
+      ],
+      "routine": "create_new_abstraction",
+      "category": "Create New Abstraction / 3D Tools",
+      "stack_category": "Create New Abstraction / 3D Tools",
+      "catalog_category": "Create New Abstraction / 3D Tools",
+      "group": "Create New Abstraction / 3D Tools",
+      "stack_node_id": "stack_3d_tool",
+      "order": 50,
+      "applies_to_domains": [
+        "generic_project",
+        "create_project"
+      ],
+      "applies_to_targets": [
+        "any"
+      ],
+      "intent": "Creates a standalone new 3D tool abstraction with separate scene, asset, viewer/editor and export boundaries.",
+      "template": "Plan a standalone 3D tool abstraction for {$abstraction_goal}. Keep scene structure, assets, viewer/editor, runtime and export separate and start with a small preview-validatable slice.",
+      "fields": [
+        {
+          "id": "abstraction_goal",
+          "type": "text",
+          "required": true,
+          "description": "Which 3D tool should be created?"
+        },
+        {
+          "id": "tool_3d_profile",
+          "type": "enum",
+          "required": false,
+          "description": "Which 3D tool type is primary?",
+          "options": [
+            "viewer_tool",
+            "editor_tool",
+            "asset_pipeline_tool",
+            "scene_generator_tool"
+          ],
+          "default": "viewer_tool"
+        }
+      ],
+      "tokens": [
+        "{$abstraction_goal}",
+        "{$tool_3d_profile:viewer_tool|editor_tool|asset_pipeline_tool|scene_generator_tool}"
+      ],
+      "timeline_tokens": [
+        "{$write_project_mapping}",
+        "{$write_dependency_layer}",
+        "{$compiler_run}",
+        "{$write_export_manifest}"
+      ],
+      "references": [
+        "create_stack_reference",
+        "professional_solution_engineering_reference",
+        "structured_output_reference",
+        "prompt_eval_reference"
+      ],
+      "roles": [
+        "create_stack_operator",
+        "create_context_build_operator",
+        "professional_solution_engineering_operator",
+        "prompt_eval_operator"
+      ],
+      "validation_focus": [
+        "3D runtime boundary",
+        "scene/asset contract",
+        "preview validation",
+        "small start slice"
+      ],
+      "acceptance_criteria": [
+        "3D goal and runtime boundary are clear.",
+        "Szenen-/Asset-Fluss ist beschrieben.",
+        "Preview validation or manual test is planned."
+      ],
+      "non_goals": [
+        "patching an existing project as feature/refactor",
+        "broad automatic migration without Build.complete",
+        "invent unevidenced dependencies or runtime versions"
+      ],
+      "output_contract": [
+        "tool_3d_blueprint",
+        "scene_asset_contract",
+        "target_tree",
+        "dependency_layer",
+        "validation_plan",
+        "known_gaps"
+      ],
+      "source_policy": "create_new_abstraction owns this standalone plan; Feature/Refactor modes may only continue from a completed or verified project base."
+    },
+    {
+      "id": "new_abstraction_blender_viewer",
+      "label": "Blender-Viewer",
+      "display_name": "Blender-Viewer",
+      "modes": [
+        "new_project_abstraction"
+      ],
+      "routine": "create_new_abstraction",
+      "category": "Create New Abstraction / Blender Tools",
+      "stack_category": "Create New Abstraction / Blender Tools",
+      "catalog_category": "Create New Abstraction / Blender Tools",
+      "group": "Create New Abstraction / Blender Tools",
+      "stack_node_id": "stack_blender_viewer",
+      "order": 60,
+      "applies_to_domains": [
+        "generic_project",
+        "create_project"
+      ],
+      "applies_to_targets": [
+        "any"
+      ],
+      "intent": "Creates a standalone Blender/3D viewer abstraction for model display, scene import and simple viewer interaction.",
+      "template": "Plan a standalone Blender Viewer abstraction for {$abstraction_goal}. Keep import, viewer UI, scene structure and export/preview separate and start with a small validatable viewer slice.",
+      "fields": [
+        {
+          "id": "abstraction_goal",
+          "type": "text",
+          "required": true,
+          "description": "Which Blender/viewer function should carry the new abstraction?"
+        },
+        {
+          "id": "viewer_runtime",
+          "type": "enum",
+          "required": false,
+          "description": "Which viewer runtime is preferred?",
+          "options": [
+            "blender_python",
+            "threejs_web_viewer",
+            "python_opengl",
+            "manifest_evidence_only"
+          ],
+          "default": "manifest_evidence_only"
+        }
+      ],
+      "tokens": [
+        "{$abstraction_goal}",
+        "{$viewer_runtime:blender_python|threejs_web_viewer|python_opengl|manifest_evidence_only}"
+      ],
+      "timeline_tokens": [
+        "{$write_project_mapping}",
+        "{$write_dependency_layer}",
+        "{$compiler_run}",
+        "{$write_export_manifest}"
+      ],
+      "references": [
+        "create_stack_reference",
+        "professional_solution_engineering_reference",
+        "structured_output_reference",
+        "prompt_eval_reference"
+      ],
+      "roles": [
+        "create_stack_operator",
+        "create_context_build_operator",
+        "professional_solution_engineering_operator",
+        "prompt_eval_operator"
+      ],
+      "validation_focus": [
+        "viewer runtime boundary",
+        "scene import contract",
+        "preview validation",
+        "small start slice"
+      ],
+      "acceptance_criteria": [
+        "Viewer goal and scene scope are clear.",
+        "Runtime dependencies are manifested or known gap.",
+        "No complete 3D suite is created as the first patch."
+      ],
+      "non_goals": [
+        "patching an existing project as feature/refactor",
+        "broad automatic migration without Build.complete",
+        "invent unevidenced dependencies or runtime versions"
+      ],
+      "output_contract": [
+        "viewer_blueprint",
+        "scene_contract",
+        "target_tree",
+        "dependency_layer",
+        "validation_plan",
+        "known_gaps"
+      ],
+      "source_policy": "create_new_abstraction owns this standalone plan; Feature/Refactor modes may only continue from a completed or verified project base."
+    },
+    {
+      "id": "new_abstraction_pdf_slicer",
+      "label": "PDF-SLICER",
+      "display_name": "PDF-SLICER",
+      "modes": [
+        "new_project_abstraction"
+      ],
+      "routine": "create_new_abstraction",
+      "category": "Create New Abstraction / Document Tools",
+      "stack_category": "Create New Abstraction / Document Tools",
+      "catalog_category": "Create New Abstraction / Document Tools",
+      "group": "Create New Abstraction / Document Tools",
+      "stack_node_id": "stack_pdf_slicer",
+      "order": 70,
+      "applies_to_domains": [
+        "generic_project",
+        "create_project"
+      ],
+      "applies_to_targets": [
+        "any"
+      ],
+      "intent": "Creates a standalone PDF slicer abstraction for split, merge, page-range selection and local file processing.",
+      "template": "Plan a standalone PDF Slicer abstraction for {$abstraction_goal}. Prioritize local processing, clear I/O boundaries, file safety and a small CLI/UI start slice.",
+      "fields": [
+        {
+          "id": "abstraction_goal",
+          "type": "text",
+          "required": true,
+          "description": "Which PDF slicer function should be created?"
+        },
+        {
+          "id": "pdf_operation_profile",
+          "type": "enum",
+          "required": false,
+          "description": "Which PDF operation is primary?",
+          "options": [
+            "split_pages",
+            "merge_documents",
+            "extract_ranges",
+            "reorder_pages",
+            "mixed_pdf_slicer"
+          ],
+          "default": "split_pages"
+        }
+      ],
+      "tokens": [
+        "{$abstraction_goal}",
+        "{$pdf_operation_profile:split_pages|merge_documents|extract_ranges|reorder_pages|mixed_pdf_slicer}"
+      ],
+      "timeline_tokens": [
+        "{$write_project_mapping}",
+        "{$write_dependency_layer}",
+        "{$compiler_run}",
+        "{$write_export_manifest}"
+      ],
+      "references": [
+        "create_stack_reference",
+        "professional_solution_engineering_reference",
+        "structured_output_reference",
+        "prompt_eval_reference"
+      ],
+      "roles": [
+        "create_stack_operator",
+        "create_context_build_operator",
+        "professional_solution_engineering_operator",
+        "prompt_eval_operator"
+      ],
+      "validation_focus": [
+        "local file safety",
+        "PDF IO contract",
+        "minimal CLI/UI validation",
+        "rollback-ready output"
+      ],
+      "acceptance_criteria": [
+        "PDF input/output boundaries are defined.",
+        "File processing remains local and validatable.",
+        "Start slice contains manual test or automatable probe."
+      ],
+      "non_goals": [
+        "patching an existing project as feature/refactor",
+        "broad automatic migration without Build.complete",
+        "invent unevidenced dependencies or runtime versions"
+      ],
+      "output_contract": [
+        "pdf_io_contract",
+        "target_tree",
+        "dependency_layer",
+        "timeline_plan",
+        "validation_plan",
+        "known_gaps"
+      ],
+      "source_policy": "create_new_abstraction owns this standalone plan; Feature/Refactor modes may only continue from a completed or verified project base."
+    },
+    {
+      "id": "feature_package_project_windows_exe",
+      "label": "Project To Windows.exe",
+      "display_name": "Project To Windows.exe",
+      "modes": [
+        "feature_for_existing_project"
+      ],
+      "group": "Feature / Packaging",
+      "order": 70,
+      "applies_to_domains": [
+        "generic_project",
+        "desktop_app",
+        "create_project"
+      ],
+      "applies_to_targets": [
+        "any"
+      ],
+      "intent": "An existing project receives a Windows .exe packaging/release slice based on evidenced build and runtime evidence.",
+      "template": "Extend the existing project with a minimal Windows .exe packaging slice for {$package_goal}. Use existing build tools, document missing toolchain as known gap and change only necessary files.",
+      "fields": [
+        {
+          "id": "package_goal",
+          "type": "text",
+          "required": true,
+          "description": "Which Windows .exe goal should be created?"
+        },
+        {
+          "id": "windows_packager",
+          "type": "enum",
+          "required": false,
+          "description": "Which packaging route is allowed?",
+          "options": [
+            "existing_toolchain",
+            "pyinstaller",
+            "electron_builder",
+            "dotnet_publish",
+            "manual_plan_only"
+          ],
+          "default": "existing_toolchain"
+        }
+      ],
+      "tokens": [
+        "{$package_goal}",
+        "{$windows_packager:existing_toolchain|pyinstaller|electron_builder|dotnet_publish|manual_plan_only}"
+      ],
+      "timeline_tokens": [
+        "{$write_export_manifest}",
+        "{$compiler_run}"
+      ],
+      "references": [
+        "create_stack_reference",
+        "process_log_reference",
+        "prompt_eval_reference"
+      ],
+      "roles": [
+        "repository_management_prompt_operator",
+        "professional_solution_engineering_operator",
+        "prompt_eval_operator"
+      ],
+      "validation_focus": [
+        "existing build evidence",
+        "windows artifact boundary",
+        "no invented toolchain"
+      ],
+      "acceptance_criteria": [
+        "Packaging route is derivable from project/manifest evidence or marked as plan-only gap.",
+        "Changed files are small and rollback-capable.",
+        "Windows artifact check or manual test is documented."
+      ],
+      "non_goals": [
+        "create new project",
+        "Changing feature behavior",
+        "globale Build-System-Migration"
+      ],
+      "output_contract": [
+        "changed_files",
+        "packaging_delta",
+        "validation_or_manual_test",
+        "rollback_note",
+        "known_gaps"
+      ]
+    },
+    {
+      "id": "feature_package_project_linux_debian_pkg",
+      "label": "Project to Linux/Debian.pkg",
+      "display_name": "Project to Linux/Debian.pkg",
+      "modes": [
+        "feature_for_existing_project"
+      ],
+      "group": "Feature / Packaging",
+      "order": 71,
+      "applies_to_domains": [
+        "generic_project",
+        "desktop_app",
+        "devops_release"
+      ],
+      "applies_to_targets": [
+        "any"
+      ],
+      "intent": "An existing project receives einen a Linux/Debian package slice with manifested release boundary.",
+      "template": "Extend the existing project with a Linux/Debian package slice for {$package_goal}. Check existing build/install structure and provide package metadata only with evidence.",
+      "fields": [
+        {
+          "id": "package_goal",
+          "type": "text",
+          "required": true,
+          "description": "Which Linux/Debian package goal should be created?"
+        },
+        {
+          "id": "linux_package_profile",
+          "type": "enum",
+          "required": false,
+          "description": "Which package route is allowed?",
+          "options": [
+            "deb_plan",
+            "dpkg_build",
+            "appimage_plan",
+            "systemd_service_package",
+            "manual_plan_only"
+          ],
+          "default": "deb_plan"
+        }
+      ],
+      "tokens": [
+        "{$package_goal}",
+        "{$linux_package_profile:deb_plan|dpkg_build|appimage_plan|systemd_service_package|manual_plan_only}"
+      ],
+      "timeline_tokens": [
+        "{$write_export_manifest}",
+        "{$compiler_run}"
+      ],
+      "references": [
+        "create_terminal_timeline_reference",
+        "process_log_reference",
+        "prompt_eval_reference"
+      ],
+      "roles": [
+        "repository_management_prompt_operator",
+        "create_terminal_timeline_operator",
+        "prompt_eval_operator"
+      ],
+      "validation_focus": [
+        "package metadata",
+        "linux install boundary",
+        "manual test/save point"
+      ],
+      "acceptance_criteria": [
+        "Install/package metadata is minimal and traceable.",
+        "No distribution-specific claims without evidence.",
+        "Validation or manual test is provided."
+      ],
+      "non_goals": [
+        "create new project",
+        "CI/CD-Komplettumbau",
+        "Distribution-Release behaupten"
+      ],
+      "output_contract": [
+        "changed_files",
+        "package_plan",
+        "validation_or_manual_test",
+        "rollback_note",
+        "known_gaps"
+      ]
+    },
+    {
+      "id": "feature_package_project_ios_android",
+      "label": "Project to IOS/Android",
+      "display_name": "Project to IOS/Android",
+      "modes": [
+        "feature_for_existing_project"
+      ],
+      "group": "Feature / Mobile Packaging",
+      "order": 72,
+      "applies_to_domains": [
+        "generic_project",
+        "mobile_app",
+        "create_project"
+      ],
+      "applies_to_targets": [
+        "frontend",
+        "wrapper",
+        "any"
+      ],
+      "intent": "An existing project receives a mobile target-platform plan or a small evidenced adapter slice for iOS/Android.",
+      "template": "Extend the existing project with an iOS/Android handoff slice for {$mobile_goal}. Use existing Flutter/Android/Capacitor/React-Native evidence or provide plan-only output with known gaps.",
+      "fields": [
+        {
+          "id": "mobile_goal",
+          "type": "text",
+          "required": true,
+          "description": "Which iOS/Android goal should be created?"
+        },
+        {
+          "id": "mobile_route",
+          "type": "enum",
+          "required": false,
+          "description": "Which mobile route is evidenced or requested?",
+          "options": [
+            "existing_mobile_stack",
+            "flutter",
+            "android_kotlin",
+            "capacitor",
+            "react_native",
+            "plan_only"
+          ],
+          "default": "plan_only"
+        }
+      ],
+      "tokens": [
+        "{$mobile_goal}",
+        "{$mobile_route:existing_mobile_stack|flutter|android_kotlin|capacitor|react_native|plan_only}"
+      ],
+      "timeline_tokens": [
+        "{$write_dependency_layer}",
+        "{$write_export_manifest}"
+      ],
+      "references": [
+        "create_stack_reference",
+        "package_dependency_layer_reference",
+        "prompt_eval_reference"
+      ],
+      "roles": [
+        "create_stack_operator",
+        "package_dependency_layer_operator",
+        "prompt_eval_operator"
+      ],
+      "validation_focus": [
+        "mobile stack evidence",
+        "platform boundary",
+        "plan-first handoff"
+      ],
+      "acceptance_criteria": [
+        "Mobile route is evidenced or explicitly plan-only.",
+        "No App Store/signing claims without local evidence.",
+        "Next manual save/test point is clear."
+      ],
+      "non_goals": [
+        "full mobile port in one patch",
+        "Signing/Profile erfinden",
+        "bestehendes Verhalten riskieren"
+      ],
+      "output_contract": [
+        "changed_files_or_plan",
+        "mobile_handoff",
+        "validation_or_manual_test",
+        "rollback_note",
+        "known_gaps"
+      ]
+    },
+    {
+      "id": "feature_i18n_multilanguage_language_switcher",
+      "label": "I18n Multilanguage + Language Switcher",
+      "display_name": "I18n Multilanguage + Language Switcher",
+      "modes": [
+        "feature_for_existing_project"
+      ],
+      "group": "Feature / UX & Locale",
+      "order": 73,
+      "applies_to_domains": [
+        "generic_project",
+        "web_app",
+        "desktop_app"
+      ],
+      "applies_to_targets": [
+        "frontend",
+        "wrapper",
+        "any"
+      ],
+      "intent": "An existing project receives a small internationalization with language resources and language switcher.",
+      "template": "Add I18n and a language switcher for {$i18n_goal}. Detect existing locale structures, extract only necessary strings and keep fallback language and validation visible.",
+      "fields": [
+        {
+          "id": "i18n_goal",
+          "type": "text",
+          "required": true,
+          "description": "Which languages/views should be supported?"
+        },
+        {
+          "id": "language_set",
+          "type": "text",
+          "required": false,
+          "description": "Desired languages, z.B. de,en oder de,en,fr."
+        }
+      ],
+      "tokens": [
+        "{$i18n_goal}",
+        "{$language_set}"
+      ],
+      "timeline_tokens": [
+        "{$write_export_manifest}"
+      ],
+      "references": [
+        "tool_wide_prompt_engineering_reference",
+        "prompt_eval_reference"
+      ],
+      "roles": [
+        "professional_solution_engineering_operator",
+        "software_documentation_operator",
+        "prompt_eval_operator"
+      ],
+      "validation_focus": [
+        "locale resource reuse",
+        "language switcher behavior",
+        "fallback language"
+      ],
+      "acceptance_criteria": [
+        "Existing I18n structure is reused or new creation is justified.",
+        "Language Switcher ist klein und nachvollziehbar integriert.",
+        "Fallback/Manual-Test ist dokumentiert."
+      ],
+      "non_goals": [
+        "full translation of all content without assignment",
+        "Design-Redesign",
+        "new framework installation without evidence"
+      ],
+      "output_contract": [
+        "changed_files",
+        "i18n_delta",
+        "manual_test",
+        "rollback_note",
+        "known_gaps"
+      ]
+    },
+    {
+      "id": "feature_math_utils_library",
+      "label": "Math Utils Libary",
+      "display_name": "Math Utils Library",
+      "modes": [
+        "feature_for_existing_project"
+      ],
+      "group": "Feature / Library",
+      "order": 74,
+      "applies_to_domains": [
+        "generic_project",
+        "data_ai",
+        "backend_app"
+      ],
+      "applies_to_targets": [
+        "backend",
+        "wrapper",
+        "any"
+      ],
+      "intent": "An existing project receives a small tested math-utils library or extension of existing math utilities.",
+      "template": "Add a Math Utils library for {$math_goal}. Search existing utils/tests first, create no parallel library without justification and provide test/manual validation.",
+      "fields": [
+        {
+          "id": "math_goal",
+          "type": "text",
+          "required": true,
+          "description": "Which mathematical utilities should be created?"
+        },
+        {
+          "id": "math_scope",
+          "type": "enum",
+          "required": false,
+          "description": "Which scope is allowed?",
+          "options": [
+            "single_module",
+            "extend_existing_utils",
+            "test_plan_only"
+          ],
+          "default": "single_module"
+        }
+      ],
+      "tokens": [
+        "{$math_goal}",
+        "{$math_scope:single_module|extend_existing_utils|test_plan_only}"
+      ],
+      "timeline_tokens": [
+        "{$write_export_manifest}"
+      ],
+      "references": [
+        "professional_solution_engineering_reference",
+        "prompt_eval_reference"
+      ],
+      "roles": [
+        "professional_solution_engineering_operator",
+        "prompt_eval_operator"
+      ],
+      "validation_focus": [
+        "resource reuse",
+        "numeric edge cases",
+        "unit/manual tests"
+      ],
+      "acceptance_criteria": [
+        "Existing utils are preferred.",
+        "Edge Cases und Testpunkte sind benannt.",
+        "No large domain math library without scope."
+      ],
+      "non_goals": [
+        "neues Framework",
+        "Performance-Claims ohne Benchmark",
+        "breite API-Suite"
+      ],
+      "output_contract": [
+        "changed_files",
+        "math_api_delta",
+        "test_or_manual_gap",
+        "rollback_note",
+        "known_gaps"
+      ]
+    },
+    {
+      "id": "feature_redesign_material_design",
+      "label": "Redesign Project to Material Design",
+      "display_name": "Redesign Project to Material Design",
+      "modes": [
+        "feature_for_existing_project"
+      ],
+      "group": "Feature / UI Redesign",
+      "order": 75,
+      "applies_to_domains": [
+        "generic_project",
+        "web_app",
+        "desktop_app"
+      ],
+      "applies_to_targets": [
+        "frontend",
+        "wrapper",
+        "any"
+      ],
+      "intent": "An existing project receives a small Material Design redesign slice without complete UI rewrite.",
+      "template": "Redesign {$redesign_scope} toward Material Design. Limit yourself to one visible UI slice, use existing components/tokens and document deviations as known gaps.",
+      "fields": [
+        {
+          "id": "redesign_scope",
+          "type": "text",
+          "required": true,
+          "description": "Which UI area should be redesigned as Material Design slice?"
+        },
+        {
+          "id": "material_depth",
+          "type": "enum",
+          "required": false,
+          "description": "How deep may the redesign slice go?",
+          "options": [
+            "tokens_only",
+            "one_component",
+            "one_view",
+            "plan_first"
+          ],
+          "default": "one_view"
+        }
+      ],
+      "tokens": [
+        "{$redesign_scope}",
+        "{$material_depth:tokens_only|one_component|one_view|plan_first}"
+      ],
+      "timeline_tokens": [
+        "{$write_export_manifest}"
+      ],
+      "references": [
+        "tool_wide_prompt_engineering_reference",
+        "prompt_eval_reference"
+      ],
+      "roles": [
+        "professional_solution_engineering_operator",
+        "prompt_eval_operator"
+      ],
+      "validation_focus": [
+        "small UI slice",
+        "component reuse",
+        "visual/manual test"
+      ],
+      "acceptance_criteria": [
+        "Redesign remains limited to a clear area.",
+        "Existing components/tokens are reused.",
+        "Visueller Manual-Test/Save-Punkt ist dokumentiert."
+      ],
+      "non_goals": [
+        "kompletter UI-Rewrite",
+        "design system without application",
+        "new UI library without evidence"
+      ],
+      "output_contract": [
+        "changed_files",
+        "ui_delta",
+        "manual_visual_test",
+        "rollback_note",
+        "known_gaps"
+      ]
+    },
+    {
+      "id": "refactor_search_destroy_manual_savepoint",
+      "label": "Search & Destroy",
+      "display_name": "Search & Destroy",
+      "modes": [
+        "refactor_existing_stack"
+      ],
+      "group": "Refactor / Quality Sweep",
+      "order": 66,
+      "applies_to_domains": [
+        "generic_project",
+        "create_project"
+      ],
+      "applies_to_targets": [
+        "any"
+      ],
+      "intent": "Systematically searches as many evidenced bug/risk sources as possible and fixes them only up to a logically validatable manual test/save point.",
+      "template": "Run Search & Destroy for {$sweep_goal}. Search syntax, reference, schema, lint, performance and security risks, prioritize evidenced findings and stop at a clear manual test/save point.",
+      "fields": [
+        {
+          "id": "sweep_goal",
+          "type": "text",
+          "required": true,
+          "description": "Which project area should be checked?"
+        },
+        {
+          "id": "sweep_limit",
+          "type": "enum",
+          "required": false,
+          "description": "How far may the sweep go?",
+          "options": [
+            "safe_lint_schema_sweep",
+            "targeted_module_sweep",
+            "manual_plan_only"
+          ],
+          "default": "safe_lint_schema_sweep"
+        }
+      ],
+      "tokens": [
+        "{$sweep_goal}",
+        "{$sweep_limit:safe_lint_schema_sweep|targeted_module_sweep|manual_plan_only}"
+      ],
+      "timeline_tokens": [
+        "{$write_export_manifest}"
+      ],
+      "references": [
+        "repository_management_prompt_reference",
+        "prompt_eval_reference"
+      ],
+      "roles": [
+        "repository_management_prompt_operator",
+        "professional_solution_engineering_operator",
+        "prompt_eval_operator"
+      ],
+      "validation_focus": [
+        "error discovery",
+        "manual save point",
+        "behavior preservation",
+        "risk triage"
+      ],
+      "acceptance_criteria": [
+        "Found bugs/risks are prioritized and evidenced.",
+        "Patches remain behavior-preserving and small.",
+        "The next manual test/save point is clear."
+      ],
+      "non_goals": [
+        "endloser Projektrewrite",
+        "Feature development",
+        "unevidenced style changes",
+        "fake validation"
+      ],
+      "output_contract": [
+        "findings",
+        "changed_files",
+        "validation_result",
+        "manual_save_point",
+        "rollback_note",
+        "known_gaps"
+      ]
+    }
+  ],
+  "note": "Clean catalog plus PTB-aligned software documentation, update planning, unit-test planning, local resource reuse, Last-Git-Commit references and system-plan expansion. TASKS.TXT and shortcut commands are export hooks, not catalog entries.",
+  "create_mode_parameter_controls": [],
+  "parameter_control_rule": "Parameter influence context budget and risk posture only; they do not create extra catalog entries.",
+  "feature_refactor_overlay_note": "Overlay scale entries were removed because they created duplicate pseudo-plans.",
+  "autonomous_feature_policy": {
+    "randomness_policy": "No arbitrary random features. Seeded choice is allowed only as a tie-breaker between equally evidenced, low-risk candidates.",
+    "selection_required_evidence": [
+      "observed file",
+      "mapping relation",
+      "existing entry point",
+      "schema contract",
+      "validation path"
+    ],
+    "write_gate": "Patch only when autonomy_level permits it and risk is low/medium with explicit rollback.",
+    "fallback": "If evidence is weak, emit proposal_only with known_gaps instead of editing files."
+  },
+  "documentation_test_resource_policy": {
+    "documentation": "Software documentation is feature-only and must select exactly one PTB/WELMEC schema profile when PTB mode is used.",
+    "testing": "Unit-test plans prefer existing frameworks and fixtures; no unproven dependency installation.",
+    "reuse": "Feature and refactor entries must inspect local resources before creating parallel implementations.",
+    "refactor": "Refactor remains behavior-preserving; docs and fixes stay out of the refactor catalog."
+  },
+  "last_git_commit_reference_policy": {
+    "scan_trigger": "Selecting feature_last_git_commit_reference or refactor_last_git_commit_hardening triggers the Patch-tab read-only Git scan before Prompt Builder compilation.",
+    "export_trigger": "The Export-tab LAST-GIT-COMMIT checkbox also enables Reference D in USER_PROMPT and manifests.",
+    "boundary": "Commit metadata is context only; no diff, remote URL, secret or Git write operation is exported."
+  },
+  "tasks_sidecar_policy": {
+    "artifact": "TASKS.TXT",
+    "scope": "prompt_builder_export_hook",
+    "not_a_catalog_entry": true,
+    "not_user_selectable": true,
+    "automatic_trigger": "When Prompt Builder left CUSTOM_USER_PROMPT input exists, parse JSON/list/plain text and write TASKS.TXT as a sidecar outside ZIP/folder output.",
+    "create_tab_boundary": "Create Preview may display pipeline awareness, but TASKS.TXT is not a Create-Tab plan, chain entry, specialization, or selectable slice.",
+    "manifest_rule": "Declare TASKS.TXT in outside_files/artifacts only when generated."
+  },
+  "shortcut_command_policy": {
+    "scope": "user_prompt_export_hook",
+    "manifest_file": "CMD.json",
+    "not_a_catalog_entry": true,
+    "not_user_selectable": true,
+    "commands": [
+      "RESTART",
+      "START",
+      "REFACTOR",
+      "SKIP",
+      "EXTEND",
+      "SHRINK",
+      "FIX",
+      "STATUS"
+    ],
+    "contract": "USER_PROMPT introduces these as immediate user CMD meanings and CMD.json mirrors them as machine-readable command metadata.",
+    "guardrail": "Commands do not expand tool rights, repository access, scope, validation boundaries, or safety limits.",
+    "surfaces": [
+      "USER_PROMPT.txt",
+      "Prompt Builder preview",
+      "Create Preview pipeline config",
+      "EXPORT_MANIFEST.json",
+      "PROMPT_MANIFEST.json",
+      "CMD.json"
+    ]
+  },
+  "create_new_abstraction_plan_policy": {
+    "routine": "create_new_abstraction",
+    "mode": "new_project_abstraction",
+    "rule": "New abstraction plans are first-class Create-mode entries. Each listed abstraction is standalone, stack-category-bound and must not be grouped into a compound plan.",
+    "feature_refactor_boundary": "Feature/Refactor entries may package, extend or refactor an existing verified project only after Build.complete or Start-tab evidence.",
+    "example_entries": [
+      "new_abstraction_visual_studio_utils",
+      "new_abstraction_game_program",
+      "new_abstraction_pdf_program",
+      "new_abstraction_ai_prompt_image_editor",
+      "new_abstraction_3d_tool",
+      "new_abstraction_blender_viewer",
+      "new_abstraction_pdf_slicer"
+    ],
+    "stack_category_rule": "Create New Abstraction entries must declare category, stack_category, catalog_category and a matching create_stack_nodes entry with chain_boilerplate_ids."
+  }
+}

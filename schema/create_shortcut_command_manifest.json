@@ -1,0 +1,64 @@
+{
+  "create_cmd_manifest_schema": {
+    "schema_version": "2026.create.cmd_manifest.v1",
+    "artifact": "CREATE_CMD_MANIFEST.json",
+    "purpose": "Machine-readable mirror of USER_PROMPT shortcut commands.",
+    "owner": "USER_PROMPT export hook",
+    "not_create_catalog_entry": true,
+    "not_user_selectable": true,
+    "required_commands": [
+      "START",
+      "RESTART",
+      "REFACTOR",
+      "SKIP",
+      "EXTEND",
+      "SHRINK",
+      "FIX",
+      "STATUS",
+      "PLAN",
+      "VERIFY",
+      "TEST",
+      "AUDIT",
+      "SECURITY",
+      "PERFORMANCE",
+      "SCHEMA",
+      "INTEGRATE",
+      "ROLLBACK",
+      "DOCS",
+      "TRACE",
+      "COMPARE",
+      "CLEANUP",
+      "MIGRATE",
+      "LOCK",
+      "SNAPSHOT",
+      "REVIEW"
+    ],
+    "command_fields": [
+      "command",
+      "applies_to",
+      "instruction",
+      "guardrail"
+    ],
+    "guardrails": [
+      "Commands do not expand safety, filesystem, tool, repository, scope or validation boundaries.",
+      "Commands are applied only to the current task, last patch, available project context or actually available session context.",
+      "STATUS and SNAPSHOT must report missing data as Known Gap instead of inventing history.",
+      "FIX, REFACTOR, CLEANUP, SECURITY, PERFORMANCE and SCHEMA must not introduce unrelated features.",
+      "SKIP must exclude the rejected previous patch pattern before proposing a new approach.",
+      "LOCK must freeze the active scope and prevent silent scope expansion."
+    ],
+    "surfaces": [
+      "USER_PROMPT.txt",
+      "Prompt Builder preview",
+      "Create Preview pipeline config",
+      "CREATE_EXPORT_MANIFEST.json",
+      "CREATE_PROMPT_MANIFEST.json",
+      "CREATE_CMD_MANIFEST.json",
+      "CMD.json"
+    ],
+    "artifact_aliases": [
+      "CMD.json"
+    ],
+    "always_write_policy": "CREATE exports must write CREATE_CMD_MANIFEST.json and CMD.json after the generator finishes, including compact/ZIP mode."
+  }
+}
