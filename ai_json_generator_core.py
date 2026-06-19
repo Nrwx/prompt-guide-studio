@@ -15,7 +15,7 @@ v6:
 - Custom prompt wrapping with selected weights, roles, references and project tree scope.
 - Prompt-engineering 2026 manifest, quality report and evaluation checklist.
 - Separate GUI export output path, import-expanded scope export and dependency-manifest gating.
-- ZIP export uses a staging folder so only the final ZIP, USER_PROMPT.txt and EXPORT_MANIFEST.json remain outside.
+- ZIP export uses a staging folder so only the final ZIP and human text sidecars remain outside.
 - AI-RULES stores dependency-free project evidence summaries, not package/requirements manifests.
 - Strict local-only import expansion for JS/Vue/Python/SCSS without dependency package imports.
 """
@@ -23,11 +23,13 @@ v6:
 from __future__ import annotations
 
 import fnmatch
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import json
 import os
 import posixpath
 import re
 import shutil
+import sys
 import zipfile
 try:
     import tomllib
@@ -154,11 +156,20 @@ class SaveTarget:
 
     def normalized(self, schema: Dict[str, Any]) -> "SaveTarget":
         path_type = self.path_type.strip().lower()
-        if path_type not in set(schema["supported_path_types"]):
-            raise ValueError(f"Unsupported path_type: {self.path_type}")
 
-        if self.ai_target not in set(schema["supported_ai_targets"]):
-            raise ValueError(f"Unsupported ai_target: {self.ai_target}")
+        # AppData/cache and bundled schema files are allowed to disappear or be
+        # minimal. A persisted/default SaveTarget must therefore not crash just
+        # because the schema list is incomplete. Treat path_type/ai_target as
+        # target-local values here; the UI/schema still defines the selectable
+        # catalog, but startup normalization remains cache-resilient.
+        supported_path_types = set(schema.get("supported_path_types") or [])
+        if path_type and path_type not in supported_path_types:
+            supported_path_types.add(path_type)
+
+        supported_ai_targets = set(schema.get("supported_ai_targets") or [])
+        ai_target = str(self.ai_target or "").strip() or "default"
+        if ai_target not in supported_ai_targets:
+            supported_ai_targets.add(ai_target)
 
         profiles = self.boilerplate_profiles or sorted(schema["supported_boilerplate_profiles"])
         invalid_profiles = set(profiles) - set(schema["supported_boilerplate_profiles"])
@@ -173,7 +184,7 @@ class SaveTarget:
         return SaveTarget(
             path=self.path,
             path_type=path_type,
-            ai_target=self.ai_target,
+            ai_target=ai_target,
             boilerplate_profiles=list(profiles),
             file_types=list(selected_file_types),
             enabled=self.enabled,
@@ -332,7 +343,8 @@ def _plugin_reference_entry_to_role(entry: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 def load_schema(schema_dir: Path) -> Dict[str, Any]:
-    schema_dir = Path(schema_dir)
+    requested_schema_dir = Path(schema_dir).expanduser()
+    schema_dir = resolve_schema_dir(requested_schema_dir)
     raw: Dict[str, Any] = {key: [] for key in SCHEMA_ARRAY_KEYS}
     loaded_files: List[str] = []
 
@@ -366,6 +378,12 @@ def load_schema(schema_dir: Path) -> Dict[str, Any]:
     ]
     if plugin_roles:
         raw["operation_roles"] = _merge_by_id(raw.get("operation_roles", []), plugin_roles)
+
+    raw.setdefault("metadata", {})
+    raw["metadata"]["schema_dir"] = str(schema_dir)
+    raw["metadata"]["schema_dir_requested"] = str(requested_schema_dir)
+    if not loaded_files:
+        raw["metadata"]["schema_resource_error"] = f"No JSON schema resources found in {schema_dir}"
 
     return {
         "loaded_files": loaded_files,
@@ -425,8 +443,112 @@ def load_schema(schema_dir: Path) -> Dict[str, Any]:
     }
 
 
+def _schema_dir_has_json(path: Path | str | None) -> bool:
+    """Return True when *path* is a usable Prompt Guide schema resource dir."""
+    if path in (None, ""):
+        return False
+    try:
+        candidate = Path(path).expanduser().resolve()
+        return candidate.is_dir() and any(candidate.rglob("*.json"))
+    except Exception:
+        return False
+
+
+def _unique_existing_resource_bases(paths: Iterable[Path | str | None]) -> List[Path]:
+    seen: set[str] = set()
+    result: List[Path] = []
+    for raw in paths:
+        if raw in (None, ""):
+            continue
+        try:
+            path = Path(raw).expanduser().resolve()
+        except Exception:
+            continue
+        key = path.as_posix().lower() if os.name == "nt" else path.as_posix()
+        if key in seen:
+            continue
+        seen.add(key)
+        result.append(path)
+    return result
+
+
+def _runtime_base_dir() -> Path:
+    """Return the best source/bundle base path for normal Python and frozen builds.
+
+    The app can be launched from a copied temp/runtime folder, a PyInstaller
+    extraction folder, or a normal source checkout.  Resource lookup must not
+    blindly trust ``__file__`` because the copied runtime may contain only the
+    Python entry points while ``schema/`` remains beside the real executable or
+    source folder.
+    """
+    frozen_base = getattr(sys, "_MEIPASS", None)
+    candidates = _unique_existing_resource_bases([
+        os.environ.get("PROMPT_GUIDE_RESOURCE_DIR"),
+        frozen_base,
+        Path(__file__).resolve().parent,
+        Path(sys.argv[0]).resolve().parent if sys.argv and sys.argv[0] else None,
+        Path(sys.executable).resolve().parent if getattr(sys, "executable", "") else None,
+        Path.cwd(),
+    ])
+    for base in candidates:
+        if _schema_dir_has_json(base / "schema"):
+            return base
+    if candidates:
+        return candidates[0]
+    return Path(__file__).resolve().parent
+
+
+def resolve_schema_dir(schema_dir: Path | str | None = None) -> Path:
+    """Resolve the active schema directory with resource fallbacks.
+
+    Persisted settings and temp/runtime launches may point at a deleted or
+    partial ``/schema`` folder.  Prefer an explicitly valid schema directory,
+    then fall back to bundled/source resources.
+    """
+    explicit_candidates: List[Path | str | None] = []
+    if schema_dir not in (None, ""):
+        explicit_candidates.append(schema_dir)
+        try:
+            explicit_candidates.append(Path(schema_dir) / "schema")
+        except Exception:
+            pass
+    explicit_candidates.extend([
+        os.environ.get("PROMPT_GUIDE_SCHEMA_DIR"),
+        os.environ.get("PROMPT_GUIDE_RESOURCE_DIR"),
+    ])
+    for candidate in explicit_candidates:
+        if candidate in (None, ""):
+            continue
+        path = Path(candidate).expanduser()
+        nested = path / "schema"
+        if _schema_dir_has_json(nested):
+            return nested.resolve()
+        if path.name.lower() == "schema" and _schema_dir_has_json(path):
+            return path.resolve()
+
+    base = _runtime_base_dir()
+    if _schema_dir_has_json(base / "schema"):
+        return (base / "schema").resolve()
+
+    search_bases = _unique_existing_resource_bases([
+        Path(__file__).resolve().parent,
+        Path(sys.argv[0]).resolve().parent if sys.argv and sys.argv[0] else None,
+        Path(sys.executable).resolve().parent if getattr(sys, "executable", "") else None,
+        Path.cwd(),
+        Path.cwd() / "prompt-guide",
+    ])
+    for candidate_base in search_bases:
+        candidate = candidate_base / "schema"
+        if _schema_dir_has_json(candidate):
+            return candidate.resolve()
+
+    if schema_dir not in (None, ""):
+        return Path(schema_dir).expanduser()
+    return base / "schema"
+
+
 def default_schema_dir() -> Path:
-    return Path(__file__).resolve().parent / "schema"
+    return resolve_schema_dir(None)
 
 
 def item_by_id(items: List[Dict[str, Any]], item_id: str) -> Dict[str, Any]:
@@ -727,6 +849,33 @@ def _normalize_scope_paths(root: Path, scope_paths: Iterable[str] | None) -> tup
 
 
 
+def _scan_worker_count(total_items: int, *, max_workers: int = 8, min_parallel: int = 64) -> int:
+    """Return a conservative worker count for filesystem metadata work.
+
+    Directory walking remains ordered and single-threaded so chained scans keep
+    deterministic scope boundaries. Only independent file-stat metadata is
+    parallelized when enough files exist to make worker overhead worthwhile.
+    """
+    try:
+        total = int(total_items or 0)
+    except Exception:
+        total = 0
+    if total < min_parallel:
+        return 1
+    return max(1, min(max_workers, os.cpu_count() or 2, total))
+
+
+def _file_reference_from_path(root: Path, rel: str, path: Path) -> Dict[str, Any]:
+    try:
+        stat = path.stat()
+        size = stat.st_size
+        modified_at = datetime.fromtimestamp(stat.st_mtime).isoformat(timespec="seconds")
+    except OSError:
+        size = None
+        modified_at = None
+    return {"id": rel, "path": rel, "size_bytes": size, "modified_at": modified_at}
+
+
 def _count_project_scope_entries(
     root: Path,
     effective_roots: Iterable[str],
@@ -809,9 +958,10 @@ def _count_project_scope_entries(
 def build_project_scope(root: Path, scope_paths: Iterable[str] | None = None, export_dir: Path | None = None, progress_callback: Callable[[str, int, int], None] | None = None) -> Dict[str, Any]:
     """Return a flat, id-addressable recursive file reference list for a project scope.
 
-    Progress is exact and sequential: first a count pass builds a real total,
+    Progress is exact for the walk: first a count pass builds a real total,
     then the scan pass reports ``processed_entries / total_entries`` for every
-    accepted directory or file.
+    accepted directory or file. File metadata is statted in a conservative
+    parallel pass only when the scope is large enough to justify it.
     """
     root = Path(root).resolve()
     export_dir = export_dir.resolve() if export_dir is not None else preferred_output_export_dir(root).resolve()
@@ -821,6 +971,7 @@ def build_project_scope(root: Path, scope_paths: Iterable[str] | None = None, ex
     rules = _collect_gitignore_rules(root, export_dir, progress_callback, "Project Tree")
     file_refs: List[Dict[str, Any]] = []
     directory_refs: List[Dict[str, Any]] = []
+    file_scan_items: List[tuple[str, Path]] = []
     seen_files: set[str] = set()
     seen_dirs: set[str] = set()
 
@@ -854,7 +1005,7 @@ def build_project_scope(root: Path, scope_paths: Iterable[str] | None = None, ex
         processed_units += 1
         _emit_progress(
             progress_callback,
-            f"Project Tree: {len(file_refs)} Dateien, {len(directory_refs)} Ordner sequentiell eingelesen ({label})",
+            f"Project Tree: {len(seen_files)} Dateien, {len(directory_refs)} Ordner eingelesen ({label})",
             min(processed_units, total_units),
             total_units,
         )
@@ -879,14 +1030,7 @@ def build_project_scope(root: Path, scope_paths: Iterable[str] | None = None, ex
         if is_path_gitignored(root, path, rules, is_dir=False, export_dir=export_dir):
             return
         seen_files.add(rel)
-        try:
-            stat = path.stat()
-            size = stat.st_size
-            modified_at = datetime.fromtimestamp(stat.st_mtime).isoformat(timespec="seconds")
-        except OSError:
-            size = None
-            modified_at = None
-        file_refs.append({"id": rel, "path": rel, "size_bytes": size, "modified_at": modified_at})
+        file_scan_items.append((rel, path))
         report_scan_progress("Datei")
 
     for selected_rel in sorted(effective_roots):
@@ -915,6 +1059,25 @@ def build_project_scope(root: Path, scope_paths: Iterable[str] | None = None, ex
             dirs[:] = sorted(kept_dirs)
             for filename in sorted(files):
                 add_file(current_path / filename)
+
+    worker_count = _scan_worker_count(len(file_scan_items))
+    if worker_count > 1:
+        _emit_progress(progress_callback, f"Project Tree: Datei-Metadaten parallel ({worker_count} Worker)", 0, len(file_scan_items))
+        completed = 0
+        with ThreadPoolExecutor(max_workers=worker_count, thread_name_prefix="project-scope-stat") as pool:
+            futures = [pool.submit(_file_reference_from_path, root, rel, path) for rel, path in file_scan_items]
+            for future in as_completed(futures):
+                try:
+                    file_refs.append(future.result())
+                except Exception:
+                    pass
+                completed += 1
+                _emit_progress(progress_callback, "Project Tree: Datei-Metadaten parallel", completed, len(file_scan_items))
+    else:
+        for index, (rel, path) in enumerate(file_scan_items, start=1):
+            file_refs.append(_file_reference_from_path(root, rel, path))
+            if len(file_scan_items) > 1:
+                _emit_progress(progress_callback, "Project Tree: Datei-Metadaten", index, len(file_scan_items))
 
     _emit_progress(progress_callback, "Project Tree: Scan sortieren", total_units, total_units)
     file_refs.sort(key=lambda item: item["path"])
@@ -1133,7 +1296,7 @@ def clone_project_scope_to_directory(
     return manifest
 
 
-DEPENDENCY_MANIFEST_FILENAMES = {"package.json", "requirements.txt", "requirements.json"}
+DEPENDENCY_MANIFEST_FILENAMES = {"package.json", "requirements.txt", "requirements.json", "pyproject.toml", "build.json"}
 
 def _is_dependency_manifest_path(path: Path | str) -> bool:
     return Path(path).name in DEPENDENCY_MANIFEST_FILENAMES
@@ -1292,7 +1455,29 @@ def build_project_analytics(project_root: Path, project_scope: Dict[str, Any]) -
 
 def _dependency_inventory_from_metadata(project_metadata: Dict[str, Any]) -> List[Dict[str, Any]]:
     inventory: List[Dict[str, Any]] = []
-    for report in project_metadata.get("targets", []) if isinstance(project_metadata, dict) else []:
+    if not isinstance(project_metadata, dict):
+        return inventory
+
+    recursive = project_metadata.get("recursive_dependency_inventory")
+    if isinstance(recursive, list) and recursive:
+        for block in recursive:
+            if not isinstance(block, dict):
+                continue
+            deps = _dedupe_strings([str(dep) for dep in block.get("dependencies", []) if str(dep).strip()])
+            if deps or block.get("manifest_files"):
+                inventory.append({
+                    "target_path": block.get("root") or block.get("target_path") or ".",
+                    "path_type": block.get("path_type") or "dependency_manifest_root",
+                    "package_manager": block.get("package_manager"),
+                    "manifest_files": block.get("manifest_files", []),
+                    "dependency_count": len(deps),
+                    "dependencies": deps[:300],
+                    "scripts": block.get("scripts", []),
+                    "commands": block.get("commands", []),
+                })
+        return inventory
+
+    for report in project_metadata.get("targets", []) if isinstance(project_metadata.get("targets"), list) else []:
         deps: List[str] = []
         pkg = report.get("package_json") if isinstance(report, dict) else None
         if isinstance(pkg, dict):
@@ -1309,6 +1494,173 @@ def _dependency_inventory_from_metadata(project_metadata: Dict[str, Any]) -> Lis
                 "dependencies": deps[:200],
             })
     return inventory
+
+
+def _project_scope_dependency_manifest_paths(project_root: Path, project_scope: Dict[str, Any], export_dir: Path | None = None) -> List[Path]:
+    """Return dependency manifests present in the effective Project Scope.
+
+    This is intentionally scope-driven: ProjectRoot/Create-Build exports must
+    inventory manifests that are actually part of the selected tree, including
+    nested frontend/backend/package folders, instead of checking only the target
+    root directory.
+    """
+    root = Path(project_root).resolve()
+    if not root.exists():
+        return []
+    rules = _collect_gitignore_rules(root, preferred_output_export_dir(root, export_dir).resolve() if export_dir is not None else None)
+    paths: List[Path] = []
+    file_refs = project_scope.get("file_references", []) if isinstance(project_scope, dict) else []
+    for item in file_refs:
+        if not isinstance(item, dict):
+            continue
+        rel = _normalize_project_rel(str(item.get("path", "")))
+        if not rel or rel == ".":
+            continue
+        candidate = (root / rel).resolve()
+        try:
+            candidate.relative_to(root)
+        except ValueError:
+            continue
+        if candidate.name not in DEPENDENCY_MANIFEST_FILENAMES:
+            continue
+        if candidate.exists() and candidate.is_file() and not is_path_gitignored(root, candidate, rules, is_dir=False, export_dir=export_dir):
+            paths.append(candidate)
+    if not paths:
+        paths = _dependency_manifest_files(root, export_dir)
+    return _dedupe_path_list(paths)
+
+
+def _dependency_entry_name(name: str, version: Any = None, *, section: str = "") -> str:
+    base = str(name or "").strip()
+    if not base:
+        return ""
+    version_text = str(version or "").strip()
+    suffix = f"@{version_text}" if version_text else ""
+    prefix = f"{section}:" if section else ""
+    return f"{prefix}{base}{suffix}"
+
+
+def _collect_requirements_json_dependencies(data: Any) -> List[str]:
+    deps: List[str] = []
+    if isinstance(data, dict):
+        for key, value in data.items():
+            key_l = str(key).lower()
+            if key_l in {"dependencies", "devdependencies", "dev_dependencies", "requirements", "packages"}:
+                if isinstance(value, dict):
+                    deps.extend(_dependency_entry_name(k, v, section=key_l) for k, v in value.items())
+                elif isinstance(value, list):
+                    deps.extend(str(item).strip() for item in value if str(item).strip())
+            elif isinstance(value, (dict, list)):
+                deps.extend(_collect_requirements_json_dependencies(value))
+    elif isinstance(data, list):
+        for item in data:
+            if isinstance(item, str):
+                deps.append(item.strip())
+            elif isinstance(item, dict):
+                name = item.get("name") or item.get("package") or item.get("id")
+                version = item.get("version") or item.get("specifier") or item.get("constraint")
+                if name:
+                    deps.append(_dependency_entry_name(str(name), version))
+                else:
+                    deps.extend(_collect_requirements_json_dependencies(item))
+    return _dedupe_strings([dep for dep in deps if dep])
+
+
+def build_recursive_dependency_inventory(project_root: Path, project_scope: Dict[str, Any], export_dir: Path | None = None) -> List[Dict[str, Any]]:
+    """Build a recursive dependency inventory from manifest files in scope.
+
+    The result is safe for PROJECT_METADATA/PROMPT_MANIFEST/LIBRARY.log: it lists
+    package names, versions/specifiers, scripts and validation commands without
+    copying dependency folders or embedding lockfile contents.
+    """
+    root = Path(project_root).resolve()
+    manifests = _project_scope_dependency_manifest_paths(root, project_scope, export_dir)
+    grouped: Dict[str, Dict[str, Any]] = {}
+    for manifest in sorted(manifests, key=lambda path: path.as_posix()):
+        try:
+            rel = manifest.resolve().relative_to(root).as_posix()
+        except ValueError:
+            continue
+        base_rel = posixpath.dirname(rel) or "."
+        base_dir = (root / base_rel).resolve() if base_rel != "." else root
+        block = grouped.setdefault(base_rel, {
+            "root": base_rel,
+            "manifest_files": [],
+            "package_manager": _package_manager(base_dir),
+            "dependencies": [],
+            "scripts": [],
+            "commands": [],
+            "warnings": [],
+        })
+        block["manifest_files"].append(rel)
+        name = manifest.name
+        if name == "package.json":
+            data = _read_json(manifest)
+            if not isinstance(data, dict) or data.get("_error"):
+                block["warnings"].append(f"package.json parse error: {data.get('_error') if isinstance(data, dict) else 'invalid json'}")
+                continue
+            for section in ("dependencies", "devDependencies", "peerDependencies", "optionalDependencies"):
+                values = data.get(section, {})
+                if isinstance(values, dict):
+                    block["dependencies"].extend(_dependency_entry_name(dep, version, section=section) for dep, version in values.items())
+            scripts = data.get("scripts", {})
+            if isinstance(scripts, dict):
+                runner = _command_runner(block.get("package_manager"))
+                for script_name, script_cmd in scripts.items():
+                    block["scripts"].append(f"{script_name}: {script_cmd}")
+                    block["commands"].append(f"{runner} {script_name}")
+        elif name == "requirements.txt":
+            lines = _read_requirements(manifest)
+            block["dependencies"].extend(lines)
+        elif name == "requirements.json":
+            data = _read_json(manifest)
+            if isinstance(data, dict) and data.get("_error"):
+                block["warnings"].append(f"requirements.json parse error: {data.get('_error')}")
+            else:
+                block["dependencies"].extend(_collect_requirements_json_dependencies(data))
+        elif name == "pyproject.toml":
+            data = _read_toml(manifest)
+            if isinstance(data, dict) and data.get("_error"):
+                block["warnings"].append(f"pyproject.toml parse error: {data.get('_error')}")
+            else:
+                block["dependencies"].extend(_collect_pyproject_dependencies(data))
+                tool = data.get("tool", {}) if isinstance(data, dict) else {}
+                if isinstance(tool, dict):
+                    block["commands"].extend(cmd for cmd in ["pytest", "ruff check .", "mypy ."] if cmd.split()[0] in tool)
+        elif name == "build.json":
+            data = _read_json(manifest)
+            if isinstance(data, dict) and data.get("_error"):
+                block["warnings"].append(f"build.json parse error: {data.get('_error')}")
+            elif isinstance(data, dict):
+                for key in ("dependencies", "packages", "requirements"):
+                    value = data.get(key)
+                    if isinstance(value, dict):
+                        block["dependencies"].extend(_dependency_entry_name(k, v, section=key) for k, v in value.items())
+                    elif isinstance(value, list):
+                        block["dependencies"].extend(str(item).strip() for item in value if str(item).strip())
+                for key in ("commands", "scripts", "quality_commands", "validation_commands"):
+                    value = data.get(key)
+                    if isinstance(value, dict):
+                        block["commands"].extend(str(v).strip() for v in value.values() if str(v).strip())
+                    elif isinstance(value, list):
+                        block["commands"].extend(str(v).strip() for v in value if str(v).strip())
+
+    result: List[Dict[str, Any]] = []
+    for base_rel, block in sorted(grouped.items(), key=lambda pair: pair[0]):
+        deps = _dedupe_strings([str(dep).strip() for dep in block.get("dependencies", []) if str(dep).strip()])
+        scripts = _dedupe_strings([str(item).strip() for item in block.get("scripts", []) if str(item).strip()])
+        commands = _dedupe_strings([str(item).strip() for item in block.get("commands", []) if str(item).strip()])
+        result.append({
+            "root": base_rel,
+            "manifest_files": _dedupe_strings(block.get("manifest_files", [])),
+            "package_manager": block.get("package_manager"),
+            "dependency_count": len(deps),
+            "dependencies": deps[:500],
+            "scripts": scripts[:120],
+            "commands": commands[:120],
+            "warnings": _dedupe_strings(block.get("warnings", [])),
+        })
+    return result
 
 
 def build_process_log_markdown(
@@ -1347,6 +1699,8 @@ def build_process_log_markdown(
         f"- Generator-pinned references: `{', '.join(selected_reference_ids or []) or 'none'}`",
         f"- Generator-pinned operation roles: `{', '.join(selected_operation_role_ids or []) or 'none'}`",
         f"- Custom prompt wrapped: `{custom_prompt_enabled}`",
+        f"- Recursive dependency manifests: `{len(project_metadata.get('dependency_manifest_files', []) if isinstance(project_metadata, dict) else [])}`",
+        f"- Recursive dependency roots: `{len(project_metadata.get('recursive_dependency_inventory', []) if isinstance(project_metadata, dict) else [])}`",
         "",
         "### Targets",
     ]
@@ -1428,12 +1782,36 @@ def build_library_log_text(project_metadata: Dict[str, Any]) -> str:
     lines.extend(["", "[top_level_paths]"])
     for item in _list(analytics.get("by_top_level_path"))[:100]:
         lines.append(f"{item.get('path')} files={item.get('file_count')} bytes={item.get('total_bytes')} size={item.get('size_human')}")
+    manifest_files = _dedupe_strings([
+        str(path)
+        for block in dependencies
+        for path in (block.get("manifest_files", []) if isinstance(block.get("manifest_files"), list) else [])
+    ])
+    lines.extend(["", "[dependency_manifests]"])
+    if manifest_files:
+        for rel in manifest_files[:300]:
+            lines.append(rel)
+    else:
+        lines.append("none detected")
     lines.extend(["", "[dependencies]"])
     if dependencies:
         for block in dependencies:
-            lines.append(f"target={block.get('target_path')} path_type={block.get('path_type')} package_manager={block.get('package_manager') or 'unknown'} dependency_count={block.get('dependency_count')}")
-            for dep in block.get("dependencies", [])[:200]:
-                lines.append(f"  - {dep}")
+            manifest_note = ",".join(block.get("manifest_files", [])[:12]) if isinstance(block.get("manifest_files"), list) else ""
+            lines.append(f"target={block.get('target_path')} path_type={block.get('path_type')} package_manager={block.get('package_manager') or 'unknown'} manifest_files={manifest_note or 'none'} dependency_count={block.get('dependency_count')}")
+            scripts = block.get("scripts", []) if isinstance(block.get("scripts"), list) else []
+            commands = block.get("commands", []) if isinstance(block.get("commands"), list) else []
+            if scripts:
+                lines.append("  scripts:")
+                for script in scripts[:80]:
+                    lines.append(f"    - {script}")
+            if commands:
+                lines.append("  commands:")
+                for command in commands[:80]:
+                    lines.append(f"    - {command}")
+            if block.get("dependencies"):
+                lines.append("  dependencies:")
+                for dep in block.get("dependencies", [])[:300]:
+                    lines.append(f"    - {dep}")
     else:
         lines.append("none detected")
     lines.append("")
@@ -1620,6 +1998,7 @@ def build_prompt_manifest(
             {"id": "google_structured_output", "url": "https://ai.google.dev/gemini-api/docs/structured-output", "reason": "schema output and validation limits"},
         ],
         "schema_inventory": inventory,
+        "used_schema_resolution": project_metadata.get("used_schema_resolution", {}) if isinstance(project_metadata, dict) else {},
         "targets": target_reports,
     }
 
@@ -2165,6 +2544,10 @@ def export_project_clone_zip(
         if source.exists() and source.is_file():
             if _is_dependency_manifest_path(source) and not include_dependency_manifests:
                 continue
+            if (rel == "schema" or rel.startswith("schema/")) and (generated_output_base / "schema").exists():
+                # schema/ is a generated Human-API schema resource in exports.
+                # Do not let a selected project-root schema catalog override it.
+                continue
             raw_plan.append((source, rel))
 
     if include_dependency_manifests:
@@ -2227,19 +2610,20 @@ def export_project_clone_zip(
         absolute_project_paths=absolute_project_paths,
     )
     manifest["zip_root_mode"] = "project_relative_no_root_folder"
-    manifest["zip_sidecar_policy"] = "Only the ZIP, USER_PROMPT.txt and EXPORT_MANIFEST.json remain outside after ZIP export."
-    manifest["outside_files"] = [zip_path.name, prompt_path.name, manifest_path.name]
+    manifest["zip_sidecar_policy"] = "Only the ZIP and human text sidecars remain outside after ZIP export; EXPORT_MANIFEST.json is kept inside the ZIP."
+    manifest["outside_files"] = [zip_path.name, prompt_path.name]
     if absolute_project_paths:
-        manifest["outside_files_relative"] = [zip_path.name, prompt_path.name, manifest_path.name]
-        manifest["outside_files"] = [str(zip_path.resolve()), str(prompt_path.resolve()), str(manifest_path.resolve())]
+        manifest["outside_files_relative"] = [zip_path.name, prompt_path.name]
+        manifest["outside_files"] = [_project_scope_absolute_path(zip_path.name), _project_scope_absolute_path(prompt_path.name)]
     manifest["schema_included_in_zip"] = any(path == "schema" or path.startswith("schema/") for path in manifest_copied_files)
+    manifest["schema_export_policy"] = "schema/ contains recursively resolved Human-API used-schema rows, not the full application schema catalog."
     manifest["include_dependency_manifests"] = include_dependency_manifests
-    manifest["dependency_manifest_policy"] = "Only package.json, requirements.txt and requirements.json may be forced into the export when enabled."
+    manifest["dependency_manifest_policy"] = "Dependency manifests are recursively inventoried in PROJECT_METADATA.json and LIBRARY.log; manifest files are copied only when enabled."
     manifest_text = json.dumps(manifest, ensure_ascii=False, indent=2) + "\n"
     manifest_path.write_text(manifest_text, encoding="utf-8")
     (clone_root / manifest_rel).write_text(manifest_text, encoding="utf-8")
     copied_rel_paths = manifest_copied_files
-    messages.append(f"WRITE {manifest_path} (outside ZIP and inside ZIP)")
+    messages.append(f"WRITE {manifest_path} (staging manifest, then inside ZIP only)")
     _emit_progress(progress_callback, "ZIP Export: EXPORT_MANIFEST.json geschrieben", 1, 1)
 
     zip_files = [path for path in sorted(clone_root.rglob("*")) if path.is_file()]
@@ -2254,8 +2638,14 @@ def export_project_clone_zip(
     messages.append(f"ZIP   {zip_path}")
     messages.append("ZIPROOT project-relative paths only; no output/root folder prefix")
     messages.append(f"COPY  {len(copied_rel_paths)} scoped/generated file(s) into ZIP")
-    messages.append(f"SCHEMA {'included' if manifest['schema_included_in_zip'] else 'missing'} in ZIP")
+    messages.append(f"SCHEMA_RESOLUTION {'included' if manifest['schema_included_in_zip'] else 'missing'} in ZIP")
     messages.append(f"DEPENDENCY_MANIFESTS {'included' if include_dependency_manifests else 'excluded'}")
+    try:
+        if manifest_path.exists():
+            manifest_path.unlink()
+            messages.append(f"CLEAN {manifest_path} (ZIP export keeps manifest inside ZIP only)")
+    except Exception:
+        pass
 
     if clone_root.exists():
         shutil.rmtree(clone_root)
@@ -2604,6 +2994,14 @@ def scan_project_metadata(
             "inferred": inferred,
         })
 
+    _emit_progress(progress_callback, "Metadaten: Dependency-Manifeste werden rekursiv inventarisiert", None, 0)
+    recursive_dependency_inventory = build_recursive_dependency_inventory(output_base, project_scope, export_dir)
+    dependency_manifest_files = _dedupe_strings([
+        rel
+        for block in recursive_dependency_inventory
+        for rel in (block.get("manifest_files", []) if isinstance(block.get("manifest_files"), list) else [])
+    ])
+
     _emit_progress(progress_callback, "Metadaten: Projektanalytics werden gebaut", None, 0)
     project_analytics = build_project_analytics(output_base, project_scope)
     _emit_progress(progress_callback, "Metadaten: Scan fertig", 1, 1)
@@ -2613,6 +3011,8 @@ def scan_project_metadata(
         "base": str(output_base),
         "project_scope": project_scope,
         "project_analytics": project_analytics,
+        "recursive_dependency_inventory": recursive_dependency_inventory,
+        "dependency_manifest_files": dependency_manifest_files,
         "reference_routing": {
             "generator_pinned_reference_ids": selected_reference_ids,
             "generator_pinned_operation_role_ids": selected_operation_role_ids,
@@ -3182,13 +3582,15 @@ def build_custom_weighted_prompt(
     base_role = build_operator_role_prompt(schema, target, project_metadata, ai_language, "operator_role", role_date)
     custom = (custom_prompt_text or "").strip()
     target = target.normalized(schema)
-    target_report = next((report for report in project_metadata.get("targets", []) if report.get("path") == target.path), {}) if isinstance(project_metadata, dict) else {}
+    target_report = _target_report_for_prompt(project_metadata, target)
     active_references = [ref.get("id") for ref in target_report.get("active_reference_domains", []) if ref.get("id")]
     active_roles = [role.get("id") for role in target_report.get("active_operation_roles", []) if role.get("id")]
     scope = project_metadata.get("project_scope", {}) if isinstance(project_metadata, dict) else {}
-    target_scope = _target_scope_from_project_scope(scope, target.path) if scope else {}
+    target_scope = _target_scope_for_prompt(project_metadata, target) if scope else {}
     scope_paths = [str(item.get("path")) for item in target_scope.get("file_references", []) if item.get("path")]
-    scope_preview = "\n".join(f"- {path}" for path in scope_paths[:300]) or "- none"
+    display_scope_paths = _prompt_project_paths(project_metadata, scope_paths[:300])
+    scope_preview = "\n".join(f"- {path}" for path in display_scope_paths) or "- none"
+    display_target_path = _prompt_project_path(project_metadata, target.path)
     if len(scope_paths) > 300:
         scope_preview += f"\n- ... +{len(scope_paths) - 300} more scope files"
     changed_files_only = bool((project_metadata.get("response_policy", {}) if isinstance(project_metadata, dict) else {}).get("changed_files_only"))
@@ -3233,7 +3635,7 @@ def build_custom_weighted_prompt(
         "Do not treat this wrapper as a solution. Treat it as the next task prompt with guardrails.",
         "",
         "## Active wrapper context",
-        f"- Target path: `{target.path}`",
+        f"- Target path: `{display_target_path}`",
         f"- Path type: `{target.path_type}`",
         f"- AI target: `{target.ai_target}`",
         f"- File types: `{', '.join(target.file_types or []) or 'none'}`",
@@ -3281,7 +3683,7 @@ def build_ai_rules_for_target(target: SaveTarget, ai_language: str, project_name
     wrapper_delegation = _wrapper_delegation(schema, all_targets) if target.path_type == "wrapper" else None
     project_scope = project_metadata.get("project_scope", {}) if isinstance(project_metadata, dict) else {}
     target_scope = _target_scope_from_project_scope(project_scope, target.path) if project_scope else {}
-    target_report = next((report for report in project_metadata.get("targets", []) if report.get("path") == target.path), {}) if isinstance(project_metadata, dict) else {}
+    target_report = _target_report_for_prompt(project_metadata, target)
     active_reference_domains = target_report.get("active_reference_domains", [])
     active_operation_roles = target_report.get("active_operation_roles", [])
     rules_project_metadata = _metadata_without_dependency_manifests(project_metadata)
@@ -3405,7 +3807,7 @@ def build_ai_manager(ai_language: str, project_name: str, targets: List[SaveTarg
             "export_folder": "EXPORT/",
             "clear_entire_export_folder_before_zip": True,
             "zip_sidecars_only": True,
-            "outside_zip_files": ["*_scope_clone.zip", "USER_PROMPT.txt", "EXPORT_MANIFEST.json"],
+            "outside_zip_files": ["*_scope_clone.zip", "USER_PROMPT.txt", "TASKS.TXT when present", "CMD.TXT when Create ZIP contract applies"],
             "zip_created_only_when_export_as_zip_is_true": True,
             "clone_selected_tree_paths": True,
             "preserve_project_relative_paths": True,
@@ -3481,8 +3883,11 @@ def build_ai_manager(ai_language: str, project_name: str, targets: List[SaveTarg
 
 def copy_schema_files(source_schema_dir: Path, output_base: Path, overwrite: bool, progress_callback: Callable[[str, int, int], None] | None = None) -> List[str]:
     messages = []
+    source_schema_dir = resolve_schema_dir(source_schema_dir)
     target_schema_dir = output_base / "schema"
     if not source_schema_dir.exists():
+        message = f"WARN  schema resource folder missing: {source_schema_dir}"
+        messages.append(message)
         _emit_progress(progress_callback, "Schema Copy: Quellordner fehlt", 1, 1)
         return messages
     files = sorted(source_schema_dir.rglob("*.json"))
@@ -3502,8 +3907,605 @@ def copy_schema_files(source_schema_dir: Path, output_base: Path, overwrite: boo
         _emit_progress(progress_callback, f"Schema Copy: Datei {index}/{len(files)} verarbeitet — {rel.as_posix()}", index, total)
     return messages
 
+
+def _schema_item_by_id(schema: Dict[str, Any], key: str, item_id: str) -> Dict[str, Any]:
+    needle = str(item_id or "").strip()
+    if not needle:
+        return {}
+    for item in schema.get(key, []) if isinstance(schema, dict) else []:
+        if isinstance(item, dict) and str(item.get("id") or "").strip() == needle:
+            return dict(item)
+    return {}
+
+
+def _schema_items_by_ids(schema: Dict[str, Any], key: str, item_ids: Iterable[str] | None) -> List[Dict[str, Any]]:
+    wanted = [str(item).strip() for item in (item_ids or []) if str(item).strip()]
+    if not wanted:
+        return []
+    wanted_set = set(wanted)
+    rows: List[Dict[str, Any]] = []
+    for item in schema.get(key, []) if isinstance(schema, dict) else []:
+        if isinstance(item, dict) and str(item.get("id") or "").strip() in wanted_set:
+            rows.append(dict(item))
+    order = {item_id: index for index, item_id in enumerate(wanted)}
+    rows.sort(key=lambda item: order.get(str(item.get("id") or ""), 10_000))
+    return rows
+
+
+def _schema_match_id_by_id_or_label(schema: Dict[str, Any], key: str, value: str) -> str:
+    needle = str(value or "").strip()
+    if not needle:
+        return ""
+    lowered = needle.lower()
+    for item in schema.get(key, []) if isinstance(schema, dict) else []:
+        if not isinstance(item, dict):
+            continue
+        candidates = [item.get("id"), item.get("label"), item.get("display_name"), item.get("name")]
+        if any(str(candidate or "").strip().lower() == lowered for candidate in candidates):
+            return str(item.get("id") or "").strip()
+    return ""
+
+
+def _as_schema_id_list(values: Any) -> List[str]:
+    if values in (None, "", [], {}):
+        return []
+    if isinstance(values, dict):
+        values = values.values()
+    if not isinstance(values, (list, tuple, set)):
+        values = [values]
+    return _dedupe_strings([str(item).strip() for item in values if str(item).strip()])
+
+
+def build_used_schema_resolution(
+    schema: Dict[str, Any],
+    targets: List[SaveTarget],
+    project_metadata: Dict[str, Any] | None = None,
+    *,
+    compact_export_context: Dict[str, Any] | None = None,
+) -> Dict[str, Any]:
+    """Resolve the exact schema rows used by the active export.
+
+    This intentionally returns row content instead of a full schema dump.  The
+    export may copy a filtered schema/ folder from this payload, and
+    PROMPT_MANIFEST.json can expose the same payload as the Human-API truth for
+    Schema/Boilerplate resolution.
+    """
+    metadata = project_metadata if isinstance(project_metadata, dict) else {}
+    context = compact_export_context if isinstance(compact_export_context, dict) else {}
+    used: Dict[str, List[str]] = {key: [] for key in SCHEMA_ARRAY_KEYS}
+
+    def add(key: str, values: Any) -> None:
+        if key not in used:
+            used[key] = []
+        for value in _as_schema_id_list(values):
+            if value and value not in used[key]:
+                used[key].append(value)
+
+    def add_row_dependencies(row: Dict[str, Any]) -> None:
+        if not isinstance(row, dict):
+            return
+        add("boilerplate_profiles", row.get("profiles") or row.get("boilerplate_profiles"))
+        add("reference_domains", row.get("references") or row.get("reference_domains"))
+        add("operation_roles", row.get("roles") or row.get("operation_roles"))
+        add("weight_table", row.get("weights") or row.get("weight_profiles"))
+        add("weight_operators", row.get("weight_operators"))
+        add("hooks", row.get("hooks"))
+        add("dependency_groups", row.get("dependency_group_ids"))
+        add("create_micro_tasks", row.get("micro_task_ids"))
+        add("feature_modules", row.get("feature_module_ids"))
+        add("refactor_modules", row.get("refactor_module_ids"))
+        add("file_types", row.get("file_types"))
+        add("path_types", row.get("path_type") or row.get("path_types") or row.get("build_target"))
+        add("ai_targets", row.get("ai_target") or row.get("ai_targets"))
+
+    reports_by_path = {
+        str(report.get("path") or ""): report
+        for report in metadata.get("targets", [])
+        if isinstance(report, dict)
+    } if isinstance(metadata.get("targets"), list) else {}
+
+    for target in targets or []:
+        try:
+            target = target.normalized(schema)
+        except Exception:
+            continue
+        add("path_types", target.path_type)
+        add("file_types", target.file_types or [])
+        add("ai_targets", target.ai_target)
+        active_profiles = _profiles(schema, target.boilerplate_profiles or [], target.path_type)
+        active_profile_ids = [str(profile.get("id") or "") for profile in active_profiles if profile.get("id")]
+        add("boilerplate_profiles", active_profile_ids)
+        hooks = _active_hooks(schema, target.path_type, target.ai_target, active_profile_ids, target.file_types or [])
+        add("hooks", [item.get("id") for item in hooks if isinstance(item, dict)])
+        if hooks:
+            add("hook_lifecycle", [item.get("id") for item in schema.get("hook_lifecycle", []) if isinstance(item, dict)])
+        routines = _active_special_routines(schema, target.path_type, target.ai_target, active_profile_ids, hooks, target.file_types or [])
+        add("special_routines", [item.get("id") for item in routines if isinstance(item, dict)])
+        weights = _active_weight_table(schema, target.ai_target, hooks)
+        add("weight_table", [item.get("id") for item in weights if isinstance(item, dict)])
+        weight_ops = _active_weight_operators(schema, target.path_type, active_profile_ids, target.file_types or [])
+        add("weight_operators", [item.get("id") for item in weight_ops if isinstance(item, dict)])
+        modules = _boilerplate_modules(target.path_type, active_profile_ids, target.file_types or [], hooks, routines)
+        add("target_match_boilerplates", [item.get("id") for item in modules if isinstance(item, dict)])
+        report = reports_by_path.get(target.path) or _target_report_for_prompt(metadata, target)
+        add("reference_domains", [item.get("id") for item in report.get("active_reference_domains", []) if isinstance(item, dict)])
+        add("operation_roles", [item.get("id") for item in report.get("active_operation_roles", []) if isinstance(item, dict)])
+        add("code_structures", [item.get("structure_id") for item in report.get("detected_structures", []) if isinstance(item, dict)])
+
+    routing = metadata.get("reference_routing", {}) if isinstance(metadata.get("reference_routing"), dict) else {}
+    add("reference_domains", routing.get("selected_reference_ids"))
+    add("operation_roles", routing.get("selected_operation_role_ids"))
+
+    # Create/Human-API context, supplied by prompt.py for Create export and by
+    # compact_export_context for compact mode.  These values are explicit user or
+    # GUI selections and are therefore legitimate schema input.
+    add("reference_domains", context.get("references") or context.get("selected_reference_ids"))
+    add("operation_roles", context.get("roles") or context.get("selected_operation_role_ids"))
+    add("boilerplate_profiles", context.get("profiles"))
+    add("file_types", context.get("file_types"))
+    selected_stack = str(context.get("selected_stack") or context.get("stack") or "").strip()
+    stack_id = _schema_match_id_by_id_or_label(schema, "create_stack_nodes", selected_stack)
+    if stack_id:
+        add("create_stack_nodes", stack_id)
+        stack_row = _schema_item_by_id(schema, "create_stack_nodes", stack_id)
+        add_row_dependencies(stack_row)
+        for dependency in stack_row.get("dependency_abstraction", []) if isinstance(stack_row.get("dependency_abstraction"), list) else []:
+            if isinstance(dependency, dict):
+                add("dependency_groups", dependency.get("id"))
+    selected_category = str(context.get("selected_stack_category") or context.get("stack_category") or context.get("category") or "").strip()
+    category_id = _schema_match_id_by_id_or_label(schema, "create_node_categories", selected_category)
+    if category_id:
+        add("create_node_categories", category_id)
+
+    selected_entry = context.get("selected_chain_entry") or context.get("selected_create_chain_entry")
+    if isinstance(selected_entry, dict):
+        entry_id = str(selected_entry.get("id") or "").strip()
+        add("create_chain_boilerplates", entry_id)
+        add_row_dependencies(selected_entry)
+    chain_schema = context.get("chain_schema") if isinstance(context.get("chain_schema"), dict) else {}
+    # Only the explicitly selected catalog entry is included. If no entry is
+    # selected, do not export the full chain catalog.
+    selected_entry_id = str((selected_entry or {}).get("id") if isinstance(selected_entry, dict) else "").strip()
+    for entry in chain_schema.get("boilerplates", []) if isinstance(chain_schema.get("boilerplates"), list) else []:
+        if isinstance(entry, dict) and selected_entry_id and str(entry.get("id") or "").strip() == selected_entry_id:
+            add("create_chain_boilerplates", selected_entry_id)
+            add_row_dependencies(entry)
+
+    parameters = context.get("create_mode_parameters") if isinstance(context.get("create_mode_parameters"), dict) else {}
+    controls = parameters.get("controls") if isinstance(parameters.get("controls"), list) else []
+    for control in controls:
+        if isinstance(control, dict):
+            add("create_mode_parameter_controls", control.get("id"))
+            # create_mode_parameter_boilerplates often re-use the same ids as controls.
+            add("create_mode_parameter_boilerplates", control.get("id"))
+    add("create_mode_parameter_boilerplates", [item.get("id") for item in context.get("create_parameter_boilerplates", []) if isinstance(item, dict)] if isinstance(context.get("create_parameter_boilerplates"), list) else [])
+
+    # Resolve a real recursive closure.  Rows often point at other rows by id
+    # (weights -> operators -> hooks -> lifecycle, Create stack -> dependency
+    # groups -> micro tasks, references -> operation roles, etc.).  Exported
+    # schema resources must represent that reachable graph, not the whole schema
+    # catalog and not only the first hop.
+    all_row_ids: Dict[str, set[str]] = {}
+    id_to_keys: Dict[str, set[str]] = {}
+    for schema_key in SCHEMA_ARRAY_KEYS:
+        ids_for_key = {str(row.get("id") or "").strip() for row in schema.get(schema_key, []) if isinstance(row, dict) and str(row.get("id") or "").strip()}
+        all_row_ids[schema_key] = ids_for_key
+        for row_id in ids_for_key:
+            id_to_keys.setdefault(row_id, set()).add(schema_key)
+
+    relation_key_map = {
+        "profiles": "boilerplate_profiles",
+        "boilerplate_profiles": "boilerplate_profiles",
+        "references": "reference_domains",
+        "reference_domains": "reference_domains",
+        "roles": "operation_roles",
+        "operation_roles": "operation_roles",
+        "weights": "weight_table",
+        "weight_profiles": "weight_table",
+        "weight_operators": "weight_operators",
+        "hooks": "hooks",
+        "dependency_group_ids": "dependency_groups",
+        "micro_task_ids": "create_micro_tasks",
+        "feature_module_ids": "feature_modules",
+        "refactor_module_ids": "refactor_modules",
+        "file_types": "file_types",
+        "path_type": "path_types",
+        "path_types": "path_types",
+        "build_target": "path_types",
+        "ai_target": "ai_targets",
+        "ai_targets": "ai_targets",
+        "category": "create_node_categories",
+        "category_id": "create_node_categories",
+        "stack": "create_stack_nodes",
+        "stack_id": "create_stack_nodes",
+        "chain_boilerplate_id": "create_chain_boilerplates",
+        "target_match_boilerplates": "target_match_boilerplates",
+        "prompt_operator_ids": "prompt_operators",
+    }
+
+    def add_relation(target_key: str, values: Any) -> bool:
+        before = len(used.get(target_key, []))
+        add(target_key, values)
+        return len(used.get(target_key, [])) != before
+
+    def scan_value_for_schema_ids(value: Any, key_hint: str = "") -> None:
+        mapped_key = relation_key_map.get(key_hint)
+        if mapped_key:
+            add_relation(mapped_key, value)
+        if isinstance(value, dict):
+            for child_key, child_value in value.items():
+                if child_key == "id":
+                    continue
+                scan_value_for_schema_ids(child_value, str(child_key))
+            return
+        if isinstance(value, (list, tuple, set)):
+            for item in value:
+                scan_value_for_schema_ids(item, key_hint)
+            return
+        if not isinstance(value, str):
+            return
+        text = value.strip()
+        if not text:
+            return
+        if mapped_key and text in all_row_ids.get(mapped_key, set()):
+            add_relation(mapped_key, text)
+            return
+        # Generic exact-id references are allowed, but only exact scalar/list
+        # values count.  We never mine free prose for ids because that would turn
+        # documentation text back into catalog browsing.
+        for candidate_key in sorted(id_to_keys.get(text, set())):
+            add_relation(candidate_key, text)
+
+    processed: set[tuple[str, str]] = set()
+    while True:
+        pending = [
+            (key, row_id)
+            for key, values in list(used.items())
+            for row_id in list(values)
+            if (key, row_id) not in processed
+        ]
+        if not pending:
+            break
+        for key, row_id in pending:
+            processed.add((key, row_id))
+            row = _schema_item_by_id(schema, key, row_id)
+            if not isinstance(row, dict) or not row:
+                continue
+            add_row_dependencies(row)
+            scan_value_for_schema_ids(row)
+
+    cleaned_ids = {key: _dedupe_strings(values) for key, values in used.items() if _dedupe_strings(values)}
+    content = {key: _schema_items_by_ids(schema, key, ids) for key, ids in cleaned_ids.items()}
+    content = {key: rows for key, rows in content.items() if rows}
+    return {
+        "artifact": "used_schema_resolution",
+        "version": "2026.06.used-schema.v1",
+        "policy": "Only schema rows explicitly required by active targets, selected stack, selected catalog entry, active roles/references, weights, hooks and detected structures are exported. No full schema dump.",
+        "used_ids": cleaned_ids,
+        "content": content,
+        "counts": {key: len(rows) for key, rows in content.items()},
+        "human_api_context": {
+            "stack_category": str(context.get("selected_stack_category") or context.get("stack_category") or context.get("category") or ""),
+            "stack": selected_stack,
+            "catalog_entry_id": str((selected_entry or {}).get("id") if isinstance(selected_entry, dict) else ""),
+            "catalog_entry_label": str((selected_entry or {}).get("display_name") or (selected_entry or {}).get("label") or "") if isinstance(selected_entry, dict) else "",
+            "weight_values": parameters.get("values", {}) if isinstance(parameters.get("values"), dict) else {},
+        },
+    }
+
+
+def _filter_schema_json_for_used_ids(data: Any, used_ids: Dict[str, List[str]]) -> Dict[str, Any]:
+    if not isinstance(data, dict):
+        return {}
+    filtered: Dict[str, Any] = {}
+    kept_any_array = False
+    all_used_ids = {str(item).strip() for values in used_ids.values() for item in values if str(item).strip()}
+    pending_metadata: Dict[str, Any] = {}
+    for key, value in data.items():
+        if isinstance(value, list):
+            wanted = set(used_ids.get(key) or []) if key in used_ids else all_used_ids
+            rows = []
+            for item in value:
+                if isinstance(item, dict) and str(item.get("id") or "").strip() in wanted:
+                    rows.append(item)
+            if rows:
+                filtered[key] = rows
+                kept_any_array = True
+            continue
+        if key in SCHEMA_ARRAY_KEYS:
+            continue
+        if isinstance(value, dict) and str(value.get("id") or "").strip() in all_used_ids:
+            filtered[key] = value
+            kept_any_array = True
+        else:
+            # Keep scalar/file-level metadata only if this JSON file has at least
+            # one explicitly used schema row.  Unmatched list payloads are not
+            # copied because they are catalog browsing, not selected schema.
+            pending_metadata[key] = value
+    if not kept_any_array:
+        return {}
+    for key, value in pending_metadata.items():
+        if isinstance(value, (str, int, float, bool)) or value is None:
+            filtered[key] = value
+    return filtered
+
+
+def _schema_human_api_text(used_schema_resolution: Dict[str, Any]) -> str:
+    used_ids = used_schema_resolution.get("used_ids") if isinstance(used_schema_resolution.get("used_ids"), dict) else {}
+    content = used_schema_resolution.get("content") if isinstance(used_schema_resolution.get("content"), dict) else {}
+    lines = [
+        "# HUMAN API - Resolved Schema/Boilerplate Text",
+        "",
+        "This file is generated from the recursive used-schema closure. It is not a full schema catalog.",
+        "Only rows reached from the active targets, Create stack, selected chain entry, roles, references, weights, hooks and their recursive id dependencies are represented here.",
+        "",
+        "## Used ID index",
+    ]
+    if used_ids:
+        for key in sorted(used_ids):
+            ids = used_ids.get(key) if isinstance(used_ids.get(key), list) else []
+            lines.append(f"- {key}: {', '.join(str(item) for item in ids) or 'none'}")
+    else:
+        lines.append("- none")
+    lines.append("")
+    lines.append("## Recursive row text")
+    for key in sorted(content):
+        rows = content.get(key) if isinstance(content.get(key), list) else []
+        if not rows:
+            continue
+        lines.extend(["", f"### {key}"])
+        for row in rows:
+            if not isinstance(row, dict):
+                continue
+            row_id = str(row.get("id") or "").strip()
+            label = str(row.get("label") or row.get("name") or row.get("display_name") or row_id).strip()
+            lines.append(f"- `{row_id}` — {label}" if row_id else f"- {label}")
+            for field in ("description", "summary", "purpose", "instruction", "weight_effect", "applies_to", "schema_compatibility"):
+                value = row.get(field)
+                if isinstance(value, str) and value.strip():
+                    lines.append(f"  - {field}: {value.strip()}")
+            for field in ("rules", "guardrails", "constraints", "outputs", "requires", "references", "roles", "weights", "hooks", "dependency_group_ids", "micro_task_ids", "feature_module_ids", "refactor_module_ids"):
+                value = row.get(field)
+                values = _as_schema_id_list(value)
+                if values:
+                    lines.append(f"  - {field}: {', '.join(values[:40])}")
+    lines.append("")
+    return "\n".join(lines)
+
+
+def copy_used_schema_files(
+    source_schema_dir: Path,
+    output_base: Path,
+    overwrite: bool,
+    used_schema_resolution: Dict[str, Any] | None = None,
+    progress_callback: Callable[[str, int, int], None] | None = None,
+) -> List[str]:
+    """Materialize the recursive used-schema closure into ``output_base/schema``.
+
+    The export must not ship the complete application schema catalog.  It writes a
+    small Human-API schema resource made from ``used_schema_resolution.content``:
+    per-section JSON files plus a readable ``HUMAN_API_SCHEMA.md``.  This keeps
+    runtime resource availability deterministic without turning the export into a
+    full schema dump.
+    """
+    source_schema_dir = resolve_schema_dir(source_schema_dir)
+    output_base = Path(output_base).resolve()
+    target_schema_dir = output_base / "schema"
+    payload = used_schema_resolution if isinstance(used_schema_resolution, dict) else {}
+    content = payload.get("content") if isinstance(payload.get("content"), dict) else {}
+    used_ids = payload.get("used_ids") if isinstance(payload.get("used_ids"), dict) else {}
+    messages: List[str] = []
+
+    if overwrite and target_schema_dir.exists():
+        shutil.rmtree(target_schema_dir)
+        messages.append(f"CLEAN {target_schema_dir} (replace stale schema catalog with resolved Human-API schema)")
+    target_schema_dir.mkdir(parents=True, exist_ok=True)
+
+    rows_by_key = {
+        key: rows
+        for key, rows in sorted(content.items())
+        if isinstance(rows, list) and rows
+    }
+    if not rows_by_key:
+        messages.append(f"WARN  no used schema rows resolved from {source_schema_dir}; full schema catalog was not copied")
+        return messages
+
+    index_payload = {
+        "artifact": "USED_SCHEMA_INDEX.json",
+        "version": payload.get("version") or "2026.06.used-schema.v1",
+        "policy": "Recursive used-schema closure only. Full application schema catalog is not exported.",
+        "source_schema_dir": str(source_schema_dir),
+        "used_ids": used_ids,
+        "counts": {key: len(rows) for key, rows in rows_by_key.items()},
+        "human_api_text": "schema/HUMAN_API_SCHEMA.md",
+    }
+    index_path = target_schema_dir / "USED_SCHEMA_INDEX.json"
+    index_path.write_text(json.dumps(index_payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    messages.append(f"WRITE {index_path}")
+
+    total = max(len(rows_by_key) + 1, 1)
+    for index, (key, rows) in enumerate(rows_by_key.items(), start=1):
+        destination = target_schema_dir / f"{key}.json"
+        section_payload = {
+            "artifact": f"schema/{key}.json",
+            "schema_subset": key,
+            "policy": "Resolved rows only; not a full schema catalog.",
+            key: rows,
+        }
+        destination.write_text(json.dumps(section_payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        messages.append(f"WRITE {destination}")
+        _emit_progress(progress_callback, f"Schema Human-API: {index}/{len(rows_by_key)} Sektionen geschrieben — {key}", index, total)
+
+    human_api_path = target_schema_dir / "HUMAN_API_SCHEMA.md"
+    human_api_path.write_text(_schema_human_api_text({**payload, "content": rows_by_key}), encoding="utf-8")
+    messages.append(f"WRITE {human_api_path}")
+    used_total = sum(len(values) for values in used_ids.values() if isinstance(values, list))
+    messages.append(f"SCHEMA_RESOLUTION materialized_used_schema_rows={used_total} section_files={len(rows_by_key)} source={source_schema_dir}")
+    return messages
+
+
 def _ids(items: List[Dict[str, Any]]) -> List[str]:
     return [str(item.get("id")) for item in items if item.get("id")]
+
+
+def _metadata_absolute_paths_enabled(project_metadata: Dict[str, Any] | None) -> bool:
+    if not isinstance(project_metadata, dict):
+        return False
+    policy = project_metadata.get("path_policy") if isinstance(project_metadata.get("path_policy"), dict) else {}
+    return bool(policy.get("absolute_project_paths"))
+
+
+def _metadata_project_root(project_metadata: Dict[str, Any] | None) -> Path | None:
+    if not isinstance(project_metadata, dict):
+        return None
+    policy = project_metadata.get("path_policy") if isinstance(project_metadata.get("path_policy"), dict) else {}
+    root = policy.get("project_root") or project_metadata.get("project_root")
+    if not root:
+        output_policy = project_metadata.get("output_policy") if isinstance(project_metadata.get("output_policy"), dict) else {}
+        root = output_policy.get("project_root")
+    if not root:
+        return None
+    try:
+        return Path(str(root)).resolve()
+    except Exception:
+        return Path(str(root))
+
+
+def _project_scope_absolute_path(value: str, project_root: Path | None = None) -> str:
+    """Return a project-scope absolute path like `/backend/app.py`.
+
+    This is intentionally not an OS absolute path. The export checkbox named
+    ABSOLUTE_PATHS means absolute inside the exported project scope, not
+    `C:/Users/...` or `/home/...`.
+    """
+    text = str(value or "").replace("\\", "/").strip()
+    if not text or text.startswith("@") or "://" in text:
+        return text
+    if project_root is not None:
+        try:
+            candidate = Path(text)
+            if candidate.is_absolute():
+                rel = candidate.resolve().relative_to(Path(project_root).resolve()).as_posix()
+                return "/" + rel.strip("/") if rel and rel != "." else "/"
+        except Exception:
+            pass
+    # Avoid leaking OS roots for absolute paths outside the project. Keep only a
+    # portable project-scope-looking representation.
+    if re.match(r"^[A-Za-z]:/", text):
+        text = text.split(":/", 1)[1]
+    text = text.lstrip("/")
+    while text.startswith("./"):
+        text = text[2:]
+    text = posixpath.normpath(text) if text else "."
+    if text in {"", "."}:
+        return "/"
+    if text.startswith("../") or text == "..":
+        return "/" + text.replace("../", "__parent__/")
+    return "/" + text.strip("/")
+
+
+def _prompt_project_path(project_metadata: Dict[str, Any] | None, value: str) -> str:
+    text = str(value or "").replace("\\", "/").strip()
+    if not text or text.startswith("@") or "://" in text:
+        return text
+    if not _metadata_absolute_paths_enabled(project_metadata):
+        return text
+    return _project_scope_absolute_path(text, _metadata_project_root(project_metadata))
+
+
+def _prompt_project_paths(project_metadata: Dict[str, Any] | None, values: Iterable[str]) -> List[str]:
+    return [_prompt_project_path(project_metadata, str(item)) for item in values]
+
+
+def _target_report_for_prompt(project_metadata: Dict[str, Any] | None, target: SaveTarget) -> Dict[str, Any]:
+    if not isinstance(project_metadata, dict):
+        return {}
+    reports = project_metadata.get("targets", []) if isinstance(project_metadata.get("targets"), list) else []
+    target_rel = str(target.path or ".").replace("\\", "/").strip() or "."
+    target_abs = _prompt_project_path(project_metadata, target_rel)
+    for report in reports:
+        if not isinstance(report, dict):
+            continue
+        candidates = [report.get("path"), report.get("relative_path")]
+        for raw in candidates:
+            text = str(raw or "").replace("\\", "/").strip()
+            if not text:
+                continue
+            if text == target_rel or text == target_abs or _prompt_project_path(project_metadata, text) == target_abs:
+                return report
+    return {}
+
+
+def _target_scope_for_prompt(project_metadata: Dict[str, Any] | None, target: SaveTarget) -> Dict[str, Any]:
+    scope = project_metadata.get("project_scope", {}) if isinstance(project_metadata, dict) and isinstance(project_metadata.get("project_scope"), dict) else {}
+    if not scope:
+        return {}
+    target_scope = _target_scope_from_project_scope(scope, target.path)
+    if target_scope:
+        return target_scope
+    abs_target = _prompt_project_path(project_metadata, target.path)
+    if abs_target != target.path:
+        return _target_scope_from_project_scope(scope, abs_target)
+    return target_scope
+
+
+def build_schema_boilerplate_feature_derivation_prompt(
+    schema: Dict[str, Any],
+    target: SaveTarget,
+    project_metadata: Dict[str, Any],
+    ai_language: str = "GERMAN",
+    role_date: str | None = None,
+) -> str:
+    """Build a small /prompts handoff containing only schema, boilerplate and feature derivation."""
+    target = target.normalized(schema)
+    today = (role_date or datetime.now().strftime("%Y-%m-%d")).strip()
+    active_profiles = _profiles(schema, target.boilerplate_profiles or [], target.path_type)
+    active_profile_ids = [profile.get("id") for profile in active_profiles if profile.get("id")]
+    file_types = _file_types(schema, target.file_types or [])
+    path_rule = _compact_instruction_item(_path_rules(schema, target.path_type), max_rules=6)
+    target_report = _target_report_for_prompt(project_metadata, target)
+    active_references = [ref.get("id") for ref in target_report.get("active_reference_domains", []) if isinstance(ref, dict) and ref.get("id")]
+    active_roles = [role.get("id") for role in target_report.get("active_operation_roles", []) if isinstance(role, dict) and role.get("id")]
+    target_scope = _target_scope_for_prompt(project_metadata, target)
+    scoped_paths = [str(item.get("path")) for item in target_scope.get("file_references", []) if isinstance(item, dict) and item.get("path")]
+    scoped_paths = _prompt_project_paths(project_metadata, scoped_paths[:120])
+    target_path = _prompt_project_path(project_metadata, target.path)
+    lines = [
+        "# Schema / Boilerplate / Feature Derivation",
+        "",
+        f"Date: {today}",
+        f"AI_LANGUAGE: {ai_language}",
+        f"Target path: {target_path}",
+        f"Path type: {target.path_type}",
+        f"AI target: {target.ai_target}",
+        "",
+        "## Human API schema binding",
+        "- The full JSON content of used schema rows is resolved in PROMPT_MANIFEST.json.used_schema_resolution.content.",
+        "- Exported schema/ contains only filtered JSON files with explicitly used rows; it is not a full schema dump.",
+        "",
+        "## Schema",
+        f"- Path rule: {json.dumps(path_rule, ensure_ascii=False)}",
+        "- File types: " + (", ".join(str(item.get("id")) for item in file_types if item.get("id")) or "none"),
+        "",
+        "## Boilerplate",
+        "- Profiles: " + (", ".join(str(item) for item in active_profile_ids) or "none"),
+        "- Active references: " + (", ".join(str(item) for item in active_references) or "none"),
+        "- Active roles: " + (", ".join(str(item) for item in active_roles) or "none"),
+        "",
+        "## Feature derivation",
+        "- Use only schema, boilerplate profiles, active references/roles and exported project evidence.",
+        "- Derive feature/refactor work from PROMPT_MANIFEST.json and EXPORT_MANIFEST.json; do not duplicate USER_PROMPT prose.",
+        "- Paths below are the allowed target evidence for this derivation.",
+    ]
+    if scoped_paths:
+        lines.extend(f"- {path}" for path in scoped_paths)
+        if len(target_scope.get("file_references", []) or []) > len(scoped_paths):
+            lines.append(f"- ... +{len(target_scope.get('file_references', []) or []) - len(scoped_paths)} more scope files in manifest")
+    else:
+        lines.append("- none")
+    text = "\n".join(lines).strip()
+    _assert_no_unresolved_template_tokens(text, "schema/boilerplate/feature derivation prompt")
+    return text
 
 
 def build_operator_role_prompt(
@@ -3547,7 +4549,7 @@ def build_operator_role_prompt(
     missing_expected_files = "none"
     command_text = "none detected"
     for report in project_metadata.get("targets", []):
-        if report.get("path") == target.path:
+        if report is _target_report_for_prompt(project_metadata, target):
             inferred = report.get("inferred", {})
             frameworks = ", ".join(inferred.get("frameworks", [])) or "none detected"
             tooling = ", ".join(inferred.get("tooling", [])) or "none detected"
@@ -3566,10 +4568,13 @@ def build_operator_role_prompt(
             break
 
     project_scope = project_metadata.get("project_scope", {}) if isinstance(project_metadata, dict) else {}
-    target_scope = _target_scope_from_project_scope(project_scope, target.path) if project_scope else {}
+    target_scope = _target_scope_for_prompt(project_metadata, target) if project_scope else {}
     scoped_paths = [str(item.get("path")) for item in target_scope.get("file_references", []) if item.get("path")]
-    scoped_file_text = "\n".join(f"- {path}" for path in scoped_paths) or "- none"
-    selected_scope_text = ", ".join(target_scope.get("selected_paths", []) or []) or "full project"
+    display_scoped_paths = _prompt_project_paths(project_metadata, scoped_paths)
+    scoped_file_text = "\n".join(f"- {path}" for path in display_scoped_paths) or "- none"
+    selected_scope_paths = _prompt_project_paths(project_metadata, target_scope.get("selected_paths", []) or [])
+    selected_scope_text = ", ".join(selected_scope_paths) or "full project"
+    display_target_path = _prompt_project_path(project_metadata, target.path)
     scope_text = (
         f"Mode: {target_scope.get('mode', 'not computed')}; selected paths: {selected_scope_text}; "
         f"files in target scope: {target_scope.get('file_count', 0)}; "
@@ -3680,7 +4685,7 @@ Be direct, practical, calm and honest.
 Do not be theatrical. Do not over-explain. Do not pretend certainty.
 
 Target boundary:
-- Primary path: {target.path}
+- Primary path: {display_target_path}
 - Path type: {target.path_type}
 - AI target: {target.ai_target}
 - Full target hierarchy belongs in USER_PROMPT.txt and PROMPT_MANIFEST.json. Do not duplicate raw Active-target dumps or dependency package lists in Build Prompt output.
@@ -3848,7 +4853,7 @@ def _build_role_operator_boilerplate_manifest(
     *,
     compact_export_context: Dict[str, Any] | None = None,
 ) -> Dict[str, Any]:
-    """Build the only schema/role/operator manifest allowed in compact export."""
+    """Build the compact role/operator manifest for compact export."""
     target_entries: List[Dict[str, Any]] = []
     for target in targets:
         target = target.normalized(schema)
@@ -3896,6 +4901,7 @@ def _build_role_operator_boilerplate_manifest(
                 "ROLE_OPERATOR_BOILERPLATE_MANIFEST.json",
                 "EXPORT_CONDITIONS.json",
                 "EXPORT_MANIFEST.json",
+                "schema/ resolved Human-API schema rows when Copy schema folder into export is enabled",
                 "selected Project Tree / Selected Scope files with project-relative paths",
                 "PROJECT_SCOPE/<path> only for compact control-file name collisions",
                 "*_compact_context.zip when ZIP export is enabled",
@@ -3909,7 +4915,6 @@ def _build_role_operator_boilerplate_manifest(
                 "LIBRARY.log",
                 "PROMPT_QUALITY_REPORT.md",
                 "PROMPT_EVAL_CHECKLIST.md",
-                "schema/ raw dump",
                 "unselected project source files",
             ],
         },
@@ -3951,6 +4956,7 @@ def _compact_scope_file_copy_plan(
     *,
     include_dependency_manifests: bool = False,
     reserved_rel_paths: Iterable[str] | None = None,
+    schema_resource_controlled: bool = False,
 ) -> tuple[List[tuple[Path, str]], List[Dict[str, str]]]:
     """Return project files that compact mode must copy from the selected scope.
 
@@ -3979,6 +4985,8 @@ def _compact_scope_file_copy_plan(
             continue
         if _is_dependency_manifest_path(source) and not include_dependency_manifests:
             continue
+        if schema_resource_controlled and (rel == "schema" or rel.startswith("schema/")):
+            continue
         dest_rel = rel
         if dest_rel in reserved:
             dest_rel = f"PROJECT_SCOPE/{rel}"
@@ -4003,12 +5011,14 @@ def _copy_compact_scope_files(
     include_dependency_manifests: bool,
     reserved_rel_paths: Iterable[str],
     progress_callback: Callable[[str, int, int], None] | None = None,
+    schema_resource_controlled: bool = False,
 ) -> tuple[List[str], List[Dict[str, str]]]:
     copy_plan, remapped = _compact_scope_file_copy_plan(
         project_root,
         project_scope,
         include_dependency_manifests=include_dependency_manifests,
         reserved_rel_paths=reserved_rel_paths,
+        schema_resource_controlled=schema_resource_controlled,
     )
     total = max(len(copy_plan), 1)
     if not copy_plan:
@@ -4039,6 +5049,8 @@ def _write_compact_export(
     export_prompt_text: str | None,
     custom_prompt_text: str | None,
     compact_export_context: Dict[str, Any] | None,
+    schema_dir: Path | None = None,
+    copy_schema: bool = True,
     progress_callback: Callable[[str, int, int], None] | None = None,
 ) -> List[str]:
     """Write a deliberately tiny export surface for prompt handoff/review."""
@@ -4074,6 +5086,8 @@ def _write_compact_export(
     }
     if isinstance(compact_export_context, dict) and compact_export_context:
         conditions["context"] = compact_export_context
+    conditions["schema_resources_included"] = bool(copy_schema)
+    conditions["schema_resource_policy"] = "Recursive used-schema Human-API resources only; no full schema dump." if copy_schema else "Schema copy disabled by user setting."
 
     files = {
         "USER_PROMPT.txt": prompt_body.rstrip() + "\n",
@@ -4096,6 +5110,7 @@ def _write_compact_export(
         project_scope if isinstance(project_scope, dict) else {},
         include_dependency_manifests=include_dependency_manifests,
         reserved_rel_paths=compact_control_files,
+        schema_resource_controlled=bool(copy_schema),
     )
     conditions["selected_scope_files_included"] = bool(planned_scope_files)
     conditions["selected_scope_copy_count"] = len(planned_scope_files)
@@ -4117,10 +5132,24 @@ def _write_compact_export(
         include_dependency_manifests=include_dependency_manifests,
         reserved_rel_paths=compact_control_files,
         progress_callback=progress_callback,
+        schema_resource_controlled=bool(copy_schema),
     )
 
+    schema_messages: List[str] = []
+    schema_copied_files: List[str] = []
+    if copy_schema:
+        schema_source = resolve_schema_dir(schema_dir)
+        compact_used_schema = build_used_schema_resolution(schema, targets, project_metadata, compact_export_context=compact_export_context)
+        schema_messages = copy_used_schema_files(schema_source, staging, overwrite=True, used_schema_resolution=compact_used_schema, progress_callback=progress_callback)
+        schema_root = staging / "schema"
+        schema_copied_files = [path.relative_to(staging).as_posix() for path in sorted(schema_root.rglob("*")) if path.is_file()] if schema_root.exists() else []
+        conditions["schema_resource_count"] = len(schema_copied_files)
+        conditions["schema_resource_policy"] = "Recursive used-schema Human-API resources only; no full schema dump."
+        files["EXPORT_CONDITIONS.json"] = json.dumps(conditions, ensure_ascii=False, indent=2) + "\n"
+        (staging / "EXPORT_CONDITIONS.json").write_text(files["EXPORT_CONDITIONS.json"], encoding="utf-8")
+
     zip_path: Path | None = None
-    copied_files = _dedupe_strings(sorted(list(files.keys()) + scope_copied_files))
+    copied_files = _dedupe_strings(sorted(list(files.keys()) + scope_copied_files + schema_copied_files))
     if export_as_zip:
         zip_path = export_dir / f"{(project_root.name or 'project')}_compact_context.zip"
         manifest_inside_files = _dedupe_strings(copied_files + ["EXPORT_MANIFEST.json"])
@@ -4151,6 +5180,7 @@ def _write_compact_export(
     _emit_progress(progress_callback, "Kompakt-Export: EXPORT_MANIFEST.json geschrieben", 1, 1)
 
     messages = [f"COMPACT_EXPORT enabled -> {export_dir}"]
+    messages.extend(schema_messages)
     if export_as_zip:
         assert zip_path is not None
         zip_files = [path for path in sorted(staging.rglob("*")) if path.is_file()]
@@ -4161,13 +5191,11 @@ def _write_compact_export(
                 archive.write(path, rel)
                 _emit_progress(progress_callback, f"Kompakt-Export: ZIP-Datei {index}/{len(zip_files)} geschrieben - {rel}", index, total_zip)
         (export_dir / "USER_PROMPT.txt").write_text(files["USER_PROMPT.txt"], encoding="utf-8")
-        (export_dir / "EXPORT_MANIFEST.json").write_text(manifest_text, encoding="utf-8")
         shutil.rmtree(staging)
         messages.extend([
             f"ZIP   {zip_path}",
             f"WRITE {export_dir / 'USER_PROMPT.txt'} (outside ZIP)",
-            f"WRITE {export_dir / 'EXPORT_MANIFEST.json'} (outside ZIP)",
-            "COMPACT_EXPORT outside_files=ZIP, USER_PROMPT.txt, EXPORT_MANIFEST.json",
+            "COMPACT_EXPORT outside_files=ZIP and human text sidecars only; EXPORT_MANIFEST.json stays inside ZIP",
         ])
     else:
         messages.extend([f"WRITE {staging / name}" for name in sorted(list(files.keys()) + ["EXPORT_MANIFEST.json"])])
@@ -4176,7 +5204,13 @@ def _write_compact_export(
 
 def generated_output_files(output_base: Path) -> List[Path]:
     output_base = Path(output_base)
-    names = {"AI_MANAGER.json", "AI-RULES.json", "AI_GENERATION_LOG.json", "PROJECT_METADATA.json", "PROCESS_LOG.md", "SUMMARY.md", "LIBRARY.log", "PROMPT_MANIFEST.json", "PROMPT_QUALITY_REPORT.md", "PROMPT_EVAL_CHECKLIST.md", "EXPORT_MANIFEST.json"}
+    names = {
+        "AI_MANAGER.json", "AI-RULES.json", "AI_GENERATION_LOG.json", "PROJECT_METADATA.json",
+        "PROCESS_LOG.md", "SUMMARY.md", "LIBRARY.log", "PROMPT_MANIFEST.json",
+        "PROMPT_QUALITY_REPORT.md", "PROMPT_EVAL_CHECKLIST.md", "EXPORT_MANIFEST.json",
+        "CMD.json", "PROGRESS.json", "LAST_GIT_COMMIT.json", "MANIFEST.json",
+        "ROLE_OPERATOR_BOILERPLATE_MANIFEST.json", "EXPORT_CONDITIONS.json",
+    }
     files: List[Path] = []
     if output_base.exists():
         for path in sorted(output_base.rglob("*")):
@@ -4191,16 +5225,36 @@ def generated_output_files(output_base: Path) -> List[Path]:
 
 
 def _manifest_abs_path(root: Path, value: str) -> str:
-    text = str(value or "").replace("\\", "/").strip()
-    if not text:
-        return text
-    candidate = Path(text)
-    if candidate.is_absolute():
-        return str(candidate)
-    try:
-        return str((Path(root).resolve() / text.strip("/")).resolve())
-    except Exception:
-        return str(Path(root) / text.strip("/"))
+    """Compile paths for manifests as project-scope absolute paths.
+
+    Despite the historical function name, this must never emit host filesystem
+    paths when the ABSOLUTE_PATHS checkbox is enabled.
+    """
+    return _project_scope_absolute_path(str(value or ""), Path(root))
+
+
+def _scrub_export_filesystem_paths(value: Any, *, project_root: Path, generated_output_base: Path, export_dir: Path) -> Any:
+    """Remove host filesystem prefixes from exported JSON/log payloads."""
+    if isinstance(value, dict):
+        return {key: _scrub_export_filesystem_paths(item, project_root=project_root, generated_output_base=generated_output_base, export_dir=export_dir) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_scrub_export_filesystem_paths(item, project_root=project_root, generated_output_base=generated_output_base, export_dir=export_dir) for item in value]
+    if not isinstance(value, str):
+        return value
+    text = value.replace("\\", "/")
+    replacements = []
+    for root, prefix in ((generated_output_base, ""), (project_root, ""), (export_dir, "/EXPORT")):
+        try:
+            replacements.append((Path(root).resolve().as_posix(), prefix))
+        except Exception:
+            pass
+    for raw, prefix in sorted(replacements, key=lambda item: len(item[0]), reverse=True):
+        if raw and raw in text:
+            text = text.replace(raw, prefix.rstrip("/"))
+    # Collapse accidental empty prefixes after replacement into project-scope paths.
+    text = re.sub(r"(?<![A-Za-z0-9_])//+", "/", text)
+    text = re.sub(r"[A-Za-z]:/[^\s,;]+", lambda m: _project_scope_absolute_path(m.group(0), project_root), text)
+    return text
 
 
 def build_export_manifest_data(
@@ -4237,7 +5291,7 @@ def build_export_manifest_data(
         "AI_MANAGER.json",
         "AI-RULES.json",
     ]
-    present = set(generated_files)
+    present = set(generated_files) | {Path(name).name for name in generated_files}
     missing_required = [name for name in required_traceability if name not in present]
     relative_generated_files = sorted(generated_files)
     relative_copied_files = sorted(copied_files or [])
@@ -4245,12 +5299,11 @@ def build_export_manifest_data(
     selected_paths = project_metadata.get("project_scope", {}).get("selected_paths", []) if isinstance(project_metadata, dict) else []
     if absolute_project_paths:
         for row in target_rows:
-            rel_path = str(row.get("path") or ".")
+            rel_path = _normalize_save_target_path_value(str(row.get("path") or "."))
             row["relative_path"] = rel_path
             row["path"] = _manifest_abs_path(project_root, rel_path)
-        generated_files_for_manifest = sorted(_manifest_abs_path(output_base, item) for item in relative_generated_files)
-        source_path_map = copied_file_source_paths or {}
-        copied_files_for_manifest = sorted(str(Path(source_path_map.get(item, _manifest_abs_path(project_root, item))).resolve()) for item in relative_copied_files)
+        generated_files_for_manifest = sorted(_project_scope_absolute_path(item) for item in relative_generated_files)
+        copied_files_for_manifest = sorted(_project_scope_absolute_path(item) for item in relative_copied_files)
         selected_paths_for_manifest = [_manifest_abs_path(project_root, item) for item in selected_paths]
     else:
         generated_files_for_manifest = relative_generated_files
@@ -4262,11 +5315,11 @@ def build_export_manifest_data(
         "project_name": project_name,
         "AI_LANGUAGE": ai_language,
         "role_date": role_date or datetime.now().date().isoformat(),
-        "project_root": str(Path(project_root).resolve()),
-        "output_base": str(output_base),
+        "project_root": "/" if absolute_project_paths else str(Path(project_root).resolve()),
+        "output_base": "/" if absolute_project_paths else str(output_base),
         "preferred_folder": "EXPORT",
         "export_as_zip": bool(export_as_zip),
-        "zip_path": str(zip_path.resolve()) if zip_path else None,
+        "zip_path": (_project_scope_absolute_path(zip_path.name) if (zip_path and absolute_project_paths) else (str(zip_path.resolve()) if zip_path else None)),
         "prompt_file_written": prompt_file_written,
         "targets": target_rows,
         "scope": {
@@ -4285,10 +5338,10 @@ def build_export_manifest_data(
     if absolute_project_paths:
         manifest["path_policy"] = {
             "absolute_project_paths": True,
-            "project_root": str(Path(project_root).resolve()),
-            "output_base": str(output_base),
-            "compiled_path_format": "absolute_project_path",
-            "zip_member_policy": "ZIP members remain project-relative; manifest paths are compiled absolute by checkbox.",
+            "project_root": "/",
+            "output_base": "/",
+            "compiled_path_format": "project_scope_absolute_path",
+            "zip_member_policy": "ZIP members remain project-relative; manifest/display paths use project-scope absolute form such as /backend/app.py.",
         }
         manifest["generated_files_relative"] = relative_generated_files
         manifest["copied_files_relative"] = relative_copied_files
@@ -4336,19 +5389,42 @@ def write_export_manifest(
 
 
 
+def _normalize_save_target_path_value(path: str) -> str:
+    """Normalize a Generator save target into a portable project-relative path.
+
+    Inputs like `./backend`, `/backend`, `.backend` and `backend` all become
+    `backend`. This prevents accidental filesystem-root writes and duplicate
+    output folders such as `.backend/` beside `backend/`.
+    """
+    raw = str(path or ".").replace("\\", "/").strip()
+    if not raw or raw in {".", "./", "/"}:
+        return "."
+    if re.match(r"^[A-Za-z]:/", raw):
+        raw = raw.split(":/", 1)[1]
+    while raw.startswith("./"):
+        raw = raw[2:]
+    raw = raw.strip("/")
+    if raw.startswith(".") and raw[1:].lower() in {"backend", "frontend", "src", "app"}:
+        raw = raw[1:]
+    try:
+        raw = posixpath.normpath(raw).replace("\\", "/")
+    except Exception:
+        pass
+    if raw in {"", "."}:
+        return "."
+    if raw.startswith("../") or raw == "..":
+        return raw
+    return raw.strip("/") or "."
+
+
 def _normalize_save_target_path_key(path: str) -> str:
     """Normalize Generator save paths for duplicate detection.
 
     `backend`, `./backend` and shallow `<project>/backend` all describe the same
     default backend slot. Same for frontend. Root stays `.`.
     """
-    raw = str(path or ".").replace("\\", "/").strip()
-    if not raw or raw in {".", "./", "/"}:
-        return "."
-    while raw.startswith("./"):
-        raw = raw[2:]
-    raw = raw.strip("/")
-    if not raw:
+    raw = _normalize_save_target_path_value(path)
+    if not raw or raw == ".":
         return "."
     try:
         raw = posixpath.normpath(raw).replace("\\", "/")
@@ -4395,15 +5471,58 @@ def generate_files(
     _emit_progress(progress_callback, "Schema wird geladen", None, 0)
     schema_dir = schema_dir or default_schema_dir()
     schema = load_schema(schema_dir)
-    normalized_targets = [target.normalized(schema) for target in targets if target.enabled]
-    if not normalized_targets:
+    raw_normalized_targets = []
+    for target in targets:
+        if not target.enabled:
+            continue
+        normalized = target.normalized(schema)
+        normalized = SaveTarget(
+            path=_normalize_save_target_path_value(normalized.path),
+            path_type=normalized.path_type,
+            ai_target=normalized.ai_target,
+            boilerplate_profiles=normalized.boilerplate_profiles,
+            file_types=normalized.file_types,
+            enabled=normalized.enabled,
+            write_rules=normalized.write_rules,
+            write_manager=normalized.write_manager,
+        )
+        raw_normalized_targets.append(normalized)
+    if not raw_normalized_targets:
         raise ValueError("At least one enabled save target is required.")
-    seen_target_paths: dict[str, str] = {}
-    for target in normalized_targets:
+
+    # UI/path-policy layers may represent the same project-relative write target
+    # as ./backend, backend or /backend. Those are not distinct generator save
+    # destinations. Deduplicate them here instead of aborting export; the first
+    # declaration keeps its path identity and later duplicates only enrich the
+    # file/profile metadata.
+    normalized_targets: list[SaveTarget] = []
+    target_by_key: dict[str, SaveTarget] = {}
+    for target in raw_normalized_targets:
         key = _normalize_save_target_path_key(target.path)
-        if key in seen_target_paths:
-            raise ValueError(f"Duplicate active Generator save path after normalization: {seen_target_paths[key]!r} and {target.path!r} both resolve to {key!r}")
-        seen_target_paths[key] = target.path
+        if key not in target_by_key:
+            target_by_key[key] = target
+            normalized_targets.append(target)
+            continue
+        existing = target_by_key[key]
+        existing_profiles = list(existing.boilerplate_profiles or [])
+        for item in target.boilerplate_profiles or []:
+            if item not in existing_profiles:
+                existing_profiles.append(item)
+        existing_file_types = list(existing.file_types or [])
+        for item in target.file_types or []:
+            if item not in existing_file_types:
+                existing_file_types.append(item)
+        target_by_key[key] = SaveTarget(
+            path=existing.path,
+            path_type=existing.path_type,
+            ai_target=existing.ai_target,
+            boilerplate_profiles=existing_profiles,
+            file_types=existing_file_types,
+            enabled=existing.enabled,
+            write_rules=existing.write_rules,
+            write_manager=existing.write_manager,
+        )
+        normalized_targets[normalized_targets.index(existing)] = target_by_key[key]
 
     project_root = Path(output_base).resolve()
     project_root.mkdir(parents=True, exist_ok=True)
@@ -4415,7 +5534,7 @@ def generate_files(
         _emit_progress(progress_callback, "ZIP-Exportordner wird vorbereitet", None, 0)
         _clean_directory_contents(export_dir, progress_callback, "ZIP Export: Exportordner")
         generated_output_base = export_dir / ".zip_export_staging"
-        output_rule = "ZIP export writes generated artifacts into a staging folder. Outside remains only ZIP, USER_PROMPT.txt and EXPORT_MANIFEST.json."
+        output_rule = "ZIP export writes generated artifacts into a staging folder. Outside remains only ZIP and human text sidecars."
     else:
         generated_output_base = export_dir
         output_rule = "All generated files and export sidecars are written under the configured export folder by default."
@@ -4423,7 +5542,7 @@ def generate_files(
     generated_output_base.mkdir(parents=True, exist_ok=True)
     messages = [f"OUTPUT_POLICY generated_and_exported_under={generated_output_base}"]
     if export_as_zip:
-        messages.append("OUTPUT_POLICY zip_mode_sidecars_only=ZIP, USER_PROMPT.txt, EXPORT_MANIFEST.json")
+        messages.append("OUTPUT_POLICY zip_mode_sidecars_only=ZIP and human text sidecars")
 
     _emit_progress(progress_callback, "Projektstruktur wird eingelesen", None, 0)
     effective_scope_paths = list(scope_paths or [])
@@ -4439,7 +5558,7 @@ def generate_files(
         "export_dir": str(export_dir),
         "preferred_folder": "EXPORT",
         "zip_sidecars_only": bool(export_as_zip),
-        "outside_zip_files_when_zip_export": ["*_scope_clone.zip", "USER_PROMPT.txt", "EXPORT_MANIFEST.json"] if export_as_zip else [],
+        "outside_zip_files_when_zip_export": ["*_scope_clone.zip", "USER_PROMPT.txt", "TASKS.TXT when present", "CMD.TXT when Create ZIP contract applies"] if export_as_zip else [],
         "rule": output_rule,
     }
     project_metadata["response_policy"] = {
@@ -4463,10 +5582,15 @@ def generate_files(
     }
     project_metadata["path_policy"] = {
         "absolute_project_paths": bool(absolute_project_paths),
-        "project_root": str(project_root),
-        "compiled_path_format": "absolute_project_path" if absolute_project_paths else "project_relative_path",
-        "zip_member_policy": "ZIP members remain project-relative; exported manifests may contain absolute paths when enabled.",
+        "project_root": "/" if absolute_project_paths else str(project_root),
+        "compiled_path_format": "project_scope_absolute_path" if absolute_project_paths else "project_relative_path",
+        "zip_member_policy": "ZIP members remain project-relative; exported manifests/prompts use project-scope absolute paths like /backend when enabled.",
     }
+    if absolute_project_paths:
+        project_metadata["base"] = "/"
+        if isinstance(project_metadata.get("project_scope"), dict):
+            project_metadata["project_scope"]["root"] = "/"
+        project_metadata = _scrub_export_filesystem_paths(project_metadata, project_root=project_root, generated_output_base=generated_output_base, export_dir=export_dir)
 
     if compact_export:
         return _write_compact_export(
@@ -4482,6 +5606,8 @@ def generate_files(
             export_prompt_text=export_prompt_text,
             custom_prompt_text=custom_prompt_text,
             compact_export_context=compact_export_context,
+            schema_dir=schema_dir,
+            copy_schema=copy_schema,
             progress_callback=progress_callback,
         )
 
@@ -4490,12 +5616,26 @@ def generate_files(
     if metadata_path.exists() and not overwrite:
         messages.append(f"SKIP  {metadata_path} already exists. Enable overwrite to replace it.")
     else:
-        metadata_path.write_text(json.dumps(project_metadata, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        metadata_payload = _scrub_export_filesystem_paths(project_metadata, project_root=project_root, generated_output_base=generated_output_base, export_dir=export_dir) if absolute_project_paths else project_metadata
+        metadata_path.write_text(json.dumps(metadata_payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
         messages.append(f"WRITE {metadata_path}")
 
+    project_metadata["used_schema_resolution"] = build_used_schema_resolution(
+        schema,
+        normalized_targets,
+        project_metadata,
+        compact_export_context=compact_export_context,
+    )
+
     if copy_schema:
-        _emit_progress(progress_callback, "Schema-Dateien werden vorbereitet", None, 0)
-        messages.extend(copy_schema_files(schema_dir, generated_output_base, overwrite=True if export_as_zip else overwrite, progress_callback=progress_callback))
+        _emit_progress(progress_callback, "Benötigte Schema-Dateien werden vorbereitet", None, 0)
+        messages.extend(copy_used_schema_files(
+            schema_dir,
+            generated_output_base,
+            overwrite=True if export_as_zip else overwrite,
+            used_schema_resolution=project_metadata.get("used_schema_resolution", {}),
+            progress_callback=progress_callback,
+        ))
 
     _emit_progress(progress_callback, "AI_MANAGER wird geschrieben", None, 0)
     manager = build_ai_manager(ai_language, project_name, normalized_targets, schema, create_log, project_metadata)
@@ -4537,6 +5677,15 @@ def generate_files(
             messages.append(f"WRITE {prompt_path}")
             written_prompts.append(str(prompt_path))
 
+        derivation_prompt_path = prompt_dir / f"{safe_path}_{target.path_type}_{target.ai_target}_schema_boilerplate_feature_derivation.txt"
+        derivation_prompt = build_schema_boilerplate_feature_derivation_prompt(schema, target, _metadata_without_dependency_manifests(project_metadata), ai_language, role_date)
+        if derivation_prompt_path.exists() and not overwrite:
+            messages.append(f"SKIP  {derivation_prompt_path} already exists. Enable overwrite to replace it.")
+        else:
+            derivation_prompt_path.write_text(derivation_prompt + "\n", encoding="utf-8")
+            messages.append(f"WRITE {derivation_prompt_path}")
+            written_prompts.append(str(derivation_prompt_path))
+
         if custom_prompt_text and custom_prompt_text.strip():
             custom_prompt_path = prompt_dir / f"{safe_path}_{target.path_type}_{target.ai_target}_custom_weighted_prompt.txt"
             custom_prompt = build_custom_weighted_prompt(schema, target, _metadata_without_dependency_manifests(project_metadata), custom_prompt_text, ai_language, "custom_weighted_prompt", role_date)
@@ -4550,6 +5699,7 @@ def generate_files(
                 written_prompts.append(str(custom_prompt_path))
 
     _emit_progress(progress_callback, "Dokumentationsartefakte werden geschrieben", None, 0)
+    documentation_messages = _scrub_export_filesystem_paths(messages, project_root=project_root, generated_output_base=generated_output_base, export_dir=export_dir) if absolute_project_paths else messages
     doc_messages = write_generation_documentation_files(
         generated_output_base,
         project_name,
@@ -4557,7 +5707,7 @@ def generate_files(
         role_date,
         normalized_targets,
         project_metadata,
-        messages,
+        documentation_messages,
         create_log=create_log,
         export_as_zip=export_as_zip,
         include_imports=include_imports,
@@ -4573,7 +5723,9 @@ def generate_files(
     if create_log:
         _emit_progress(progress_callback, "Generierungslog wird geschrieben", None, 0)
         log_path = generated_output_base / "AI_GENERATION_LOG.json"
-        log_data = {"created_at": datetime.now().isoformat(timespec="seconds"), "project_name": project_name, "AI_LANGUAGE": ai_language, "role_date": role_date, "schema_dir": str(schema_dir), "schema_files": schema["loaded_files"], "targets": [asdict(target) for target in normalized_targets], "scope_paths": list(effective_scope_paths or []), "include_imports": include_imports, "include_dependency_manifests": include_dependency_manifests, "changed_files_only": bool(changed_files_only), "compact_export": bool(compact_export), "absolute_project_paths": bool(absolute_project_paths), "selected_reference_ids": list(selected_reference_ids or []), "selected_operation_role_ids": list(selected_operation_role_ids or []), "strict_selected_reference_routing": bool(strict_selected_reference_routing), "export_as_zip": export_as_zip, "custom_prompt_enabled": bool(custom_prompt_text and custom_prompt_text.strip()), "written_rules": written_rules, "written_prompts": written_prompts, "messages": messages}
+        log_data = {"created_at": datetime.now().isoformat(timespec="seconds"), "project_name": project_name, "AI_LANGUAGE": ai_language, "role_date": role_date, "schema_dir": "schema" if absolute_project_paths else str(schema_dir), "schema_files": schema["loaded_files"], "targets": [asdict(target) for target in normalized_targets], "scope_paths": list(effective_scope_paths or []), "include_imports": include_imports, "include_dependency_manifests": include_dependency_manifests, "changed_files_only": bool(changed_files_only), "compact_export": bool(compact_export), "absolute_project_paths": bool(absolute_project_paths), "selected_reference_ids": list(selected_reference_ids or []), "selected_operation_role_ids": list(selected_operation_role_ids or []), "strict_selected_reference_routing": bool(strict_selected_reference_routing), "export_as_zip": export_as_zip, "custom_prompt_enabled": bool(custom_prompt_text and custom_prompt_text.strip()), "written_rules": written_rules, "written_prompts": written_prompts, "messages": messages}
+        if absolute_project_paths:
+            log_data = _scrub_export_filesystem_paths(log_data, project_root=project_root, generated_output_base=generated_output_base, export_dir=export_dir)
         log_path.write_text(json.dumps(log_data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
         messages.append(f"WRITE {log_path}")
 

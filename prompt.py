@@ -4,6 +4,7 @@ from __future__ import annotations
 import base64
 import copy
 import hashlib
+import multiprocessing
 import json
 import os
 import platform
@@ -13,6 +14,7 @@ import re
 import signal
 import shlex
 import shutil
+import stat
 import subprocess
 import sys
 import tempfile
@@ -21,6 +23,64 @@ import time
 import webbrowser
 from datetime import date, datetime
 from pathlib import Path
+
+
+def prompt_guide_appdata_root() -> Path:
+    """Return the per-user AppData/cache root for Prompt Guide runtime files."""
+    if platform.system().lower().startswith("win"):
+        base = os.environ.get("LOCALAPPDATA") or os.environ.get("APPDATA")
+        if base:
+            return (Path(base) / "PromptGuide").expanduser()
+    xdg_cache = os.environ.get("XDG_CACHE_HOME")
+    if xdg_cache:
+        return (Path(xdg_cache) / "prompt-guide").expanduser()
+    try:
+        return (Path.home() / ".cache" / "prompt-guide").expanduser()
+    except Exception:
+        return (Path(tempfile.gettempdir()) / "prompt-guide-appdata").expanduser()
+
+
+def prompt_guide_runtime_root() -> Path:
+    """Shared writable runtime root for clones, exports and other disposable app files."""
+    root = prompt_guide_appdata_root() / "runtime"
+    root.mkdir(parents=True, exist_ok=True)
+    return root.resolve()
+
+
+def prompt_guide_ensure_appdata_runtime_dirs() -> Path:
+    """Recreate all app-owned AppData runtime/cache folders after user cleanup.
+
+    Deleting AppData/TEMP/cache must behave like a cold cache, not corrupted
+    application state. This only creates folders under the app-owned AppData
+    runtime/cache root and never touches the selected source repository.
+    """
+    runtime_root = prompt_guide_runtime_root()
+    for child_name in ("create-preview", "export", "patch-work", "session", "terminal", "tmp"):
+        try:
+            (runtime_root / child_name).mkdir(parents=True, exist_ok=True)
+        except Exception:
+            pass
+    try:
+        PROMPT_GUIDE_PYCACHE_ROOT.mkdir(parents=True, exist_ok=True)
+    except Exception:
+        pass
+    return runtime_root
+
+
+def configure_prompt_guide_pycache_prefix() -> Path:
+    """Route imported-module bytecode away from source folders into AppData."""
+    root = prompt_guide_appdata_root() / "pycache"
+    root.mkdir(parents=True, exist_ok=True)
+    os.environ["PYTHONPYCACHEPREFIX"] = str(root)
+    try:
+        sys.pycache_prefix = str(root)  # type: ignore[attr-defined]
+    except Exception:
+        pass
+    return root.resolve()
+
+
+PROMPT_GUIDE_PYCACHE_ROOT = configure_prompt_guide_pycache_prefix()
+
 import tkinter as tk
 import tkinter.simpledialog
 import zipfile
@@ -31,6 +91,7 @@ from ai_json_generator_core import (
     SaveTarget,
     default_file_types_for_path_type,
     default_schema_dir,
+    resolve_schema_dir,
     default_targets,
     default_profile_ids,
     build_operator_role_prompt,
@@ -40,12 +101,18 @@ from ai_json_generator_core import (
     generate_files,
     generated_output_files,
     load_schema,
+    build_used_schema_resolution,
     resolve_project_imports,
     scan_project_metadata,
     preferred_output_export_dir,
     clone_project_scope_to_directory,
     _project_dependency_names,
     CODE_IMPORT_SCAN_EXTENSIONS,
+)
+from core.process_utils import (
+    popen_subprocess_hidden as _popen_subprocess_hidden,
+    run_subprocess_hidden as _run_subprocess_hidden,
+    safe_python_executable,
 )
 
 
@@ -55,6 +122,11 @@ APP_DESCRIPTION = (
     "manifests and export packages, and keeps generated output reviewable before it is applied."
 )
 APP_LOGO_STEM = "prompt-guide-studio-logo"
+DEFAULT_PROJECT_NAME = "prompt-guide"
+DEFAULT_CREATE_STACK = "Python backend service"
+DEFAULT_CREATE_STACK_CATEGORY = "Backend / Python"
+DEFAULT_CREATE_TARGET_PATH = "./backend"
+DEFAULT_CREATE_BUILD_TARGET = "backend"
 
 START_TAB_GUIDE_STEPS = [
     "Choose the original project folder as the working tree.",
@@ -100,12 +172,71 @@ CREATE_PARAMETER_MODES = {"feature_for_existing_project", "refactor_existing_sta
 
 def _run_command(command: list[str]) -> str:
     try:
-        completed = subprocess.run(command, capture_output=True, text=True, timeout=1.5)
+        completed = _run_subprocess_hidden(command, capture_output=True, text=True, timeout=1.5)
         if completed.returncode == 0:
             return completed.stdout.strip().strip("'").strip('"')
     except Exception:
         return ""
     return ""
+
+
+def _make_path_writable(path: Path | str) -> None:
+    try:
+        os.chmod(path, stat.S_IWRITE | stat.S_IREAD | stat.S_IEXEC)
+    except Exception:
+        pass
+
+
+def _rmtree_retry_writable(func, path: str, _exc_info) -> None:
+    _make_path_writable(path)
+    try:
+        func(path)
+    except Exception:
+        pass
+
+
+def _rmtree_onexc_retry_writable(func, path: str, _exc) -> None:
+    _make_path_writable(path)
+    try:
+        func(path)
+    except Exception:
+        pass
+
+
+def _remove_path_robust(path: Path) -> bool:
+    """Remove files/trees robustly, including read-only AppData artifacts."""
+    try:
+        if not path.exists() and not path.is_symlink():
+            return False
+        _make_path_writable(path)
+        if path.is_dir() and not path.is_symlink():
+            try:
+                shutil.rmtree(path, onexc=_rmtree_onexc_retry_writable)  # type: ignore[call-arg]
+            except TypeError:
+                shutil.rmtree(path, onerror=_rmtree_retry_writable)
+        else:
+            path.unlink(missing_ok=True)
+        return True
+    except Exception:
+        return False
+
+
+def _cleanup_temp_root(root: Path) -> int:
+    """Delete one disposable Prompt Guide runtime root and return removed entries."""
+    removed = 0
+    if not root.exists():
+        return removed
+    try:
+        for child in list(root.iterdir()):
+            if _remove_path_robust(child):
+                removed += 1
+        try:
+            root.rmdir()
+        except OSError:
+            pass
+    except Exception:
+        return removed
+    return removed
 
 
 def default_start_worktree_dir() -> Path:
@@ -116,7 +247,7 @@ def default_start_worktree_dir() -> Path:
     location. A dedicated temp folder keeps the initial scan/app state isolated
     until the user explicitly chooses a real project root.
     """
-    root = Path(tempfile.gettempdir()) / "prompt-guide-start-worktree"
+    root = prompt_guide_runtime_root() / "start-worktree"
     root.mkdir(parents=True, exist_ok=True)
     return root.resolve()
 
@@ -128,33 +259,14 @@ def cleanup_create_preview_temp_roots() -> int:
     launches causes stale context and confusing exports, so startup always starts
     from a clean session root.
     """
-    root = Path(tempfile.gettempdir()) / "prompt-guide-create-preview"
-    removed = 0
-    if not root.exists():
-        return removed
-    try:
-        for child in root.iterdir():
-            try:
-                if child.is_dir():
-                    shutil.rmtree(child, ignore_errors=True)
-                    removed += 1
-                elif child.is_file():
-                    child.unlink(missing_ok=True)
-                    removed += 1
-            except Exception:
-                continue
-        try:
-            root.rmdir()
-        except OSError:
-            pass
-    except Exception:
-        return removed
+    removed = _cleanup_temp_root(prompt_guide_runtime_root() / "create-preview")
+    removed += _cleanup_temp_root(Path(tempfile.gettempdir()) / "prompt-guide-create-preview")
     return removed
 
 
 def default_export_temp_root() -> Path:
     """Shared disposable root for Worktree and Create exports."""
-    root = Path(tempfile.gettempdir()) / "export-prompt-guide-start-worktree"
+    root = prompt_guide_runtime_root() / "export"
     root.mkdir(parents=True, exist_ok=True)
     return root.resolve()
 
@@ -175,53 +287,33 @@ def default_create_export_dir() -> Path:
 
 def cleanup_create_export_temp_roots() -> int:
     """Remove stale Worktree/Create export artifacts on program startup."""
-    root = default_export_temp_root()
-    removed = 0
-    if not root.exists():
-        return removed
-    try:
-        for child in root.iterdir():
-            try:
-                if child.is_dir():
-                    shutil.rmtree(child, ignore_errors=True)
-                    removed += 1
-                elif child.is_file():
-                    child.unlink(missing_ok=True)
-                    removed += 1
-            except Exception:
-                continue
-        try:
-            root.rmdir()
-        except OSError:
-            pass
-    except Exception:
-        return removed
-    return removed
+    return _cleanup_temp_root(default_export_temp_root())
 
 
 def cleanup_patch_temp_roots() -> int:
     """Remove stale Patch-tab staging/version-control sessions on startup."""
-    root = Path(tempfile.gettempdir()) / "prompt-guide-patch-work"
+    removed = _cleanup_temp_root(prompt_guide_runtime_root() / "patch-work")
+    removed += _cleanup_temp_root(Path(tempfile.gettempdir()) / "prompt-guide-patch-work")
+    return removed
+
+
+def cleanup_prompt_guide_appdata_session_files() -> int:
+    """Remove/recreate Prompt Guide AppData runtime artifacts on startup.
+
+    If AppData/TEMP was manually deleted, treat it as a cold cache: recreate
+    app-owned runtime folders and continue. The selected source repository,
+    export folder, Git data and settings are never touched.
+    """
+    runtime_root = prompt_guide_runtime_root()
     removed = 0
-    if not root.exists():
-        return removed
+    for name in ("create-preview", "export", "patch-work", "session", "terminal", "tmp"):
+        removed += _cleanup_temp_root(runtime_root / name)
+    removed += _cleanup_temp_root(PROMPT_GUIDE_PYCACHE_ROOT)
     try:
-        for child in root.iterdir():
-            try:
-                if child.is_dir():
-                    shutil.rmtree(child, ignore_errors=True)
-                    removed += 1
-                elif child.is_file():
-                    child.unlink(missing_ok=True)
-                    removed += 1
-            except Exception:
-                continue
-        try:
-            root.rmdir()
-        except OSError:
-            pass
+        PROMPT_GUIDE_PYCACHE_ROOT.mkdir(parents=True, exist_ok=True)
     except Exception:
-        return removed
+        pass
+    prompt_guide_ensure_appdata_runtime_dirs()
     return removed
 
 
@@ -329,12 +421,14 @@ class AIJsonGeneratorGUI(tk.Tk):
         self.geometry("1340x900")
         self.minsize(1180, 760)
         self._apply_window_icon()
+        self._startup_appdata_runtime_root = str(prompt_guide_ensure_appdata_runtime_dirs())
+        self._startup_removed_appdata_session_files = cleanup_prompt_guide_appdata_session_files()
         self._startup_removed_create_temp_roots = cleanup_create_preview_temp_roots()
         self._startup_removed_patch_temp_roots = cleanup_patch_temp_roots()
         self._startup_removed_create_export_roots = cleanup_create_export_temp_roots()
 
         self.schema_dir = tk.StringVar(value=str(default_schema_dir()))
-        self.project_name = tk.StringVar(value="prompt-guide")
+        self.project_name = tk.StringVar(value=DEFAULT_PROJECT_NAME)
         self.ai_language = tk.StringVar(value="GERMAN")
         start_worktree = default_start_worktree_dir()
         self.output_base = tk.StringVar(value=str(start_worktree))
@@ -369,14 +463,14 @@ class AIJsonGeneratorGUI(tk.Tk):
         self.ai_research_schemas_boilerplates = tk.BooleanVar(value=False)
         self.project_tree_show_dependency_storage = tk.BooleanVar(value=False)
         self.create_mode = tk.StringVar(value="new_project_abstraction")
-        self.create_stack = tk.StringVar(value="Python backend service")
-        self.create_target_path = tk.StringVar(value="./backend")
+        self.create_stack = tk.StringVar(value=DEFAULT_CREATE_STACK)
+        self.create_target_path = tk.StringVar(value=DEFAULT_CREATE_TARGET_PATH)
         self.create_working_path = tk.StringVar(value="")
         # Unified custom export path: Worktree and Create exports share the same parent folder.
         self.create_export_dir = self.export_dir
-        self.create_stack_category = tk.StringVar(value="Backend / Python")
+        self.create_stack_category = tk.StringVar(value=DEFAULT_CREATE_STACK_CATEGORY)
         self.create_dependencies = tk.StringVar(value="")
-        self.create_build_target = tk.StringVar(value="backend")
+        self.create_build_target = tk.StringVar(value=DEFAULT_CREATE_BUILD_TARGET)
         self.create_lts_policy = tk.StringVar(value="active_lts_or_current_stable")
         self.create_nvm_version = tk.StringVar(value="None")
         self.create_gradle_version = tk.StringVar(value="None")
@@ -438,7 +532,12 @@ class AIJsonGeneratorGUI(tk.Tk):
         startup_cleanup = getattr(self, "_startup_removed_create_temp_roots", 0)
         patch_cleanup = getattr(self, "_startup_removed_patch_temp_roots", 0)
         create_export_cleanup = getattr(self, "_startup_removed_create_export_roots", 0)
+        appdata_cleanup = getattr(self, "_startup_removed_appdata_session_files", 0)
         cleanup_note = []
+        if appdata_cleanup:
+            cleanup_note.append(f"AppData Runtime: {appdata_cleanup}")
+        elif getattr(self, "_startup_appdata_runtime_root", ""):
+            cleanup_note.append("AppData Runtime: ready")
         if startup_cleanup:
             cleanup_note.append(f"Create Temp: {startup_cleanup}")
         if patch_cleanup:
@@ -502,6 +601,7 @@ class AIJsonGeneratorGUI(tk.Tk):
         self._create_ecosystem_probe_running = False
         self._prompt_builder_flow_refresh_after: str | None = None
         self._last_start_project_root_value = str(start_worktree.resolve())
+        self._create_last_path_binding_signature = ""
         self._create_runtime_sync_lock = False
         self._create_worktree_refresh_after: str | None = None
         self.create_temp_preview_dir = tk.StringVar(value="")
@@ -580,6 +680,12 @@ class AIJsonGeneratorGUI(tk.Tk):
         self._create_mode_values_refreshing = False
         self._create_manual_new_project_override = False
         self._create_manual_unmount_start_signature = ""
+        self._unmount_reset_in_progress = False
+        self._project_root_change_unmount_in_progress = False
+        self._project_root_preunmount_done_for_value = ""
+        self._project_root_browse_handles_scan_once = False
+        self._pending_project_root_tree_scan_after = None
+        self._pending_project_root_tree_scan_key = ""
         self._project_tree_render_after: str | None = None
         self._project_tree_selection_after: str | None = None
         self._project_tree_delete_after: str | None = None
@@ -602,6 +708,10 @@ class AIJsonGeneratorGUI(tk.Tk):
         self._project_tree_last_read_reason: str = "startup"
         self._create_source_loaded_signature: str = ""
         self._create_source_load_requested = False
+        self._create_source_load_retry_after: str | None = None
+        self._create_clone_session_generation = 0
+        self._create_clone_required_reason = ""
+        self._project_tree_last_auto_create_source_key = ""
         self.role_date = tk.StringVar(value=date.today().isoformat())
         self.ai_callback_text_default = (
             "PROGRESS / PERCENT: Design a clear custom text canvas. Show mathematically: "
@@ -1733,11 +1843,17 @@ class AIJsonGeneratorGUI(tk.Tk):
         # the window look frozen even though the subprocess is still alive.
         self.after(20 if processed_events >= max_events_per_tick else 80, self._poll_task_queue)
 
-    def _app_asset_path(self, *parts: str) -> Path:
+    def _runtime_base_dir(self) -> Path:
         try:
-            return Path(__file__).resolve().parent / "assets" / Path(*parts)
+            frozen_base = getattr(sys, "_MEIPASS", None)
+            if frozen_base:
+                return Path(frozen_base).resolve()
+            return Path(__file__).resolve().parent
         except Exception:
-            return Path("assets") / Path(*parts)
+            return Path.cwd()
+
+    def _app_asset_path(self, *parts: str) -> Path:
+        return self._runtime_base_dir() / "assets" / Path(*parts)
 
     def _apply_window_icon(self) -> None:
         """Apply the bundled app logo as the Tk window icon when available."""
@@ -1865,6 +1981,7 @@ class AIJsonGeneratorGUI(tk.Tk):
             "stack": self.create_stack.get(),
             "target_path": self.create_target_path.get(),
             "build_target": self.create_build_target.get(),
+            "clone_generation": int(getattr(self, "_create_clone_session_generation", 0) or 0),
         }
         try:
             raw = json.dumps(payload, sort_keys=True, ensure_ascii=False, default=str)
@@ -1872,8 +1989,34 @@ class AIJsonGeneratorGUI(tk.Tk):
             raw = repr(payload)
         return hashlib.sha1(raw.encode("utf-8", errors="ignore")).hexdigest()[:16]
 
+    def _known_create_temp_root(self) -> Path | None:
+        """Return an already-known Create temp root without allocating a new preview path.
+
+        Project Root and Export tree reads are evidence-only. They may inspect an
+        existing mount, but they must not create or refresh a temp preview path.
+        Allocation is allowed only from Create-tab activation or Build.complete.
+        """
+        for raw in (
+            getattr(self, "_create_tree_temp_root", None),
+            self.create_temp_preview_dir.get().strip() if hasattr(self, "create_temp_preview_dir") else "",
+        ):
+            if not raw:
+                continue
+            try:
+                root = Path(raw).resolve()
+                if root.exists():
+                    return root
+            except Exception:
+                continue
+        return None
+
     def _create_source_clone_ready(self) -> bool:
-        root = self._create_temp_root()
+        # Do not call _create_temp_root() outside Create-tab activation: that
+        # function allocates/sets create_temp_preview_dir. Project Root re-read
+        # and Export tree refresh must remain read-only and clone-free.
+        root = self._create_temp_root() if self._is_create_tab_active() else self._known_create_temp_root()
+        if root is None:
+            return False
         manifest_path = root / "CREATE_SOURCE_CLONE_MANIFEST.json"
         mount_signature = self._create_source_mount_signature_value()
         if not mount_signature:
@@ -1911,6 +2054,74 @@ class AIJsonGeneratorGUI(tk.Tk):
         except Exception:
             pass
 
+    def _schedule_create_source_load_retry(self, reason: str = "retry") -> None:
+        """Retry Create source mounting after the current UI/background task settles."""
+        if not self._is_create_tab_active():
+            return
+        pending = getattr(self, "_create_source_load_retry_after", None)
+        if pending:
+            try:
+                self.after_cancel(pending)
+            except Exception:
+                pass
+        def run_retry() -> None:
+            self._create_source_load_retry_after = None
+            if not self._is_create_tab_active():
+                return
+            try:
+                self._ensure_create_source_loaded_on_create_tab()
+            except Exception as exc:
+                try:
+                    self.create_source_clone_status.set(f"Source clone retry failed ({reason}): {exc}")
+                except Exception:
+                    pass
+        try:
+            self._create_source_load_retry_after = self.after(300, run_retry)
+        except Exception:
+            run_retry()
+
+    def _ensure_start_project_scope_synced_for_create_tab(self) -> bool:
+        """Seed Create project-first mode from the current Start Project Root cache.
+
+        Returns True when a sync was triggered or scheduled and the caller should
+        retry mounting after the Project Tree scan/render completes.
+        """
+        if not self._is_create_tab_active() or self._use_project_first_tree_preview():
+            return False
+        try:
+            base = self._normalize_start_working_tree().resolve()
+        except Exception:
+            return False
+        if self._create_unmount_blocks_start_base(base):
+            try:
+                self.create_source_clone_status.set("Source clone: unmounted — choose a Project Root before mounting Create")
+            except Exception:
+                pass
+            return False
+        if not base.exists() or not base.is_dir() or self._path_is_under_system_temp(base) or self._path_is_synthetic_project_root(base):
+            return False
+        signature = ("normal_working_tree", str(base))
+        cached_scope = self._project_tree_scope_cache.get(signature)
+        if isinstance(cached_scope, dict):
+            try:
+                self._sync_create_from_project_scope(dict(cached_scope), base)
+                if self._use_project_first_tree_preview():
+                    return False
+            except Exception as exc:
+                try:
+                    self.create_project_mode_status.set(f"Create project sync failed: {exc}")
+                except Exception:
+                    pass
+        if getattr(self, "_active_task", None):
+            self._schedule_create_source_load_retry("project_tree_busy")
+            return True
+        if hasattr(self, "project_tree"):
+            self._set_progress("Create: Start Project Root wird vor dem Mount gelesen", None, 0)
+            self._refresh_project_tree(force_scan=False, reason="create_tab_project_root_mount")
+            self._schedule_create_source_load_retry("project_tree_mount_scan")
+            return True
+        return False
+
     def _ensure_create_source_loaded_on_create_tab(self) -> None:
         """Clone/read the Start working tree only when the user opens Create.
 
@@ -1924,8 +2135,11 @@ class AIJsonGeneratorGUI(tk.Tk):
         if not self._is_create_tab_active():
             return
         if not self._use_project_first_tree_preview():
-            return
-        if self._active_successful_create_build_for_current_stack():
+            if self._ensure_start_project_scope_synced_for_create_tab():
+                return
+            if not self._use_project_first_tree_preview():
+                return
+        if self._active_successful_create_build_for_current_stack() and not getattr(self, "_create_clone_required_reason", ""):
             self._restore_completed_create_build_root_for_current_stack()
             return
         if self._create_source_clone_ready():
@@ -1939,8 +2153,10 @@ class AIJsonGeneratorGUI(tk.Tk):
         if getattr(self, "_create_source_load_requested", False) or getattr(self, "_create_source_clone_running", False):
             return
         if self._active_task:
-            # Do not stack clone jobs behind another worker. The next Create-tab
-            # focus/change will retry once the UI is idle.
+            # Do not stack clone jobs behind another worker. Retry automatically so
+            # switching Start -> Create during a Project Tree scan still mounts the
+            # Project Root as soon as the loading task is done.
+            self._schedule_create_source_load_retry("active_task")
             return
 
         base = self._create_project_source_base.resolve() if self._create_project_source_base else None
@@ -1965,7 +2181,8 @@ class AIJsonGeneratorGUI(tk.Tk):
             self._progress_callback("Create Source Clone: preparing clone", None, 0)
             root.mkdir(parents=True, exist_ok=True)
             manifest_path = root / "CREATE_SOURCE_CLONE_MANIFEST.json"
-            if manifest_path.exists():
+            fresh_required = bool(getattr(self, "_create_clone_required_reason", ""))
+            if manifest_path.exists() and not fresh_required:
                 try:
                     existing = json.loads(manifest_path.read_text(encoding="utf-8"))
                     if str(existing.get("source_mount_signature") or "") == mount_signature:
@@ -2022,6 +2239,15 @@ class AIJsonGeneratorGUI(tk.Tk):
                     self._schedule_create_stack_runtime_check("create_working_dir_scan", delay_ms=120)
                 except Exception:
                     pass
+            # Once an existing Project Root has been cloned, the Export/Project
+            # Tree may view the writable Create clone immediately. Build.complete
+            # is required only for new_project_abstraction handoff, not for
+            # existing-project clones. The original Project Root remains read-only.
+            # After this successful Create-tab lifecycle event, select
+            # create_working_dir exactly once as the Export-mode handoff. Later
+            # user source switches remain free and read-only.
+            self._create_clone_required_reason = ""
+            self._auto_select_create_working_dir_once("create_clone_ready")
             self._refresh_project_tree_source_options()
             # Do not materialize a large project tree on the Tk callback thread.
             # The source clone itself is the editable Create base; missing scaffold
@@ -2033,7 +2259,13 @@ class AIJsonGeneratorGUI(tk.Tk):
                     self.create_source_clone_status.set(f"Source clone mounted, Preview refresh failed: {exc}")
                 except Exception:
                     pass
-            self._set_progress("Create: clone/scan ready; preview materializes in the terminal when needed", 1, 1)
+            try:
+                self._sync_generator_targets_from_current_evidence("create_clone_ready")
+                self._refresh_prompt_builder_context_variable_menu()
+                self._schedule_prompt_builder_flow_refresh()
+            except Exception as exc:
+                self._set_progress(f"Prompt Builder sync skipped after Create clone: {exc}", 0)
+            self._set_progress("Create: clone/scan ready; Create Working Dir is available in Export Tree source", 1, 1)
             if self._is_project_tree_tab_active() and self._use_create_working_dir_for_project_tree():
                 self._refresh_project_tree(force_scan=False, reason="create_clone_ready")
 
@@ -3055,9 +3287,150 @@ class AIJsonGeneratorGUI(tk.Tk):
         parent.columnconfigure(1, weight=1)
         parent.columnconfigure(3, weight=1)
 
+    def _create_abstraction_project_name(self, config: dict | None = None) -> str:
+        """Return the identity name for a Create New Abstraction session.
+
+        New Abstraction is not a clone of Prompt Guide itself.  Its visible
+        project identity and disposable temp-root prefix come from the selected
+        Stack, so Build.complete manifests and temp folders read as a real
+        abstraction instead of `prompt-guide_*`.
+        """
+        config = config or {}
+        for value in (
+            config.get("label"),
+            config.get("display_name"),
+            self.create_stack.get() if hasattr(self, "create_stack") else "",
+            self.project_name.get() if hasattr(self, "project_name") else "",
+        ):
+            text = str(value or "").strip()
+            if text:
+                return text
+        return DEFAULT_PROJECT_NAME
+
+    def _create_safe_slug(self, value: str, fallback: str = "project") -> str:
+        slug = re.sub(r"[^A-Za-z0-9_.-]+", "_", str(value or "").strip()).strip("._-")
+        return (slug or fallback)[:48]
+
+    def _create_temp_project_slug(self) -> str:
+        mode = str(getattr(self, "_create_current_run_mode", "") or self.create_mode.get() or "")
+        if mode == "new_project_abstraction":
+            return self._create_safe_slug(self._create_abstraction_project_name(self._create_stack_catalog().get(self.create_stack.get(), {})), "abstraction")
+        active_record = self._active_successful_create_build_for_current_stack()
+        if isinstance(active_record, dict):
+            return self._create_safe_slug(str(active_record.get("project_name") or active_record.get("stack") or self.project_name.get()), "abstraction")
+        return self._create_safe_slug(self.project_name.get().strip() or "project", "project")
+
+    def _create_custom_first_active(self) -> bool:
+        """Return True when Create must read Generator/custom state instead of Stack defaults.
+
+        Stack/category defaults are allowed once while preparing a New Abstraction.
+        After Build.complete or after a real Project Root mount, the selected
+        stack becomes identity/evidence only.  Mapping must then be Custom-first:
+        it may toggle active target rows, but must not re-apply stack boilerplate
+        roles/references.
+        """
+        try:
+            if bool(self._active_successful_create_build_for_current_stack()):
+                return True
+        except Exception:
+            pass
+        try:
+            if bool(self._create_project_first_mode and self._create_project_scope_snapshot and self._create_project_source_base):
+                return True
+        except Exception:
+            pass
+        return False
+
+    def _generator_config_from_active_targets(self) -> dict:
+        active: list[SaveTarget] = []
+        try:
+            active = [target.normalized(self.schema) for target in self._active_generator_targets()]
+        except Exception:
+            active = []
+        wanted = str(self.create_build_target.get() or "").strip().lower()
+        chosen = None
+        for target in active:
+            if str(target.path_type or "").strip().lower() == wanted:
+                chosen = target
+                break
+        if chosen is None and active:
+            chosen = active[0]
+        if chosen is None:
+            return {}
+        return {
+            "path": chosen.path,
+            "path_type": chosen.path_type,
+            "build_target": chosen.path_type,
+            "ai_target": chosen.ai_target,
+            "file_types": list(chosen.file_types or []),
+            "profiles": list(chosen.boilerplate_profiles or []),
+            "generator_target_active": True,
+        }
+
+    def _custom_first_create_config_base(self) -> dict:
+        generator = self._generator_config_from_active_targets()
+        path = str(generator.get("path") or self.create_target_path.get().strip() or ".")
+        path_type = str(generator.get("path_type") or self.create_build_target.get().strip() or "wrapper")
+        file_types = list(generator.get("file_types") or default_file_types_for_path_type(path_type, self.schema) or ["json", "md"])
+        profiles = list(generator.get("profiles") or default_profile_ids(self.schema) or ["Create"])
+        return {
+            "label": self.project_name.get().strip() or self.create_stack.get().strip() or DEFAULT_PROJECT_NAME,
+            "category": "Custom",
+            "path": path,
+            "path_type": path_type,
+            "ai_target": str(generator.get("ai_target") or self.ai_target_var.get() or "ChatGPT"),
+            "build_target": path_type,
+            "file_types": file_types,
+            "profiles": profiles,
+            "references": [],
+            "roles": [],
+            "dependencies": self.create_dependencies.get().strip(),
+            "dependency_groups": ({"custom": [self.create_dependencies.get().strip()]} if self.create_dependencies.get().strip() else {}),
+            "tree": [path],
+            "timeline": ["{$write_project_mapping}", "{$write_export_manifest}"],
+            "placeholders": {"{$custom_first}": "read Generator-owned active targets and Mapping active-state only"},
+            "artifacts": ["PROMPT_MANIFEST.json", "EXPORT_MANIFEST.json", "CREATE_BUILD_COMPLETE_MANIFEST.json"],
+            "custom_first": True,
+            "mapping_policy": "Mapping toggles active target state only; roles/references are read from Generator or dynamic schema routing.",
+        }
+
+    def _apply_custom_first_mode_context_to_config(self, config: dict) -> dict:
+        config = dict(config)
+        context = self._create_mode_context(self.create_mode.get(), config)
+        stripped_context = dict(context)
+        stripped_context["profiles"] = []
+        stripped_context["references"] = []
+        stripped_context["roles"] = []
+        stripped_context["weights"] = []
+        stripped_context["custom_first"] = True
+        stripped_context["policy"] = "Custom-first after Build.complete/Project Root mount: do not activate Stack boilerplate roles or references from Mapping."
+        chain_schema = self._create_chain_schema(context.get("id"), [], config)
+        config["create_mode_context"] = stripped_context
+        config["create_weight_profiles"] = []
+        config["create_weight_operators"] = []
+        config["create_chain_schema"] = chain_schema
+        config["selected_create_chain_entry"] = None
+        config["create_chain_boilerplates"] = list(chain_schema.get("boilerplates", []))
+        config["create_mode_boilerplate"] = {
+            "entry_mode": context.get("id"),
+            "routine": context.get("routine"),
+            "stack": self.create_stack.get(),
+            "stack_category": "Custom",
+            "target": config.get("build_target", self.create_build_target.get()),
+            "custom_first": True,
+            "feature_update_allowed": bool(context.get("id") in {"feature_for_existing_project", "refactor_existing_stack"} and (self._active_successful_create_build_for_current_stack() or self._has_start_tab_target_match())),
+            "requires_build_complete_or_start_target_match": context.get("id") in {"feature_for_existing_project", "refactor_existing_stack"},
+            "export_context": "create_working_dir_from_completed_build" if self._active_successful_create_build_for_current_stack() else "start_target_match",
+            "chain_schema": chain_schema,
+            "selected_chain_entry": None,
+            "policy": "boilerplates are reference/provenance only in Mapping after mount/build",
+        }
+        return config
+
     def _current_create_config(self) -> dict:
         catalog = self._create_stack_catalog()
-        config = dict(catalog.get(self.create_stack.get(), {}))
+        custom_first = self._create_custom_first_active()
+        config = self._custom_first_create_config_base() if custom_first else dict(catalog.get(self.create_stack.get(), {}))
         if not config:
             config = {
                 "category": self.create_stack_category.get() or "Custom",
@@ -3076,10 +3449,15 @@ class AIJsonGeneratorGUI(tk.Tk):
                 "placeholders": {"{$create_target[custom]}": "user-defined target path"},
                 "artifacts": ["EXPORT_MANIFEST.json", "USER_PROMPT.txt"],
             }
-        config["category"] = self.create_stack_category.get().strip() or config.get("category", "Other")
-        config["path"] = self.create_target_path.get().strip() or config.get("path", ".")
-        config["path_type"] = self.create_build_target.get().strip() or config.get("path_type", "wrapper")
-        config["build_target"] = self.create_build_target.get().strip() or config.get("build_target", config.get("path_type", "wrapper"))
+        config["category"] = "Custom" if custom_first else (self.create_stack_category.get().strip() or config.get("category", "Other"))
+        if custom_first and config.get("generator_target_active"):
+            config["path"] = str(config.get("path") or ".")
+            config["path_type"] = str(config.get("path_type") or "wrapper")
+            config["build_target"] = str(config.get("build_target") or config.get("path_type") or "wrapper")
+        else:
+            config["path"] = self.create_target_path.get().strip() or config.get("path", ".")
+            config["path_type"] = self.create_build_target.get().strip() or config.get("path_type", "wrapper")
+            config["build_target"] = self.create_build_target.get().strip() or config.get("build_target", config.get("path_type", "wrapper"))
         config["dependencies"] = self.create_dependencies.get().strip() or config.get("dependencies", "")
         config["compiler_path"] = self._selected_create_compiler_path_text()
         ui_nvm = self._normalize_nvm_version(self.create_nvm_version.get())
@@ -3119,13 +3497,16 @@ class AIJsonGeneratorGUI(tk.Tk):
         # selected intensity can add its own schema, boilerplate, operator and role
         # contract to the generated Create context.
         config["create_mode_parameters"] = self._create_mode_parameter_profile()
-        config = self._apply_create_mode_context_to_config(config)
-        config = self._apply_create_parameter_operator_contract(config)
+        if custom_first:
+            config = self._apply_custom_first_mode_context_to_config(config)
+        else:
+            config = self._apply_create_mode_context_to_config(config)
+            config = self._apply_create_parameter_operator_contract(config)
         config["file_types"] = self._create_supported_ids("file_types", list(config.get("file_types", []))) or ["json", "md"]
         config["profiles"] = self._create_supported_ids("boilerplate_profiles", list(config.get("profiles", []))) or ["Create"]
         references = list(config.get("references", []))
         roles = list(config.get("roles", []))
-        if "Create" in config["profiles"]:
+        if "Create" in config["profiles"] and not custom_first:
             references.append("create_context_build_timeline_reference")
             roles.append("create_context_build_operator")
         node_id = str(config.get("node_id", ""))
@@ -3253,6 +3634,54 @@ class AIJsonGeneratorGUI(tk.Tk):
         except Exception:
             return False
 
+    def _is_prompt_guide_runtime_path(self, path: Path, child_name: str | None = None) -> bool:
+        """Return True for disposable Prompt Guide runtime paths only."""
+        try:
+            resolved = Path(path).resolve()
+            runtime = prompt_guide_runtime_root().resolve()
+            resolved.relative_to(runtime)
+            if child_name:
+                allowed = (runtime / child_name).resolve()
+                resolved.relative_to(allowed)
+            return True
+        except Exception:
+            pass
+        try:
+            legacy_temp = Path(tempfile.gettempdir()).resolve()
+            resolved = Path(path).resolve()
+            resolved.relative_to(legacy_temp)
+            if child_name == "create-preview":
+                return "prompt-guide-create-preview" in str(resolved)
+            if child_name == "patch-work":
+                return "prompt-guide-patch-work" in str(resolved)
+        except Exception:
+            pass
+        return False
+
+    def _path_is_synthetic_project_root(self, path: Path) -> bool:
+        """Return True for app-owned/default roots that must never seed Create.
+
+        These paths are placeholders or disposable Prompt Guide runtime folders
+        (`start-worktree`, `create-preview`, `export`, `patch-work`, ...).
+        Treating them as real Project Roots lets Create clone/render its own
+        preview output and can recursively grow a preview-tree loop.
+        """
+        try:
+            candidate = Path(path).expanduser().resolve()
+        except Exception:
+            return False
+        try:
+            if candidate == default_start_worktree_dir().resolve():
+                return True
+        except Exception:
+            pass
+        try:
+            if self._is_prompt_guide_runtime_path(candidate):
+                return True
+        except Exception:
+            pass
+        return False
+
     def _active_successful_create_build_for_current_stack(self) -> dict | None:
         """Return the completed build pinned to the selected stack, independent of UI tab state."""
         stack = self.create_stack.get() if hasattr(self, "create_stack") else ""
@@ -3312,6 +3741,8 @@ class AIJsonGeneratorGUI(tk.Tk):
         # New Project Abstraction intentionally creates a fresh preview root, but
         # the completed build remains pinned in _create_successful_builds_by_stack
         # and exportable from the Builds tab / Export gate.
+        if getattr(self, "_create_clone_required_reason", ""):
+            return None
         if self.create_mode.get() == "new_project_abstraction":
             return None
         return self._completed_create_build_root_for_current_stack()
@@ -3472,7 +3903,15 @@ class AIJsonGeneratorGUI(tk.Tk):
             except Exception:
                 pass
         source = str(self._create_project_source_base or self.output_base.get() or "")
-        raw = "|".join([self.project_name.get(), source, str(self._create_working_dir()), self.create_stack.get(), self.create_target_path.get(), self.create_mode.get()])
+        raw = "|".join([
+            self._create_abstraction_project_name(self._create_stack_catalog().get(self.create_stack.get(), {})) if self.create_mode.get() == "new_project_abstraction" else self.project_name.get(),
+            source,
+            str(self._create_working_dir()),
+            self.create_stack.get(),
+            self.create_target_path.get(),
+            self.create_mode.get(),
+            str(int(getattr(self, "_create_clone_session_generation", 0) or 0)),
+        ])
         return hashlib.sha1(raw.encode("utf-8", errors="ignore")).hexdigest()[:12]
 
     def _create_temp_root(self) -> Path:
@@ -3487,8 +3926,8 @@ class AIJsonGeneratorGUI(tk.Tk):
             except Exception:
                 pass
         signature = self._create_tree_temp_signature_value()
-        slug = re.sub(r"[^A-Za-z0-9_.-]+", "_", self.project_name.get().strip() or "project")[:48]
-        root = Path(tempfile.gettempdir()) / "prompt-guide-create-preview" / f"{slug}_{signature}"
+        slug = self._create_temp_project_slug()
+        root = prompt_guide_runtime_root() / "create-preview" / f"{slug}_{signature}"
         self._create_tree_temp_root = root
         self._create_tree_temp_signature = signature
         self.create_temp_preview_dir.set(str(root))
@@ -3507,8 +3946,8 @@ class AIJsonGeneratorGUI(tk.Tk):
                 resolved = str(root.resolve())
                 if not force and resolved in protected:
                     continue
-                if root.exists() and "prompt-guide-create-preview" in str(root):
-                    shutil.rmtree(root, ignore_errors=True)
+                if root.exists() and self._is_prompt_guide_runtime_path(root, "create-preview"):
+                    _remove_path_robust(root)
             except Exception:
                 pass
         if force and hasattr(self, "create_temp_preview_dir"):
@@ -3518,8 +3957,8 @@ class AIJsonGeneratorGUI(tk.Tk):
         for raw in list(getattr(self, "_create_successful_temp_roots", set())):
             try:
                 root = Path(raw)
-                if root.exists() and "prompt-guide-create-preview" in str(root):
-                    shutil.rmtree(root, ignore_errors=True)
+                if root.exists() and self._is_prompt_guide_runtime_path(root, "create-preview"):
+                    _remove_path_robust(root)
             except Exception:
                 pass
         self._create_successful_temp_roots = set()
@@ -3965,6 +4404,93 @@ class AIJsonGeneratorGUI(tk.Tk):
         if str(self.create_mode.get() or "") == "new_project_abstraction":
             self._sync_generator_default_targets_from_create_config(self._current_create_config(), activate=False)
 
+    def _project_tree_selection_target_roots(self) -> list[str]:
+        """Return repo-relative target roots represented by the current Project Tree selection."""
+        roots: list[str] = []
+        for rel in self._selected_project_paths():
+            normalized = str(rel or ".").replace("\\", "/").strip("/") or "."
+            kind = self._project_tree_kind_by_path.get(normalized)
+            if kind == "file":
+                normalized = normalized.rsplit("/", 1)[0] if "/" in normalized else "."
+            roots.append(normalized or ".")
+        roots = self._dedupe_create_list(roots)
+        if "." in roots:
+            return ["."]
+        result: list[str] = []
+        for rel in sorted(roots, key=lambda item: (item.count("/"), item)):
+            prefix = rel.rstrip("/") + "/"
+            if any(rel != existing and rel.startswith(existing.rstrip("/") + "/") for existing in result):
+                continue
+            result.append(rel)
+        return result
+
+
+    def _infer_project_tree_selection_path_type(self, rel: str, files: set[str]) -> str:
+        """Infer a Generator target type from already loaded Project Tree scope data."""
+        rel = str(rel or ".").replace("\\", "/").strip("/") or "."
+        prefix = "" if rel == "." else rel.rstrip("/") + "/"
+        under = {item[len(prefix):] if prefix and item.startswith(prefix) else item for item in files if rel == "." or item == rel or item.startswith(prefix)}
+        names = {Path(item).name.lower() for item in under}
+        parts = {part.lower() for part in rel.split("/") if part and part != "."}
+        if parts & {"frontend", "client", "web", "ui", "src"} or names & {"package.json", "vite.config.js", "vite.config.ts", "next.config.js", "index.html", "svelte.config.js"}:
+            return "frontend"
+        if parts & {"backend", "server", "api", "app"} or names & {"requirements.txt", "pyproject.toml", "pipfile", "manage.py", "poetry.lock", "uv.lock"}:
+            return "backend"
+        if parts & {"assets", "static", "public", "media", "images", "img"}:
+            return "assets"
+        if rel == ".":
+            return "wrapper"
+        return "generated"
+
+
+    def _sync_generator_targets_from_project_tree_selection(self, reason: str = "project_tree_selection") -> bool:
+        """Synchronize Generator/Prompt Builder targets from Project Tree selection immediately.
+
+        This is intentionally cache-only and scan-free. The user should not have
+        to open the Generator tab before Generate Prompt sees selected Project
+        Root elements as active targets.
+        """
+        if not hasattr(self, "project_tree"):
+            return False
+        roots = self._project_tree_selection_target_roots()
+        if not roots:
+            return False
+        try:
+            base = self._active_project_tree_base()
+        except Exception:
+            return False
+        cached_scope = self._cached_project_scope_for_paths(base, roots)
+        if not isinstance(cached_scope, dict):
+            return False
+        _dirs, files = self._scope_entries_from_project_scope(cached_scope)
+        targets: list[SaveTarget] = []
+        for rel in roots:
+            path_type = self._infer_project_tree_selection_path_type(rel, files)
+            descriptor = {
+                "path": rel,
+                "path_type": path_type,
+                "stack": self.create_stack.get(),
+                "profiles": self._current_create_config().get("profiles", []),
+                "file_types": self._detect_file_types_for_target(rel, path_type, files),
+            }
+            candidate = self._generator_target_from_descriptor(descriptor, files=files, enabled=True)
+            if candidate is not None:
+                targets.append(candidate)
+        targets = self._dedupe_generator_targets(targets)
+        if not targets:
+            return False
+        self._merge_generator_targets(targets, reset_to_defaults=True)
+        try:
+            self._refresh_prompt_builder_context_variable_menu()
+        except Exception:
+            pass
+        try:
+            self._set_progress(f"Generator/Prompt Builder targets synchronized from Project Tree selection ({reason})", 1, 1)
+        except Exception:
+            pass
+        return True
+
+
     def _manifest_dependency_rows_for_target(self, base: Path, target: dict, files: set[str]) -> list[dict]:
         rel_root = str(target.get("path") or ".").strip("/")
         prefix = "" if rel_root in {"", "."} else rel_root + "/"
@@ -4084,20 +4610,164 @@ class AIJsonGeneratorGUI(tk.Tk):
         known_project_dirs = {"backend", "frontend", "server", "api", "client", "web", "src", "app"}
         return any(part in known_project_dirs for item in real_dirs for part in item.split("/")) and bool(real_files)
 
-    def _reset_create_to_new_project_abstraction(self, base: Path | None = None) -> None:
+    def _reset_create_source_state(self) -> None:
+        """Clear all Create source/mount cache fields in one behavior-preserving place."""
         self._create_project_first_mode = False
         self._create_boilerplate_preview_override = False
         self._create_detected_targets = []
         self._create_project_scope_snapshot = None
         self._create_project_source_base = None
         self._create_source_clone_manifest = None
-        self._create_project_scope_snapshot = None
-        self._create_project_source_base = None
-        self._create_detected_targets = []
         self._create_last_source_clone_signature = ""
         self._create_source_mount_signature = ""
         self._create_source_loaded_signature = ""
         self._create_source_load_requested = False
+        self._create_source_clone_running = False
+        self._create_last_scope_sync_signature = None
+
+    def _known_create_runtime_roots_for_reset(self) -> list[Path]:
+        """Collect disposable Create roots that must be detached on Project Root reset."""
+        roots: list[Path] = []
+
+        def add(raw: object) -> None:
+            if not raw:
+                return
+            try:
+                root = Path(str(raw)).expanduser().resolve()
+            except Exception:
+                return
+            if all(str(item.resolve()) != str(root) for item in roots):
+                roots.append(root)
+
+        add(getattr(self, "_create_tree_temp_root", None))
+        try:
+            add(self.create_temp_preview_dir.get().strip())
+        except Exception:
+            pass
+        for raw in list(getattr(self, "_create_successful_temp_roots", set())):
+            add(raw)
+        records: list[dict] = []
+        try:
+            records.extend([item for item in getattr(self, "_create_successful_builds", []) if isinstance(item, dict)])
+        except Exception:
+            pass
+        last = getattr(self, "_create_last_successful_build", None)
+        if isinstance(last, dict):
+            records.append(last)
+        by_stack = getattr(self, "_create_successful_builds_by_stack", {})
+        if isinstance(by_stack, dict):
+            records.extend([item for item in by_stack.values() if isinstance(item, dict)])
+        for record in records:
+            add(record.get("temp_preview_dir") or record.get("create_working_dir"))
+        return roots
+
+    def _discard_create_build_records_for_source_reset(self, reason: str = "project_root_reset") -> None:
+        """Drop stale Build.complete/Create-working-dir records before the next source clone."""
+        roots = self._known_create_runtime_roots_for_reset()
+        self._create_successful_builds = []
+        self._create_successful_builds_by_stack = {}
+        self._create_last_successful_build = None
+        self._create_successful_temp_roots = set()
+        self._create_mode_run_records = []
+        self._create_current_run_id = ""
+        self._create_current_run_mode = ""
+        self._create_current_run_stack = ""
+        self._create_current_run_preview_root = None
+        for root in roots:
+            try:
+                if root.exists() and self._is_prompt_guide_runtime_path(root, "create-preview"):
+                    _remove_path_robust(root)
+            except Exception:
+                pass
+        try:
+            self.create_builds_status.set(f"No successful Create timeline build yet. Reset by {reason}.")
+        except Exception:
+            pass
+
+    def _invalidate_create_clone_for_next_create_tab(self, reason: str = "project_root_reset", *, reset_export_source: bool = True) -> None:
+        """Force the next Create-tab activation to create a fresh source clone.
+
+        Project Root changes, same-root reloads and Unmount are invalidation events,
+        not clone events. They clear stale Create working dirs and mark the next
+        Create-tab click as the only place where a new clone may be created.
+        """
+        try:
+            self._create_clone_session_generation = int(getattr(self, "_create_clone_session_generation", 0) or 0) + 1
+        except Exception:
+            self._create_clone_session_generation = 1
+        self._create_clone_required_reason = str(reason or "project_root_reset")
+        pending = getattr(self, "_create_source_load_retry_after", None)
+        if pending:
+            try:
+                self.after_cancel(pending)
+            except Exception:
+                pass
+            self._create_source_load_retry_after = None
+        self._create_source_clone_manifest = None
+        self._create_last_source_clone_signature = ""
+        self._create_source_mount_signature = ""
+        self._create_source_loaded_signature = ""
+        self._create_source_load_requested = False
+        self._create_source_clone_running = False
+        self._discard_create_build_records_for_source_reset(reason)
+        try:
+            self._cleanup_create_temp_tree(force=True)
+        except Exception:
+            pass
+        self._create_tree_temp_root = None
+        self._create_tree_temp_signature = ""
+        try:
+            self.create_temp_preview_dir.set("")
+        except Exception:
+            pass
+        try:
+            self.create_working_path.set("")
+        except Exception:
+            pass
+        if reset_export_source:
+            try:
+                self.project_tree_source_mode.set("normal_working_tree")
+            except Exception:
+                pass
+            try:
+                self._refresh_project_tree_source_options()
+            except Exception:
+                pass
+        try:
+            self.create_source_clone_status.set(f"Source clone: fresh clone required by {reason}; click Create tab to clone")
+        except Exception:
+            pass
+
+    def _reset_start_project_root_read_state(self, reason: str = "project_root_reload") -> None:
+        """Invalidate read-only Project Root evidence and mounted clone state.
+
+        Re-reading the same folder is intentional, not a no-op. It clears cached
+        project-first evidence, stale Build.complete records and any source clone
+        so the next Create-tab entry clones a fresh snapshot. Project Root reset
+        is an invalidation event; the clone itself is created only on Create-tab
+        activation.
+        """
+        self._reset_create_source_state()
+        self._invalidate_create_clone_for_next_create_tab(reason)
+        try:
+            self.create_project_source_path.set("")
+        except Exception:
+            pass
+        try:
+            self.create_source_clone_status.set(f"Source clone: reset by {reason}; open Create tab to clone")
+        except Exception:
+            pass
+        try:
+            self.create_project_mode_status.set("Create mode: Project Root re-read; waiting for tree evidence")
+        except Exception:
+            pass
+        try:
+            self._refresh_project_tree_source_options()
+        except Exception:
+            pass
+
+    def _reset_create_to_new_project_abstraction(self, base: Path | None = None) -> None:
+        self._reset_create_source_state()
         try:
             self.create_source_clone_status.set("Source clone: idle")
         except Exception:
@@ -4106,8 +4776,8 @@ class AIJsonGeneratorGUI(tk.Tk):
             self.create_project_source_path.set(str(base.resolve()))
         self.create_mode.set("new_project_abstraction")
         self.create_project_mode_status.set("Create mode: new project abstraction — empty/default Start tree")
-        self.targets = self._inactive_default_generator_targets()
-        self._refresh_targets()
+        # Do not mutate Generator target rows from Create reset. Only Create
+        # active state is reset here; Generator remains the target parent.
         self._refresh_create_mode_options("empty_start_tree")
         if hasattr(self, "create_preview_tree"):
             self._cleanup_create_temp_tree()
@@ -4123,7 +4793,20 @@ class AIJsonGeneratorGUI(tk.Tk):
             base_signature = str(Path(base).resolve())
         except Exception:
             base_signature = str(base)
-        if bool(getattr(self, "_create_manual_new_project_override", False)) and base_signature == str(getattr(self, "_create_manual_unmount_start_signature", "") or ""):
+        if self._create_unmount_blocks_start_base(base):
+            return
+        if self._path_is_synthetic_project_root(base):
+            # Default/AppData runtime roots are not project evidence. Keep Create in
+            # New Abstraction mode and do not mirror/clone preview-runtime content.
+            self._reset_create_source_state()
+            try:
+                self.create_project_mode_status.set("Create mode: new project abstraction — default/runtime Project Root ignored")
+            except Exception:
+                pass
+            try:
+                self._refresh_create_mode_options("synthetic_project_root")
+            except Exception:
+                pass
             return
         # Project Tree / Export scans are view-only once Create has a completed
         # build. Switching the dropdown between normal_working_tree and
@@ -4140,6 +4823,7 @@ class AIJsonGeneratorGUI(tk.Tk):
                 return
         except Exception:
             pass
+        self._clear_manual_create_override_if_real_start_base("project_scope_sync")
         try:
             sync_signature = (str(Path(base).resolve()), self.create_stack.get())
             if sync_signature == getattr(self, "_create_last_scope_sync_signature", None):
@@ -4163,11 +4847,13 @@ class AIJsonGeneratorGUI(tk.Tk):
         self.create_mode.set("feature_for_existing_project")
         first = self._create_detected_targets[0]
         self.create_stack.set(str(first.get("stack") or self.create_stack.get()))
-        self.create_stack_category.set(self._create_stack_catalog().get(self.create_stack.get(), {}).get("category", self.create_stack_category.get()))
+        self.create_stack_category.set("Custom")
         self.create_target_path.set(str(first.get("path") or "."))
         self.create_build_target.set(str(first.get("path_type") or "wrapper"))
-        self.create_project_mode_status.set("Create mode: feature for existing project — project-first targets from Start tree")
-        self._sync_generator_targets_from_detected_project()
+        self.create_project_mode_status.set("Create mode: feature for existing project — active state from Start tree; Generator targets preserved")
+        # Active state may follow the detected Project Root, but Create must not
+        # overwrite Generator target rows. Generator remains parent; Create
+        # Mapping/Prompt Builder/Export inherit target authority from Generator.
         self._sync_global_reference_selection_from_create_config(self._current_create_config(), "project_tree_synced")
         self._load_project_first_dependency_rows(base.resolve(), scope)
         if hasattr(self, "create_compiler_tree"):
@@ -4756,7 +5442,7 @@ class AIJsonGeneratorGUI(tk.Tk):
         self._create_tree_metadata[item] = {
             "path": path,
             "role": role,
-            "boilerplate": self.create_tree_node_boilerplate.get() or "none",
+            "boilerplate": old_meta.get("boilerplate") or "none",
             "kind": self.create_tree_node_kind.get() or "folder",
             "source": "user_input",
         }
@@ -5202,7 +5888,7 @@ class AIJsonGeneratorGUI(tk.Tk):
             command = self._node_dependency_install_command(dependency, target_dir)
             return self._with_nvm(command, row.get("nvm_version") or self._nvm_version_for_target(row.get("target", "")), row.get("target", ""))
         if ecosystem in {"python", "pip", "pyproject", "conda", "scientific_python"}:
-            return self._shell_join([sys.executable, "-m", "pip", "install", dependency])
+            return self._shell_join([self._python_runtime_executable(row.get("target", "")), "-m", "pip", "install", dependency])
         if ecosystem in {"flutter", "dart", "pub"}:
             return self._shell_join(["dart", "pub", "add", dependency])
         if ecosystem in {"android", "gradle"}:
@@ -5658,23 +6344,10 @@ class AIJsonGeneratorGUI(tk.Tk):
                     rows.append(row)
 
         append_from_config(config)
-        # Mapping-level boilerplate assignment is package-relevant. If a node is
-        # assigned another known boilerplate, its dependencies become expected for
-        # that node's effective target and package-control can surface missing or
-        # now-unused rows in the timeline.
-        catalog = self._create_stack_catalog()
-        seen: set[tuple[str, str]] = set()
-        for item, meta in getattr(self, "_create_tree_metadata", {}).items():
-            label = str(meta.get("boilerplate") or "none")
-            if not label or label == "none" or label == self.create_stack.get() or label not in catalog:
-                continue
-            target = self._create_tree_effective_target(item) if hasattr(self, "create_preview_tree") else ""
-            key = (label, target or "generated")
-            if key in seen:
-                continue
-            seen.add(key)
-            bp_config = dict(catalog.get(label) or {})
-            append_from_config(bp_config, target_override=target or bp_config.get("build_target") or "generated")
+        # Mapping-level boilerplate labels are provenance/reference only. They are
+        # intentionally ignored for package-control activation so changing Mapping
+        # roles only toggles active target state; it never re-selects boilerplate
+        # dependencies or stack-owned roles.
         return rows
 
     def _package_control_findings(self, config: dict | None = None) -> dict:
@@ -6214,7 +6887,7 @@ class AIJsonGeneratorGUI(tk.Tk):
                         "target": target,
                         "kind": "python",
                         "script": "compileall",
-                        "command": self._shell_join([sys.executable, "-m", "compileall", root]),
+                        "command": self._shell_join([self._python_runtime_executable(target), "-m", "compileall", root]),
                         "nvm_version": "None",
                         "gradle_version": "None",
                         "status": "detected-script",
@@ -6864,6 +7537,8 @@ raise SystemExit(2)
             "profiles": list(config.get("profiles", [])),
             "references": list(config.get("references", [])),
             "roles": list(config.get("roles", [])),
+            "custom_first": bool(config.get("custom_first")),
+            "mapping_policy": config.get("mapping_policy") or ("custom_first_active_state_only" if config.get("custom_first") else "stack_defaults_until_mount_or_build"),
             "tree_blueprint": self._create_preview_tree_model(),
             "timeline": self._selected_create_timeline_lines(),
             "temp_preview_dir": str(self._create_temp_root()),
@@ -6922,6 +7597,7 @@ raise SystemExit(2)
             f"Profiles: {', '.join(payload['profiles'])}",
             f"References: {', '.join(payload['references']) or 'none'}",
             f"Roles: {', '.join(payload['roles']) or 'none'}",
+            f"Mapping policy: {payload.get('mapping_policy', 'stack defaults')}",
             f"Expected manifests: {', '.join(payload['expected_manifests']) or 'none'}",
             f"Existing manifests: {', '.join(payload['existing_manifests']) or 'none detected'}",
             f"Package control: {len(payload.get('package_control', {}).get('missing', []))} missing / {len(payload.get('package_control', {}).get('unused', []))} unused",
@@ -7633,8 +8309,8 @@ raise SystemExit(2)
         ttk.Combobox(item_form, textvariable=self.create_tree_node_kind, values=["folder", "file"], state="readonly", width=14).grid(row=1, column=1, sticky="w", padx=(6, 0), pady=3)
         ttk.Label(item_form, text="Role / Target").grid(row=2, column=0, sticky="w", pady=3)
         ttk.Combobox(item_form, textvariable=self.create_tree_node_role, values=["structure", "wrapper_root", "backend_root", "frontend_root", "asset", "utils", "generated", "ignored"], state="readonly", width=20).grid(row=2, column=1, sticky="w", padx=(6, 0), pady=3)
-        ttk.Label(item_form, text="Boilerplate").grid(row=3, column=0, sticky="w", pady=3)
-        self.create_tree_boilerplate_box = ttk.Combobox(item_form, textvariable=self.create_tree_node_boilerplate, values=["none"] + list(self._create_stack_catalog().keys()), state="normal", width=32)
+        ttk.Label(item_form, text="Boilerplate Reference").grid(row=3, column=0, sticky="w", pady=3)
+        self.create_tree_boilerplate_box = ttk.Combobox(item_form, textvariable=self.create_tree_node_boilerplate, values=["none"] + list(self._create_stack_catalog().keys()), state="disabled", width=32)
         self.create_tree_boilerplate_box.grid(row=3, column=1, sticky="ew", padx=(6, 0), pady=3)
         item_buttons = ttk.Frame(item_form)
         item_buttons.grid(row=4, column=0, columnspan=2, sticky="ew", pady=(8, 0))
@@ -7691,7 +8367,7 @@ raise SystemExit(2)
         self.create_nvm_root_path.trace_add("write", lambda *_args: self._on_create_nvm_path_changed())
         self.create_nvm_version.trace_add("write", self._on_create_nvm_input_changed)
         for var in (self.create_target_path, self.create_working_path):
-            var.trace_add("write", lambda *_args: self._schedule_create_worktree_refresh("path_changed"))
+            var.trace_add("write", lambda *_args: self._on_create_path_binding_changed("path_changed"))
         self._on_create_category_changed()
         self._on_create_stack_changed()
         self._refresh_create_stack_control_state()
@@ -7717,6 +8393,8 @@ raise SystemExit(2)
         try:
             candidate = Path(path).expanduser().resolve()
             if not allow_temp and self._path_is_under_system_temp(candidate):
+                return
+            if not allow_temp and self._path_is_synthetic_project_root(candidate):
                 return
             name = self._folder_name_as_project_name(candidate)
             if name:
@@ -7810,6 +8488,34 @@ raise SystemExit(2)
 
     def _display_create_export_dir(self) -> str:
         return str(self._create_export_path())
+
+    def _create_path_binding_signature(self) -> str:
+        try:
+            return json.dumps({
+                "start_root": str(self._normalize_start_working_tree().resolve()),
+                "target_path": str(self.create_target_path.get() or ""),
+                "working_path": str(self.create_working_path.get() or ""),
+            }, sort_keys=True, ensure_ascii=False)
+        except Exception:
+            return f"{self.output_base.get()}|{self.create_target_path.get()}|{self.create_working_path.get()}"
+
+    def _on_create_path_binding_changed(self, reason: str = "path_changed") -> None:
+        signature = self._create_path_binding_signature()
+        previous = str(getattr(self, "_create_last_path_binding_signature", "") or "")
+        self._create_last_path_binding_signature = signature
+        if previous and previous != signature:
+            # A manual Create working/target path change must not keep a stale temp
+            # preview root from a previous Project Root. Clear only the temp pointer;
+            # Start-tab source evidence remains available for the next refresh/clone.
+            self._create_tree_temp_root = None
+            self._create_tree_temp_signature = ""
+            try:
+                self.create_temp_preview_dir.set("")
+            except Exception:
+                pass
+            self._create_last_scope_sync_signature = None
+        self._schedule_create_worktree_refresh(reason)
+        self._schedule_create_preview_refresh()
 
     def _browse_create_target_path(self) -> None:
         selected = filedialog.askdirectory(title="Choose Create target path", initialdir=str(self._resolve_create_path(self.create_target_path.get(), ".")))
@@ -7915,15 +8621,58 @@ raise SystemExit(2)
         except Exception:
             pass
 
-    def _project_tree_create_source_available(self) -> bool:
-        if self._active_successful_create_build_for_current_stack():
-            return True
+    def _create_project_tree_base_if_available(self) -> Path | None:
+        """Return the current read-only Create export tree base, if one exists.
+
+        The Export tab source switch is only a view/export-mode selector. It may
+        inspect a completed Build or an already mounted Create clone, but it must
+        never allocate a new temp path, clone, reset, unmount, or heal Create
+        state by side effect.
+        """
+        if str(getattr(self, "_create_clone_required_reason", "") or ""):
+            return None
+        completed = self._completed_create_build_root_for_current_stack()
+        if completed is not None and completed.exists():
+            return completed.resolve()
         try:
-            return bool(self._create_source_clone_ready())
+            root = self._known_create_temp_root()
+            if root is None or not root.exists():
+                return None
+            root = root.resolve()
+            manifest_path = root / "CREATE_SOURCE_CLONE_MANIFEST.json"
+            loaded_signature = str(getattr(self, "_create_source_loaded_signature", "") or "")
+            mount_signature = str(getattr(self, "_create_source_mount_signature", "") or "")
+            if not loaded_signature or not mount_signature:
+                return None
+            manifest = getattr(self, "_create_source_clone_manifest", None)
+            if isinstance(manifest, dict):
+                manifest_signature = str(manifest.get("source_mount_signature") or "")
+                if not manifest_signature or manifest_signature == loaded_signature:
+                    return root
+            if manifest_path.exists():
+                raw_manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+                if str(raw_manifest.get("source_mount_signature") or "") == loaded_signature:
+                    self._create_source_clone_manifest = raw_manifest
+                    return root
         except Exception:
-            return False
+            return None
+        return None
+
+    def _project_tree_create_source_available(self) -> bool:
+        # Export must expose Create Working Dir only when the Create tab already
+        # has a valid completed Build or mounted clone. The check is read-only:
+        # it never creates, deletes, clones or resets anything.
+        return self._create_project_tree_base_if_available() is not None
 
     def _project_tree_source_values(self) -> list[str]:
+        """Return user-selectable Export tree sources that are valid right now.
+
+        Synchronization means stale Create Working Dir entries disappear after
+        Unmount/Project Root reset, and reappear only after Create has a valid
+        clone or Build.complete. It does not mean forcing the user's selection:
+        when both sources are valid the user may freely choose Normal Worktree
+        or Create Working Dir.
+        """
         values = ["normal_working_tree"]
         if self._project_tree_create_source_available():
             values.append("create_working_dir")
@@ -7938,43 +8687,74 @@ raise SystemExit(2)
             except Exception:
                 pass
         current = str(self.project_tree_source_mode.get() or "normal_working_tree")
-        if current not in values:
-            self.project_tree_source_mode.set("normal_working_tree")
-            self._set_progress("Export: Create Working Dir is not mounted yet; selection stays on Normal Worktree", 1, 1)
+        if current not in values or (current == "create_working_dir" and self._effective_project_tree_source_mode(sync_var=False) != "create_working_dir"):
+            try:
+                self.project_tree_source_mode.set("normal_working_tree")
+            except Exception:
+                pass
+            self._set_progress("Export/Prompt tree source: stale Create Working Dir removed; Normal Worktree selected", 1, 1)
         self._refresh_export_settings_visibility()
 
+    def _auto_select_create_working_dir_once(self, reason: str = "create_source_ready") -> None:
+        """Select Create Working Dir exactly once after a new Create source appears.
+
+        This is the only automatic Export tree-source switch. It is a handoff
+        convenience after Create clone / Build.complete, not a lifecycle command:
+        it must not clone, clean, reset or mutate Create state. After this one
+        handoff, the user may freely switch back to Normal Worktree.
+        """
+        try:
+            create_base = self._create_project_tree_base_if_available()
+            if create_base is None:
+                return
+            record = self._active_successful_create_build_for_current_stack()
+            record_id = str(record.get("id") or "") if isinstance(record, dict) else ""
+            generation = str(int(getattr(self, "_create_clone_session_generation", 0) or 0))
+            key = f"{reason}:{create_base.resolve()}:{record_id}:{generation}"
+            if key == str(getattr(self, "_project_tree_last_auto_create_source_key", "") or ""):
+                return
+            self._refresh_project_tree_source_options()
+            if "create_working_dir" not in self._project_tree_source_values():
+                return
+            self._project_tree_last_auto_create_source_key = key
+            if str(self.project_tree_source_mode.get() or "") != "create_working_dir":
+                self.project_tree_source_mode.set("create_working_dir")
+            self._refresh_export_settings_visibility()
+            # Programmatic StringVar changes do not emit <<ComboboxSelected>>.
+            # Keep this handoff view-only: no automatic Project Tree scan here,
+            # otherwise Build.complete can collide with an active Timeline/scan.
+            self._set_progress("Export/Prompt tree source: Create Working Dir selected once after Create source became ready", 1, 1)
+        except Exception:
+            pass
+
     def _on_project_tree_source_mode_changed(self, _event=None) -> None:
-        # Tree-root switching is a view concern. It must not clear or replace a
-        # completed Create build for the current stack. Only selecting New Project
-        # Abstraction or starting a new stack build may move the active Create base
-        # away from Build.complete.
+        requested = str(self.project_tree_source_mode.get() or "normal_working_tree")
         self._refresh_project_tree_source_options()
-        if self._use_create_working_dir_for_project_tree() and not self._project_tree_create_source_available():
-            self.project_tree_source_mode.set("normal_working_tree")
-            self._set_progress("Export: Create Working Dir is only available after Create clone", 1, 1)
-            return
-        completed = self._completed_create_build_root_for_current_stack()
-        if completed is not None and self.create_mode.get() != "new_project_abstraction":
-            self._create_tree_temp_root = completed
-            try:
-                self.create_temp_preview_dir.set(str(completed))
-            except Exception:
-                pass
-            self.create_project_mode_status.set("Create mode: Build.complete primary — Project Tree view switch only")
+        selected = str(self.project_tree_source_mode.get() or "normal_working_tree")
         self._refresh_export_settings_visibility()
-        self._set_progress("Project Tree: tree-source switch started", 0, 3)
-        self._refresh_project_tree(force_scan=False, reason="tree_source_switch")
-        if completed is not None and self.create_mode.get() != "new_project_abstraction":
-            self._create_tree_temp_root = completed
-            try:
-                self.create_temp_preview_dir.set(str(completed))
-            except Exception:
-                pass
-        self._set_progress("Project Tree: tree-source switch synchronizes export controls", 2, 3)
         self._refresh_create_export_button_visibility()
-        self._refresh_export_settings_visibility()
         self._refresh_create_context_variable_menu()
-        self._set_progress("Project Tree: tree-source switch complete", 3, 3)
+        try:
+            self._refresh_prompt_builder_context_variable_menu()
+        except Exception:
+            pass
+        if requested == "create_working_dir" and selected != "create_working_dir":
+            self._update_project_tree_status()
+            self._set_progress("Project Tree: Create Working Dir is not available; Normal Export remains selected", 1, 1)
+            return
+        # Source switching is a read-only Export-tab view/mode switch. It must
+        # not mutate Create state, select Build.complete, reset Project Root, or
+        # schedule Create preview/materialization. It only re-renders the tree
+        # from the chosen readable base so Include Imports and Selected Scope use
+        # the user's selected Export source.
+        self._refresh_project_tree(force_scan=False, reason="export_tree_source_view_selected")
+        self._refresh_export_settings_visibility()
+        try:
+            self._schedule_prompt_builder_flow_refresh()
+        except Exception:
+            pass
+        label = "Create Export" if self._use_create_working_dir_for_project_tree() else "Normal Export"
+        self._set_progress(f"Project Tree: {label} source selected by user", 2, 2)
 
     def _main_dependency_summaries_for_config(self, config: dict | None = None) -> list[str]:
         """Return user-facing main dependency rows for the selected schema/boilerplate.
@@ -8096,22 +8876,46 @@ raise SystemExit(2)
         self._set_packed_runtime_control_visible(getattr(self, "create_ecosystem_runtime_controls", None), show_ecosystems, side="left", padx=(0, 8))
         self._refresh_create_main_dependency_controls(config)
 
+    def _effective_project_tree_source_mode(self, *, sync_var: bool = False) -> str:
+        """Return the actually usable Export/Prompt tree source.
+
+        `project_tree_source_mode` is the user's selector. The effective source
+        is create_working_dir only when the selector requests it and the Create
+        tab has a valid completed Build or mounted clone. All Export, Prompt,
+        Include-Imports and Selected-Scope features use this resolver so stale
+        Create paths cannot leak into workers while the UI still remains user
+        selectable whenever both sources are valid.
+        """
+        try:
+            var = getattr(self, "project_tree_source_mode", None)
+            value = var.get() if var is not None else "normal_working_tree"
+            requested = str(value or "normal_working_tree").strip()
+        except Exception:
+            requested = "normal_working_tree"
+        if requested == "create_working_dir" and self._project_tree_create_source_available():
+            return "create_working_dir"
+        if requested == "create_working_dir" and sync_var:
+            try:
+                self.project_tree_source_mode.set("normal_working_tree")
+            except Exception:
+                pass
+        return "normal_working_tree"
+
     def _use_create_working_dir_for_project_tree(self) -> bool:
-        return str(getattr(self, "project_tree_source_mode", tk.StringVar(value="normal_working_tree")).get() or "").strip() == "create_working_dir"
+        return self._effective_project_tree_source_mode(sync_var=False) == "create_working_dir"
 
     def _active_project_tree_base(self) -> Path:
         if self._use_create_working_dir_for_project_tree():
-            # The Export/Project-Tree tab must not make Build.complete disappear.
-            # A completed build for the selected stack is the primary create tree
-            # for feature/refactor modes; New Project Abstraction deliberately
-            # receives a fresh preview/work dir.
-            if self.create_mode.get() != "new_project_abstraction":
-                completed = self._completed_create_build_root_for_current_stack()
-                if completed is not None:
-                    return completed
-            if self._create_source_clone_ready():
-                return self._create_temp_root().resolve()
-            return self._create_working_dir().resolve()
+            # Create Working Dir is only a readable Export source when Create has
+            # already produced a completed Build or mounted clone. Do not fall
+            # back to a synthetic create_working_path here, because that is how
+            # source switching used to produce missing-path errors or implicit
+            # resets. If the source is stale, read the normal worktree instead;
+            # _refresh_project_tree_source_options() will remove the stale option
+            # from the combobox.
+            create_base = self._create_project_tree_base_if_available()
+            if create_base is not None:
+                return create_base
         return self._normalize_start_working_tree().resolve()
 
     def _active_project_tree_export_dir(self, base: Path | None = None) -> Path:
@@ -8147,16 +8951,13 @@ raise SystemExit(2)
         return shlex.join(values)
 
     def _python_runtime_executable(self, target: object = "") -> str:
-        """Return the Python executable selected by runtime detection, if project-local."""
+        """Return a CLI Python for generated timeline scripts.
+
+        In frozen GUI builds sys.executable is the app executable; using it from
+        create_timeline_run.cmd with ``-c`` reopens the main process.
+        """
         selected = self._selected_python_path_text()
-        if selected:
-            try:
-                candidate = Path(selected)
-                if candidate.exists() and candidate.is_file():
-                    return str(candidate)
-            except Exception:
-                pass
-        return sys.executable
+        return safe_python_executable(selected)
 
     def _normalize_nvm_version(self, value: object) -> str:
         version = str(value or "").strip()
@@ -8817,7 +9618,7 @@ raise SystemExit(2)
             direct_node = selected_root / "node.exe"
             if direct_node.exists():
                 try:
-                    proc = subprocess.run([str(direct_node), "-v"], capture_output=True, text=True, timeout=0.7)
+                    proc = _run_subprocess_hidden([str(direct_node), "-v"], capture_output=True, text=True, timeout=0.7)
                     version = self._parse_nvm_version_output((proc.stdout or "") + "\n" + (proc.stderr or ""))
                     if version:
                         return version
@@ -8845,7 +9646,7 @@ raise SystemExit(2)
             node_exe = Path(os.path.expandvars(str(raw))).expanduser() / "node.exe"
             try:
                 if node_exe.exists():
-                    proc = subprocess.run([str(node_exe), "-v"], capture_output=True, text=True, timeout=0.7)
+                    proc = _run_subprocess_hidden([str(node_exe), "-v"], capture_output=True, text=True, timeout=0.7)
                     version = self._parse_nvm_version_output((proc.stdout or "") + "\n" + (proc.stderr or ""))
                     if version:
                         return version
@@ -8889,7 +9690,7 @@ raise SystemExit(2)
                 'elif [ -s "${NVM_DIR:-$HOME/.nvm}/nvm.sh" ]; then . "${NVM_DIR:-$HOME/.nvm}/nvm.sh" && nvm current; '
                 'else exit 127; fi'
             )
-            proc = subprocess.run(["bash", "-lc", script], capture_output=True, text=True, timeout=1.5)
+            proc = _run_subprocess_hidden(["bash", "-lc", script], capture_output=True, text=True, timeout=1.5)
             version = self._parse_nvm_version_output((proc.stdout or "") + "\n" + (proc.stderr or ""))
             if version:
                 return version
@@ -8899,7 +9700,7 @@ raise SystemExit(2)
                 'elif [ -s "${NVM_DIR:-$HOME/.nvm}/nvm.sh" ]; then . "${NVM_DIR:-$HOME/.nvm}/nvm.sh" && nvm list; '
                 'else exit 127; fi'
             )
-            proc = subprocess.run(["bash", "-lc", script], capture_output=True, text=True, timeout=1.5)
+            proc = _run_subprocess_hidden(["bash", "-lc", script], capture_output=True, text=True, timeout=1.5)
             return self._parse_nvm_version_output((proc.stdout or "") + "\n" + (proc.stderr or ""))
         except Exception:
             return ""
@@ -9402,7 +10203,7 @@ raise SystemExit(2)
                 resolved = self._parse_nvm_version_output(candidate.name)
                 if not resolved:
                     try:
-                        proc = subprocess.run([str(node_exe), "-v"], capture_output=True, text=True, timeout=0.7)
+                        proc = _run_subprocess_hidden([str(node_exe), "-v"], capture_output=True, text=True, timeout=0.7)
                         resolved = self._parse_nvm_version_output((proc.stdout or "") + "\n" + (proc.stderr or ""))
                     except Exception:
                         resolved = ""
@@ -9549,7 +10350,7 @@ raise SystemExit(2)
         digest = hashlib.sha1(str(code or "").encode("utf-8", errors="replace")).hexdigest()[:12]
         script = export_dir / f"{safe_stem}_{digest}.py"
         script.write_text(str(code or "").rstrip() + "\n", encoding="utf-8")
-        return self._shell_join([sys.executable, script])
+        return self._shell_join([self._python_runtime_executable(self.create_build_target.get() if hasattr(self, "create_build_target") else ""), script])
 
     def _python_inline_command(self, code: str) -> str:
         # Windows cmd cannot safely carry multiline Python snippets or raw
@@ -9557,7 +10358,7 @@ raise SystemExit(2)
         # inside Python so generated .cmd/.sh scripts stay one physical line.
         payload = base64.b64encode(str(code or "").encode("utf-8")).decode("ascii")
         runner = f"import base64; exec(base64.b64decode({payload!r}).decode('utf-8'))"
-        command = self._shell_join([sys.executable, "-c", runner])
+        command = self._shell_join([self._python_runtime_executable(self.create_build_target.get() if hasattr(self, "create_build_target") else ""), "-c", runner])
         # cmd.exe starts failing around 8191 characters. Keep a safety margin and
         # spill large payloads to sidecar scripts instead of hiding them in one
         # enormous command line inside create_timeline_run.cmd.
@@ -9609,7 +10410,7 @@ raise SystemExit(2)
             gradle = shutil.which("gradle")
             if not gradle:
                 return ""
-            proc = subprocess.run([gradle, "-v"], cwd=str(target), capture_output=True, text=True, timeout=2.0)
+            proc = _run_subprocess_hidden([gradle, "-v"], cwd=str(target), capture_output=True, text=True, timeout=2.0)
             return self._parse_gradle_version_output((proc.stdout or "") + "\n" + (proc.stderr or ""))
         except Exception:
             return ""
@@ -10162,8 +10963,9 @@ raise SystemExit(2)
             workdir.mkdir(parents=True, exist_ok=True)
             command = self._create_terminal_shell_command()
             creationflags = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0) if platform.system().lower().startswith("win") else 0
+            self._set_progress("Create terminal: starting hidden process", None, 0)
             try:
-                process = subprocess.Popen(
+                process = _popen_subprocess_hidden(
                     command,
                     cwd=workdir,
                     stdin=subprocess.PIPE,
@@ -10173,7 +10975,7 @@ raise SystemExit(2)
                     encoding="utf-8",
                     errors="replace",
                     bufsize=1,
-                    creationflags=creationflags,
+                    extra_creationflags=creationflags,
                 )
             except Exception as exc:
                 messagebox.showerror("Term failed", str(exc))
@@ -10182,6 +10984,8 @@ raise SystemExit(2)
             self._create_terminal_process = process
             self._create_terminal_workdir = workdir
             self.create_terminal_status.set(f"Term: {workdir}")
+            if not getattr(self, "_create_timeline_running", False) and not getattr(self, "_create_timeline_preparing", False):
+                self._set_progress("Create terminal: ready", 1, 1)
             self._append_create_terminal(f"\n[term] start: {' '.join(command)}")
             self._append_create_terminal(f"[term] cwd: {workdir}")
             self._append_create_terminal(f"[term] apply: {self._create_working_dir()}")
@@ -10300,6 +11104,10 @@ raise SystemExit(2)
             return False
         try:
             self._append_create_terminal(f"> {command}")
+            if getattr(self, "_create_timeline_running", False) or getattr(self, "_create_timeline_preparing", False):
+                self._set_create_timeline_progress("Create timeline: command submitted")
+            else:
+                self._set_progress("Create terminal: command submitted", 0, 1)
             process.stdin.write(command + "\n")
             process.stdin.flush()
             return True
@@ -10799,6 +11607,7 @@ raise SystemExit(2)
         # When a Start-tab Working Tree is active, Mapping and temp generation must stay
         # project-first and must not restore Build.complete or boilerplate target roots.
         has_start_project_reference_pre = bool(self._create_project_first_mode and self._create_project_scope_snapshot and self._create_project_source_base)
+        custom_first_active = self._create_custom_first_active()
         self._create_last_successful_build = None if has_start_project_reference_pre else self._latest_successful_build_for_stack(self.create_stack.get())
         if self._create_last_successful_build:
             try:
@@ -10819,19 +11628,28 @@ raise SystemExit(2)
         # not replace the Mapping tree or assign a boilerplate target over the real
         # project clone. Only New Abstraction without a Start project uses boilerplate preview.
         has_start_project_reference = bool(self._create_project_first_mode and self._create_project_scope_snapshot and self._create_project_source_base)
-        self._create_boilerplate_preview_override = not has_start_project_reference
-        config = self._create_stack_catalog().get(self.create_stack.get(), {})
+        self._create_boilerplate_preview_override = (not has_start_project_reference) and not custom_first_active
+        config = self._current_create_config() if custom_first_active else self._create_stack_catalog().get(self.create_stack.get(), {})
         if config:
-            self.create_stack_category.set(config.get("category", self.create_stack_category.get()))
+            if custom_first_active:
+                self.create_stack_category.set("Custom")
+            else:
+                self.create_stack_category.set(config.get("category", self.create_stack_category.get()))
             self.create_dependencies.set(str(config.get("dependencies", "")))
+            # Create may write active-state fields, but it must not overwrite
+            # Generator-owned target rows. In project-first mode the target path
+            # and build target come from detected project evidence below; in pure
+            # boilerplate/new-abstraction mode they still come from the selected
+            # Create stack as active state only.
             if not self._create_project_first_mode or self._create_boilerplate_preview_override:
                 self.create_target_path.set(config.get("path", self.create_target_path.get()))
                 self.create_build_target.set(config.get("build_target", config.get("path_type", self.create_build_target.get())))
             # Stack selection may set boilerplate minimum versions, but it must
             # not start NVM/Gradle probes. Probes are owned by real Start/Create
             # project reads so switching catalog entries stays cheap and stable.
-            self._apply_boilerplate_runtime_versions(config, "stack_changed")
-            self._schedule_stack_required_ecosystem_probes(config, "stack_changed")
+            if not custom_first_active:
+                self._apply_boilerplate_runtime_versions(config, "stack_changed")
+                self._schedule_stack_required_ecosystem_probes(config, "stack_changed")
             self._set_text_widget_lines("create_timeline_text", self._base_create_timeline_lines(config) if hasattr(self, "create_timeline_check_frame") else config.get("timeline", []))
             self._set_text_widget_lines("create_project_tree_text", config.get("tree", []))
             self._set_text_widget_lines("create_placeholder_text", config.get("placeholders", {}))
@@ -10849,12 +11667,13 @@ raise SystemExit(2)
             if hasattr(self, "create_timeline_check_frame"):
                 self._refresh_create_timeline_checklist(reset_checked=False)
             self._refresh_create_runtime_field_visibility(config)
-            try:
-                if self.create_mode.get() == "new_project_abstraction" and not self._create_project_first_mode and not self._active_successful_create_build_for_current_stack():
-                    self._sync_generator_default_targets_from_create_config(config, activate=False)
-            except Exception:
-                pass
-        if getattr(self, "_create_boilerplate_preview_override", False):
+            # Generator targets are parent-owned. Stack changes in Create may
+            # update active state and Mapping preview, but must not rewrite
+            # self.targets. Generator/Prompt Builder/Export inherit from the
+            # Generator target table, not the other way around.
+        if custom_first_active:
+            self.create_project_mode_status.set("Create mode: Custom-first — Mapping toggles active state; boilerplate is reference-only")
+        elif getattr(self, "_create_boilerplate_preview_override", False):
             self.create_project_mode_status.set("Create mode: boilerplate preview — Mapping follows selected stack layout")
         elif self._create_project_first_mode:
             self.create_project_mode_status.set("Create mode: project-first — Mapping follows Start Working Tree clone, not boilerplate target")
@@ -10984,6 +11803,8 @@ raise SystemExit(2)
     def _path_has_project_evidence(self, base: Path, max_files: int = 800) -> bool:
         if not base.exists() or not base.is_dir():
             return False
+        if self._path_is_synthetic_project_root(base):
+            return False
         evidence_names = {
             "package.json", "requirements.txt", "pyproject.toml", "pipfile", "poetry.lock", "uv.lock",
             "manage.py", "vite.config.js", "vite.config.ts", "next.config.js", "index.html", "settings.gradle", "settings.gradle.kts", "build.gradle", "build.gradle.kts", "pubspec.yaml", "cmakelists.txt",
@@ -11041,10 +11862,11 @@ raise SystemExit(2)
         if not base.exists() or not base.is_dir():
             return False
         base_text = str(base).replace("\\", "/").lower()
-        if self._path_is_under_system_temp(base):
-            # Any Start-tab path under the system temp directory is synthetic for
-            # Create unless a Build.complete record promotes it. Without that flag
-            # it must enter as New Project Abstraction, not feature/refactor.
+        if self._path_is_under_system_temp(base) or self._path_is_synthetic_project_root(base):
+            # Any Start-tab path under temp or Prompt Guide's own runtime is
+            # synthetic for Create unless a Build.complete record promotes it.
+            # Without that flag it must enter as New Project Abstraction, not
+            # feature/refactor, and must never clone preview output as a Project Root.
             return False
         try:
             if self._create_project_scope_snapshot and self._create_project_source_base:
@@ -11062,11 +11884,12 @@ raise SystemExit(2)
         can plan features/refactors only. The synthetic default start-worktree
         under the system temp directory never counts as that evidence.
         """
+        if self._create_unmount_blocks_start_base():
+            return ["new_project_abstraction"]
+        self._clear_manual_create_override_if_real_start_base("available_modes")
         has_real_start = self._has_start_tab_target_match()
         has_build = bool(self._active_successful_create_build_for_current_stack())
         has_project_abstraction = bool(getattr(self, "_create_project_first_mode", False) or getattr(self, "_create_project_scope_snapshot", None) or getattr(self, "_create_project_source_base", None))
-        if bool(getattr(self, "_create_manual_new_project_override", False)):
-            return ["new_project_abstraction"]
         if has_real_start or has_build or has_project_abstraction:
             return ["feature_for_existing_project", "refactor_existing_stack"]
         return ["new_project_abstraction"]
@@ -11097,13 +11920,16 @@ raise SystemExit(2)
         mode = self.create_mode.get()
         has_start = self._has_start_tab_target_match()
         has_build = bool(self._active_successful_create_build_for_current_stack())
-        if mode in {"feature_for_existing_project", "refactor_existing_stack"} and not has_start and not has_build:
+        has_project = bool(getattr(self, "_create_project_first_mode", False) or getattr(self, "_create_project_scope_snapshot", None) or getattr(self, "_create_project_source_base", None))
+        manual_placeholder_block = self._create_unmount_blocks_start_base()
+        if mode in {"feature_for_existing_project", "refactor_existing_stack"} and not has_start and not has_build and not has_project:
             self.create_mode.set("new_project_abstraction")
             msg = "Create mode: New Project Abstraction — no Build.complete or Start-tab target match"
             self.create_project_mode_status.set(msg)
             if hasattr(self, "create_terminal_text"):
                 self._append_create_terminal(f"[create-mode] {reason}: downgraded to new_project_abstraction; no Build.complete/current-stack base or Start-tab target match")
-        if mode == "new_project_abstraction" and (has_start or has_build or bool(getattr(self, "_create_project_first_mode", False))) and not bool(getattr(self, "_create_manual_new_project_override", False)):
+        if mode == "new_project_abstraction" and (has_start or has_build or has_project) and not manual_placeholder_block:
+            self._clear_manual_create_override_if_real_start_base(reason)
             self.create_mode.set("feature_for_existing_project")
             self.create_project_mode_status.set("Create mode: feature for existing project — existing project evidence; New Project Abstraction hidden")
         self._refresh_create_export_button_visibility() if hasattr(self, "create_terminal_text") else None
@@ -11136,6 +11962,89 @@ raise SystemExit(2)
                 continue
         return self._create_terminal_work_dir()
 
+    def _build_complete_preview_clone_root(self, record: dict) -> Path:
+        """Return the stable preview-clone root for a completed Create build."""
+        record_id = self._create_safe_slug(str(record.get("id") or "build"), "build")
+        project_slug = self._create_safe_slug(str(record.get("project_name") or record.get("stack") or self.project_name.get() or "project"), "project")
+        return (prompt_guide_runtime_root() / "create-preview" / f"{project_slug}_{record_id}_preview_clone").resolve()
+
+    def _promote_build_complete_into_preview_clone(self, record: dict, config: dict | None = None) -> dict:
+        """Clone a successful Build.complete root into a dedicated preview clone.
+
+        A freshly created abstraction becomes a real project after Build.complete.
+        From this point on Export, Prompt Builder and Feature/Refactor must read a
+        project-shaped preview clone, not the transient terminal cwd or the normal
+        Start Project Root. This mirrors the ProjectRoot -> Create clone handoff and
+        gives the Export tree one durable Build.complete base to render.
+        """
+        if not isinstance(record, dict):
+            return record
+        raw_source = str(record.get("temp_preview_dir") or "").strip()
+        if not raw_source:
+            return record
+        try:
+            source_root = Path(raw_source).expanduser().resolve()
+        except Exception:
+            return record
+        if not source_root.exists() or not source_root.is_dir():
+            return record
+        try:
+            clone_root = self._build_complete_preview_clone_root(record)
+            if clone_root == source_root:
+                return record
+            # Never place the clone inside the source tree. A sibling below the
+            # Prompt-Guide create-preview runtime avoids recursive preview loops.
+            try:
+                clone_root.relative_to(source_root)
+                return record
+            except Exception:
+                pass
+            export_dir = self._create_export_path().resolve()
+            self._progress_callback("Build.complete Preview Clone: reading completed project", None, 0)
+            scope = build_project_scope(source_root, export_dir=export_dir, progress_callback=self._progress_callback)
+            manifest = clone_project_scope_to_directory(
+                source_root,
+                clone_root,
+                scope,
+                export_dir=export_dir,
+                include_dependency_manifests=True,
+                write_manifest=True,
+                manifest_name="BUILD_COMPLETE_PREVIEW_CLONE_MANIFEST.json",
+                progress_callback=self._progress_callback,
+            )
+            manifest["mode"] = "build_complete_preview_clone"
+            manifest["build_complete_id"] = str(record.get("id") or "")
+            manifest["project_name"] = str(record.get("project_name") or "")
+            manifest["source_build_root"] = str(source_root)
+            manifest["preview_clone_root"] = str(clone_root)
+            manifest_path = clone_root / "BUILD_COMPLETE_PREVIEW_CLONE_MANIFEST.json"
+            try:
+                manifest_path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+            except Exception:
+                pass
+            record["build_complete_source_dir"] = str(source_root)
+            record["preview_clone_dir"] = str(clone_root)
+            record["temp_preview_dir"] = str(clone_root)
+            record["preview_clone_manifest"] = manifest
+            record["preview_clone_manifest_path"] = str(manifest_path)
+            self._create_source_clone_manifest = manifest
+            self._create_last_source_clone_signature = str(manifest.get("source_base") or source_root)
+            self._create_source_loaded_signature = f"build_complete:{record.get('id') or clone_root}"
+            self._create_source_mount_signature = self._create_source_loaded_signature
+            try:
+                copied = manifest.get("copied_file_count", manifest.get("file_count", 0))
+                self.create_source_clone_status.set(f"Source clone: Build.complete preview clone mounted, {copied} file(s) → {clone_root}")
+            except Exception:
+                pass
+            self._progress_callback("Build.complete Preview Clone: ready", 1, 1)
+        except Exception as exc:
+            try:
+                self.create_source_clone_status.set(f"Build.complete preview clone skipped: {exc}")
+            except Exception:
+                pass
+            self._set_progress(f"Build.complete preview clone skipped: {exc}", 0)
+        return record
+
     def _promote_completed_build_to_feature_mode(self, record: dict) -> None:
         """After a New Abstraction build succeeds, continue from that build as Feature mode."""
         stack = str(record.get("stack") or "")
@@ -11154,11 +12063,13 @@ raise SystemExit(2)
         if stack and stack == self.create_stack.get():
             if self.create_mode.get() != "feature_for_existing_project":
                 self.create_mode.set("feature_for_existing_project")
-            self.create_project_mode_status.set("Create mode: feature for existing project — Build.complete is primary base")
-        try:
-            self._sync_generator_targets_from_build_complete(record)
-        except Exception:
-            pass
+            try:
+                self.create_stack_category.set("Custom")
+            except Exception:
+                pass
+            self.create_project_mode_status.set("Create mode: feature for existing project — Build.complete is primary base; Custom-first Mapping active")
+        # Build.complete updates Create active state, but does not rewrite
+        # Generator target rows. Generator sync remains explicit/parent-owned.
         self._refresh_create_mode_options("build_complete")
         self._refresh_create_context_variable_menu()
         self._refresh_prompt_builder_context_variable_menu()
@@ -11200,6 +12111,7 @@ raise SystemExit(2)
         temp_dir = self._create_run_work_dir_snapshot()
         run_mode = self._create_run_mode_snapshot()
         run_stack = self._create_run_stack_snapshot()
+        project_identity = self._create_abstraction_project_name(config) if run_mode == "new_project_abstraction" else (self.project_name.get().strip() or run_stack or DEFAULT_PROJECT_NAME)
         return {
             "id": hashlib.sha1(f"{now}|{temp_dir}|{run_stack}|{run_mode}".encode("utf-8", errors="ignore")).hexdigest()[:12],
             "created_at": now,
@@ -11208,6 +12120,7 @@ raise SystemExit(2)
             "complete": status in {"success", "complete"},
             "mode": run_mode,
             "stack": run_stack,
+            "project_name": project_identity,
             "category": config.get("category", self.create_stack_category.get()),
             "temp_preview_dir": str(temp_dir),
             "preview_target_path": str(self._create_terminal_target_path()),
@@ -11244,7 +12157,7 @@ raise SystemExit(2)
             shortcut_roots = {}
         return {
             "artifact": "CREATE_BUILD_COMPLETE_MANIFEST.json",
-            "schema_version": "create-build-complete.v1",
+            "schema_version": "create-build-complete.v2-custom-first",
             "created_at": datetime.now().isoformat(timespec="seconds"),
             "build_id": record.get("id"),
             "mode": "new_project_abstraction",
@@ -11252,7 +12165,7 @@ raise SystemExit(2)
             "create_working_dir": record.get("create_working_dir"),
             "create_export_dir": record.get("create_export_dir"),
             "project": {
-                "name": self.project_name.get(),
+                "name": record.get("project_name") or (self._create_abstraction_project_name(config) if str(record.get("mode") or "") == "new_project_abstraction" else self.project_name.get()),
                 "category": config.get("category", self.create_stack_category.get()),
                 "target_path": config.get("path", self.create_target_path.get()),
                 "path_type": config.get("path_type", self.create_build_target.get()),
@@ -11309,6 +12222,14 @@ raise SystemExit(2)
         record = self._create_build_record_payload("success")
         record["kind"] = "build_complete"
         config = self._current_create_config()
+        if str(record.get("mode") or "") == "new_project_abstraction":
+            identity = str(record.get("project_name") or self._create_abstraction_project_name(config)).strip()
+            record["project_name"] = identity
+            try:
+                self.project_name.set(identity)
+            except Exception:
+                pass
+        record = self._promote_build_complete_into_preview_clone(record, config)
         record["build_complete_manifest"] = self._create_build_complete_manifest(record, config)
         self._write_build_complete_manifest(record, config)
         root = Path(str(record.get("temp_preview_dir", "")))
@@ -11335,12 +12256,37 @@ raise SystemExit(2)
         except Exception:
             pass
         self.create_builds_status.set(f"Build.complete persisted: {record['id']} — {record['temp_preview_dir']}")
+        was_new_abstraction = str(record.get("mode") or "") == "new_project_abstraction"
+        self._promote_completed_build_to_feature_mode(record)
         try:
             self._sync_generator_targets_from_build_complete(record, config)
+            self._refresh_prompt_builder_context_variable_menu()
+            self._set_progress("Generator/Prompt Builder targets synchronized from Build.complete", 1, 1)
+        except Exception as exc:
+            self._set_progress(f"Generator target sync skipped after Build.complete: {exc}", 0)
+        try:
+            self.create_stack_category.set("Custom")
         except Exception:
             pass
-        self._promote_completed_build_to_feature_mode(record)
+        if self._active_successful_create_build_for_current_stack():
+            # Build.complete makes Create Working Dir available for Export and
+            # performs one automatic handoff to Create Export. This handoff is
+            # selection-only/read-only; it does not reset, clone or overwrite
+            # Create state, and the user may switch back afterwards.
+            try:
+                self._auto_select_create_working_dir_once("build_complete")
+                self._refresh_project_tree_source_options()
+                self._refresh_export_settings_visibility()
+                self._update_project_tree_status()
+                if self._use_create_working_dir_for_project_tree():
+                    self._refresh_project_tree(force_scan=True, reason="build_complete_preview_clone_ready")
+            except Exception:
+                pass
         self._refresh_prompt_builder_context_variable_menu()
+        try:
+            self._schedule_prompt_builder_flow_refresh()
+        except Exception:
+            pass
         self._refresh_create_builds_tab()
         self._refresh_create_export_button_visibility()
         self._refresh_create_stack_control_state()
@@ -11388,9 +12334,9 @@ raise SystemExit(2)
             if platform.system().lower().startswith("win"):
                 os.startfile(str(path))  # type: ignore[attr-defined]
             elif platform.system().lower() == "darwin":
-                subprocess.Popen(["open", str(path)])
+                _popen_subprocess_hidden(["open", str(path)])
             else:
-                subprocess.Popen(["xdg-open", str(path)])
+                _popen_subprocess_hidden(["xdg-open", str(path)])
         except Exception as exc:
             messagebox.showerror("Open build failed", str(exc))
 
@@ -11413,6 +12359,153 @@ raise SystemExit(2)
             pass
         return any(bool(value) for value in state_values)
 
+
+
+    def _create_unmount_blocks_start_base(self, base: Path | None = None) -> bool:
+        """Return True only for the detached placeholder Start root.
+
+        Manual Unmount should suppress the automatic Create mount only while the
+        Start tab still points at the reset/default placeholder root. It must not
+        globally hide existing-project modes after the user selects or scans a
+        real Project Root again.
+        """
+        if not bool(getattr(self, "_create_manual_new_project_override", False)):
+            return False
+        try:
+            base_path = Path(base or self._normalize_start_working_tree()).resolve()
+            base_signature = str(base_path)
+        except Exception:
+            base_signature = str(base or self.output_base.get() or "")
+        manual_signature = str(getattr(self, "_create_manual_unmount_start_signature", "") or "")
+        try:
+            default_signature = str(default_start_worktree_dir().resolve())
+        except Exception:
+            default_signature = ""
+        return bool(base_signature and (base_signature == default_signature or (manual_signature and base_signature == manual_signature)))
+
+    def _clear_manual_create_override_if_real_start_base(self, reason: str = "start_base") -> None:
+        """Re-enable normal Create mode sync when Start points at real evidence."""
+        if not bool(getattr(self, "_create_manual_new_project_override", False)):
+            return
+        try:
+            base = self._normalize_start_working_tree().resolve()
+        except Exception:
+            return
+        if self._create_unmount_blocks_start_base(base):
+            return
+        try:
+            has_real_base = base.exists() and base.is_dir() and not self._path_is_under_system_temp(base) and self._path_has_project_evidence(base)
+        except Exception:
+            has_real_base = False
+        if not has_real_base and not bool(getattr(self, "_create_project_first_mode", False)):
+            return
+        self._create_manual_new_project_override = False
+        self._create_manual_unmount_start_signature = ""
+        self._create_last_scope_sync_signature = None
+        try:
+            self._append_create_terminal(f"[create-mode] {reason}: manual unmount override cleared; real Start project evidence is active again")
+        except Exception:
+            pass
+
+    def _reset_unmount_session_defaults(self, reason: str = "manual_unmount") -> None:
+        """Reset volatile project/Create session state to startup defaults.
+
+        Unmount is a session detach operation. It must not rewrite persisted app
+        settings, UI preferences or Generator-owned target rows, but it should
+        clear the currently loaded project identity, Create clone/build state and
+        Export Tree source so the next workflow starts from a clean default.
+        """
+        self._unmount_reset_in_progress = True
+        try:
+            for attr in ("_create_source_load_retry_after", "_create_worktree_refresh_after", "_create_preview_after"):
+                pending = getattr(self, attr, None)
+                if pending:
+                    try:
+                        self.after_cancel(pending)
+                    except Exception:
+                        pass
+                    try:
+                        setattr(self, attr, None)
+                    except Exception:
+                        pass
+            default_root = default_start_worktree_dir()
+            try:
+                self.output_base.set(str(default_root))
+                self._last_start_project_root_value = str(default_root.resolve())
+                if str(reason or "").startswith("manual_unmount") or reason in {"create_build_unmounted"}:
+                    self._create_manual_new_project_override = True
+                    self._create_manual_unmount_start_signature = str(default_root.resolve())
+            except Exception:
+                pass
+            try:
+                self.project_name.set(DEFAULT_PROJECT_NAME)
+            except Exception:
+                pass
+            try:
+                self.project_tree_source_mode.set("normal_working_tree")
+            except Exception:
+                pass
+            try:
+                self._refresh_project_tree_source_options()
+            except Exception:
+                pass
+            try:
+                self.create_mode.set("new_project_abstraction")
+            except Exception:
+                pass
+            try:
+                self.create_stack_category.set(DEFAULT_CREATE_STACK_CATEGORY)
+            except Exception:
+                pass
+            try:
+                self.create_stack.set(DEFAULT_CREATE_STACK)
+            except Exception:
+                pass
+            try:
+                self.create_target_path.set(DEFAULT_CREATE_TARGET_PATH)
+            except Exception:
+                pass
+            try:
+                self.create_build_target.set(DEFAULT_CREATE_BUILD_TARGET)
+            except Exception:
+                pass
+            for var_name, value in (
+                ("create_dependencies", ""),
+                ("create_working_path", ""),
+                ("create_project_source_path", ""),
+                ("create_temp_preview_dir", ""),
+                ("create_current_run_id", ""),
+            ):
+                try:
+                    var = getattr(self, var_name)
+                    if hasattr(var, "set"):
+                        var.set(value)
+                except Exception:
+                    pass
+            self._create_successful_builds = []
+            self._create_successful_builds_by_stack = {}
+            self._create_last_successful_build = None
+            self._create_successful_temp_roots = set()
+            self._create_mode_run_records = []
+            self._create_current_run_id = ""
+            self._create_current_run_mode = ""
+            self._create_current_run_stack = ""
+            self._create_current_run_preview_root = None
+            try:
+                self.create_source_clone_status.set("Source clone: idle")
+            except Exception:
+                pass
+            try:
+                self.create_project_mode_status.set(f"Create mode: new project abstraction — defaults restored ({reason})")
+            except Exception:
+                pass
+            try:
+                self.create_builds_status.set("No successful Create timeline build yet.")
+            except Exception:
+                pass
+        finally:
+            self._unmount_reset_in_progress = False
+
     def _clear_create_mount_state(self, reason: str = "unmount", record: dict | None = None, *, remove_record: bool = True, refresh: bool = True) -> bool:
         """Detach current Create mount/build state without depending on Build.complete."""
         cleared = False
@@ -11434,16 +12527,9 @@ raise SystemExit(2)
                     pass
         if self._create_has_mounted_state() or cleared:
             cleared = True
-        self._create_source_clone_manifest = None
-        self._create_project_scope_snapshot = None
-        self._create_project_source_base = None
-        self._create_detected_targets = []
-        self._create_last_source_clone_signature = ""
-        self._create_source_mount_signature = ""
-        self._create_source_loaded_signature = ""
-        self._create_source_load_requested = False
-        self._create_source_clone_running = False
-        self._create_project_first_mode = False if reason in {"start_project_root_changed", "working_tree_changed", "manual_unmount", "create_build_unmounted"} else self._create_project_first_mode
+        self._reset_create_source_state()
+        if reason in {"manual_unmount", "create_build_unmounted", "start_project_root_changed", "working_tree_changed", "working_tree_reloaded", "project_root_reload"}:
+            self._invalidate_create_clone_for_next_create_tab(reason)
         if reason in {"manual_unmount", "create_build_unmounted"}:
             self._create_manual_new_project_override = True
             try:
@@ -11453,15 +12539,15 @@ raise SystemExit(2)
         elif reason in {"start_project_root_changed", "working_tree_changed"}:
             self._create_manual_new_project_override = False
             self._create_manual_unmount_start_signature = ""
-        try:
-            self.create_mode.set("new_project_abstraction")
-        except Exception:
-            pass
-        try:
-            self.targets = self._inactive_default_generator_targets()
-            self._refresh_targets()
-        except Exception:
-            pass
+        if reason in {"manual_unmount", "create_build_unmounted"}:
+            self._reset_unmount_session_defaults(reason)
+        else:
+            try:
+                self.create_mode.set("new_project_abstraction")
+            except Exception:
+                pass
+        # Do not mutate Generator target rows from Create unmount/reset.
+        # Unmount only clears Create mount state and active Create mode.
         try:
             self._cleanup_create_temp_tree(force=True)
         except Exception:
@@ -11476,6 +12562,11 @@ raise SystemExit(2)
             self.create_project_source_path.set("")
         except Exception:
             pass
+        if reason in {"start_project_root_changed", "working_tree_changed", "manual_unmount", "create_build_unmounted"}:
+            try:
+                self.create_working_path.set("")
+            except Exception:
+                pass
         if refresh:
             try:
                 self.create_project_mode_status.set(f"Create mode: new project abstraction — unmounted ({reason})")
@@ -11487,6 +12578,10 @@ raise SystemExit(2)
                 pass
             try:
                 self._refresh_create_builds_tab()
+            except Exception:
+                pass
+            try:
+                self._refresh_project_tree_source_options()
             except Exception:
                 pass
             try:
@@ -11512,6 +12607,16 @@ raise SystemExit(2)
         self._clear_create_mount_state("manual_unmount", record, remove_record=bool(record), refresh=True)
         try:
             self._refresh_project_tree(force_scan=True, reason="create_build_unmounted")
+        except Exception:
+            pass
+        # Project Tree refresh can derive the name from its current base; Unmount
+        # must win and leave the visible session identity at default.
+        try:
+            self._reset_unmount_session_defaults("manual_unmount_complete")
+        except Exception:
+            pass
+        try:
+            self._refresh_project_tree_source_options()
         except Exception:
             pass
 
@@ -11552,6 +12657,8 @@ raise SystemExit(2)
                     return root
             except Exception:
                 pass
+        if not self._use_create_working_dir_for_project_tree():
+            return self._normalize_start_working_tree().resolve()
         active = self._active_successful_create_build_for_current_stack()
         if active and active.get("temp_preview_dir"):
             try:
@@ -11673,13 +12780,13 @@ raise SystemExit(2)
                 role = str(row.get("role") or "")
                 rel = str(row.get("path") or "").strip().replace("\\", "/").strip("/")
                 if target and target != "ignored" and role.endswith("_root"):
-                    relations[target] = {"root_rel": rel, "role": role, "boilerplate": row.get("boilerplate")}
+                    relations[target] = {"root_rel": rel, "role": role, "boilerplate_reference": row.get("boilerplate"), "boilerplate": row.get("boilerplate")}
             for row in self._create_preview_tree_model():
                 target = str(row.get("effective_target") or "").strip().lower()
                 rel = str(row.get("path") or "").strip().replace("\\", "/").strip("/")
                 if target and target != "ignored" and target not in relations and rel:
                     first = rel.split("/", 1)[0]
-                    relations[target] = {"root_rel": first, "role": "inferred_root", "boilerplate": row.get("boilerplate")}
+                    relations[target] = {"root_rel": first, "role": "inferred_root", "boilerplate_reference": row.get("boilerplate"), "boilerplate": row.get("boilerplate")}
         except Exception:
             pass
         return relations
@@ -13697,9 +14804,15 @@ raise SystemExit(2)
                     "operator_role_id": boilerplate.get("operator_role_id") or boilerplate.get("active_operator_role_id"),
                     "weight_operator_id": boilerplate.get("weight_operator_id") or boilerplate.get("active_weight_operator_id"),
                 })
+        selected_id = self._selected_create_catalog_entry_id() if hasattr(self, "create_catalog_entry") else ""
         compact_boilerplates: list[dict] = []
         for boilerplate in schema.get("boilerplates", []) if isinstance(schema.get("boilerplates"), list) else []:
             if not isinstance(boilerplate, dict):
+                continue
+            entry_id = str(boilerplate.get("id") or "").strip()
+            if selected_id and entry_id != selected_id:
+                continue
+            if not selected_id:
                 continue
             compact_boilerplates.append({
                 "id": boilerplate.get("id"),
@@ -13708,8 +14821,7 @@ raise SystemExit(2)
                 "tokens": boilerplate.get("tokens", [])[:12] if isinstance(boilerplate.get("tokens"), list) else [],
                 "timeline_tokens": boilerplate.get("timeline_tokens", [])[:12] if isinstance(boilerplate.get("timeline_tokens"), list) else [],
             })
-            if len(compact_boilerplates) >= 24:
-                break
+            break
         result = {
             "schema_version": schema.get("schema_version"),
             "mode": schema.get("mode"),
@@ -13789,19 +14901,23 @@ raise SystemExit(2)
         catalog = catalog if isinstance(catalog, dict) else {}
         active = catalog.get("active_catalog", {}) if isinstance(catalog.get("active_catalog"), dict) else {}
         evidence = active.get("evidence", {}) if isinstance(active.get("evidence"), dict) else {}
+        selected_entry = self._selected_create_chain_entry_from_schema(catalog.get("chain_schema", {})) if isinstance(catalog.get("chain_schema", {}), dict) else None
         active_catalog = {
             "entry_mode": active.get("entry_mode"),
             "catalog_type": active.get("catalog_type"),
             "base_required": active.get("base_required"),
             "stack_boilerplate_allowed": active.get("stack_boilerplate_allowed"),
             "feature_refactor_overlay": active.get("feature_refactor_overlay"),
-            "plans": active.get("plans", [])[:20] if isinstance(active.get("plans"), list) else [],
-            "timeline": active.get("timeline", []),
-            "weights": active.get("weights", []),
-            "operators": active.get("operators", []),
-            "prompt_rules": active.get("prompt_rules", []),
-            "parameter_profile": active.get("parameter_profile", {}),
-            "parameter_context": active.get("parameter_context", []),
+            "selected_plan": {
+                "id": selected_entry.get("id"),
+                "label": selected_entry.get("label") or selected_entry.get("display_name"),
+                "type": selected_entry.get("type"),
+                "intent": selected_entry.get("intent") or selected_entry.get("user_goal"),
+            } if isinstance(selected_entry, dict) else {},
+            "plan_count": len(active.get("plans", []) if isinstance(active.get("plans"), list) else []),
+            "timeline_step_count": len(active.get("timeline", []) if isinstance(active.get("timeline"), list) else []),
+            "weight_count": len(active.get("weights", []) if isinstance(active.get("weights"), list) else []),
+            "operator_count": len(active.get("operators", []) if isinstance(active.get("operators"), list) else []),
             "boilerplate_count": len(active.get("boilerplates", []) if isinstance(active.get("boilerplates"), list) else []),
         }
         active_catalog = {key: value for key, value in active_catalog.items() if value not in (None, {}, [])}
@@ -14044,17 +15160,13 @@ raise SystemExit(2)
             return False
 
     def _create_export_path_policy_payload(self, base: Path | str | None = None) -> dict:
-        try:
-            project_root = Path(str(base or self._create_working_dir())).resolve()
-        except Exception:
-            project_root = Path(str(base or "."))
         absolute_enabled = self._create_export_absolute_paths_enabled()
         return {
             "absolute_project_paths": absolute_enabled,
-            "project_root": str(project_root),
-            "compiled_path_format": "absolute_project_path" if absolute_enabled else "project_relative_path",
-            "relative_traceability": "relative_* fields preserve project-relative originals when absolute_project_paths is true",
-            "zip_member_policy": "ZIP members remain project-relative for portable archives; manifests/prompts may compile absolute project paths by checkbox",
+            "project_root": "/" if absolute_enabled else str(Path(str(base or self._create_working_dir())).resolve()),
+            "compiled_path_format": "project_scope_absolute_path" if absolute_enabled else "project_relative_path",
+            "relative_traceability": "relative_* fields preserve project-relative originals when project-scope absolute paths are enabled",
+            "zip_member_policy": "ZIP members remain project-relative for portable archives; manifests/prompts may display project-scope absolute paths such as /backend/app.py by checkbox",
         }
 
     def _compile_project_path_for_export(self, value: object, base: Path | str | None = None) -> str:
@@ -14065,20 +15177,24 @@ raise SystemExit(2)
             return text
         if text.startswith("@") or "://" in text:
             return text
-        candidate = Path(text)
-        if candidate.is_absolute():
-            return str(candidate)
         try:
             root = Path(str(base or self._create_working_dir())).resolve()
+            candidate = Path(text)
+            if candidate.is_absolute():
+                try:
+                    rel = candidate.resolve().relative_to(root).as_posix()
+                    return "/" + rel.strip("/") if rel and rel != "." else "/"
+                except Exception:
+                    text = candidate.name or text
         except Exception:
-            root = Path(str(base or "."))
-        clean = text.strip("/") or "."
+            pass
+        clean = text.lstrip("/")
+        while clean.startswith("./"):
+            clean = clean[2:]
+        clean = clean or "."
         if clean == ".":
-            return str(root)
-        try:
-            return str((root / clean).resolve())
-        except Exception:
-            return str(root / clean)
+            return "/"
+        return "/" + clean.strip("/")
 
     def _compile_project_paths_for_export(self, values: object, base: Path | str | None = None) -> object:
         if isinstance(values, list):
@@ -14716,13 +15832,37 @@ raise SystemExit(2)
             "selected_chain_entry": (config or {}).get("selected_create_chain_entry") if isinstance(config, dict) else None,
         }
 
-    def _human_shortcut_command_contract_lines(self) -> list[str]:
+    def _create_cmd_text_payload(self, config: dict | None = None) -> str:
+        """Build the human-facing CMD.TXT sidecar for ZIP exports."""
+        payload = self._create_cmd_manifest_payload(config)
         lines = [
-            "Shortcuts are binding user CMDs in USER_PROMPT and mirrored machine-readably in CMD.json. When the user sends one of these commands, its meaning applies immediately to the next response or last patch; they still do not change access permissions, tool rights or validation boundaries.",
+            "# CMD.TXT",
+            "",
+            "Human-readable shortcut command contract. Commands never expand tool rights, filesystem access, safety limits, scope or validation boundaries.",
+            "",
+            f"Schema version: {payload.get('schema_version')}",
+            f"Created: {payload.get('created_at')}",
+            f"Selected chain entry: {(payload.get('selected_chain_entry') or {}).get('display_name') or (payload.get('selected_chain_entry') or {}).get('label') or 'none'}",
+            "",
+            "## Commands",
         ]
-        for item in self._shortcut_command_definitions():
-            lines.append(f"- {item.get('command')}: {item.get('instruction')} Guardrail: {item.get('guardrail')}")
-        return lines
+        for item in payload.get("commands", []):
+            lines.extend([
+                f"### {item.get('command')}",
+                f"Applies to: {item.get('applies_to')}",
+                f"Instruction: {item.get('instruction')}",
+                f"Guardrail: {item.get('guardrail')}",
+                "",
+            ])
+        lines.append("## Guardrails")
+        for guardrail in payload.get("guardrails", []):
+            lines.append(f"- {guardrail}")
+        return "\n".join(lines).rstrip() + "\n"
+
+    def _human_shortcut_command_contract_lines(self) -> list[str]:
+        return [
+            "- Manifest-Hinweis: shortcut command meanings are stored in CMD.json. They apply only when the user explicitly sends one of those commands and never expand scope, tool rights or validation boundaries."
+        ]
 
     def _human_operator_flow_lines(self, operator_flow: dict, profile: dict) -> list[str]:
         mode = str(operator_flow.get("execution_mode") or "confirm_then_execute")
@@ -14754,13 +15894,35 @@ raise SystemExit(2)
             candidate = Path(raw)
             if candidate.is_absolute():
                 try:
-                    return candidate.relative_to(self._create_working_dir()).as_posix() or "."
+                    raw = candidate.relative_to(self._create_working_dir()).as_posix() or "."
                 except Exception:
-                    return candidate.as_posix()
+                    # Absolute target strings such as /backend are UI/path-policy
+                    # representations, not generator write destinations. Keep
+                    # target rows project-relative so /backend and ./backend do
+                    # not become duplicate save paths after normalization.
+                    raw = candidate.as_posix().lstrip("/") or "."
         except Exception:
             pass
-        clean = raw.strip("/")
-        return clean or "."
+        clean = str(raw or ".").replace("\\", "/").strip()
+        while clean.startswith("./"):
+            clean = clean[2:]
+        clean = clean.strip("/")
+        # Some UI/export path-policy transitions used `.backend` as an
+        # intermediate spelling for the same default backend slot. Treat only
+        # known default target names this way so hidden dot folders are not
+        # broadly rewritten.
+        first = clean.split("/", 1)[0].lower() if clean else ""
+        if clean.startswith(".") and first in {".backend", ".frontend", ".assets", ".generated"}:
+            clean = clean[1:]
+        try:
+            clean = posixpath.normpath(clean).replace("\\", "/")
+        except Exception:
+            pass
+        if clean in {"", "."}:
+            return "."
+        if clean.startswith("../") or clean == "..":
+            return clean
+        return clean.strip("/") or "."
 
     def _active_target_title(self, path: str, path_type: str, ai_target: str = "") -> str:
         target = self._humanize_prompt_value(path_type or "target")
@@ -15021,70 +16183,158 @@ raise SystemExit(2)
                 compact = [item for item in compact if item]
                 if compact:
                     lines.append("- Evidenz: " + " | ".join(compact))
+            if str(row.get("path_type") or "").lower() in {"wrapper", "root"}:
+                lines.extend(self._wrapper_boilerplate_phase_lines(row, profile))
             lines.append("- Manifest-Verweis: technische Target-, Mapping- und Dependency-Details stehen konsolidiert in PROMPT_MANIFEST.json; die exportierten files stehen in EXPORT_MANIFEST.json.")
         return lines
 
     def _human_manifest_reference_lines(self, config: dict, profile: dict, create_tree: dict | None = None) -> list[str]:
-        """Human instructions for using only actually declared export files."""
-        create_tree = create_tree or {}
-        file_rows = self._declared_human_export_files(config, profile)
-        is_low = str(profile.get("id") or "") == "niedrig"
-        lines = [
-            "## Manifest-Guided Project Processing",
-            self._export_human_prompt_text("manifest_guided_intro"),
-            self._export_human_prompt_text("declared_only_text_rule"),
+        """Return compact inline manifest references; no USER_PROMPT section block."""
+        names = self._manifest_names_for_human_prompt(config, profile)[:8]
+        names_text = ", ".join(names) if names else "EXPORT_MANIFEST.json, PROMPT_MANIFEST.json"
+        tree_note = ""
+        if isinstance(create_tree, dict) and create_tree:
+            tree_note = f" Scope tree summary: {int(create_tree.get('file_count', 0) or 0)} files / {int(create_tree.get('directory_count', 0) or 0)} directories."
+        return [
+            "- Manifest-Hinweis: use " + names_text + " as the machine-readable source for scope, schema, boilerplate, feature derivation and exported files; USER_PROMPT introduces the workflow in human language." + tree_note
         ]
-        if is_low:
-            manifest_names = ", ".join(name for name, _desc in file_rows[:4])
-            lines.append(f"- Nutze nur die deklarierten Exportdateien: {manifest_names}.")
-            lines.append("- Additional technische Details bleiben in diesen files; kopiere keine Rohlisten in die Antwort.")
-        else:
-            lines.append(self._export_human_prompt_text("declared_manifest_files_intro"))
-            for name, description in file_rows:
-                lines.append(f"- {name}: {description}.")
-            lines.append("- Recursive project processing starts at the files and scope roots actually declared by EXPORT_MANIFEST.json, PROJECT_TREE.md and, if present, CREATE_WORKING_TREE.md.")
-        lines.append("- " + self._export_human_prompt_text("recursive_manifest_processing"))
-        if create_tree:
-            files = int(create_tree.get("file_count", 0) or 0)
-            dirs = int(create_tree.get("directory_count", 0) or 0)
-            lines.append(f"- The current scope was compactly detected: {files} files und {dirs} directories. This number is an orientation; the actually exported manifest list remains authoritative.")
-            if str(profile.get("id") or "") == "hoch":
-                preview_files = create_tree.get("files") if isinstance(create_tree.get("files"), list) else []
-                if preview_files:
-                    lines.append("- Beispielhafte rekursive Scope-Einstiege aus dem deklarierten Working Tree:")
-                    for rel in preview_files[:min(8, int(profile.get("detail_limit", 8) or 8))]:
-                        lines.append(f"  - {self._humanize_prompt_value(rel)}")
+
+    def _human_global_settings_lines(self, profile: dict | None = None, *, surface: str = "export") -> list[str]:
+        """Return compact inline JSON reference for global settings; no USER_PROMPT section block."""
+        profile = profile if isinstance(profile, dict) else self._export_intelligence_profile(self._create_export_intelligence_value())
+        level = str(profile.get("id") or self._create_export_intelligence_value() or "mittel").strip().lower()
+        return [
+            f"- Manifest-Hinweis: global/create/export settings for `{surface}` are stored in PROMPT_MANIFEST.json and EXPORT_MANIFEST.json; export intelligence={profile.get('label') or level}."
+        ]
+
+    def _wrapper_boilerplate_phase_lines(self, row: dict, profile: dict | None = None) -> list[str]:
+        """Introduce active wrapper targets as phased Human API handoff."""
+        profile = profile if isinstance(profile, dict) else self._export_intelligence_profile(self._create_export_intelligence_value())
+        rel = str(row.get("relative_path") or row.get("path") or ".")
+        profiles = row.get("boilerplate_profiles") if isinstance(row.get("boilerplate_profiles"), list) else []
+        file_types = row.get("file_types") if isinstance(row.get("file_types"), list) else []
+        roles = row.get("roles") if isinstance(row.get("roles"), list) else []
+        boilerplates = row.get("boilerplates") if isinstance(row.get("boilerplates"), list) else []
+        lines = [
+            "- Wrapper-Phasen nach Human API:",
+            f"  - Phase 1 — Boundary: Wrapper `{rel}` ist die äußere Projekt-/Export-Hülle; Child-Targets bleiben eigene Grenzen.",
+            "  - Phase 2 — Schema/Boilerplate: technische Details bleiben in PROMPT_MANIFEST.json; USER_PROMPT.txt erklärt nur die Wirkung.",
+            "  - Phase 3 — Execution handoff: Änderungen müssen gegen EXPORT_MANIFEST.json, Target-Scope und Validierungs-/Rollback-Vertrag geprüft werden.",
+        ]
         if str(profile.get("id") or "") == "hoch":
-            lines.extend([
-                "- In case of conflicts, the human task comes first, then operator flow, then declared manifest files, then project files as evidence.",
-                "- Wenn eine manifestierte Datei fehlt oder nicht gelesen werden kann, dokumentiere das als Known Gap statt sie zu erfinden.",
-            ])
+            if profiles:
+                lines.append("  - Boilerplate-Profile: " + ", ".join(str(item) for item in profiles[:10]))
+            if file_types:
+                lines.append("  - Schema/File-Type-Scope: " + ", ".join(str(item) for item in file_types[:10]))
+            if roles:
+                lines.append("  - Tree-Rollen: " + ", ".join(str(item) for item in roles[:10]))
+            if boilerplates:
+                lines.append("  - Tree-Boilerplates: " + ", ".join(str(item) for item in boilerplates[:10]))
         return lines
 
-    def _human_cross_tab_control_lines(self, config: dict, profile: dict, record: dict | None = None) -> list[str]:
-        """Compile the tab-spanning UI state into short human instructions."""
-        record = record or {}
-        detail_limit = int(profile.get("detail_limit", 4) or 4)
-        lines = [
-            f"- Export intelligence: {profile.get('label') or self._create_export_intelligence_value()} — {profile.get('description') or ''}".rstrip(),
-            f"- Operator-Flow: {self._operator_flow_contract().get('execution_mode')}.",
-            f"- Create-Modus: {self.create_mode.get()} / Stack: {self.create_stack.get()}.",
-            f"- Project-Tree-Source: {'Create Working Dir' if self._use_create_working_dir_for_project_tree() else 'normaler Working Tree'}.",
-            f"- Export-Scope: {'changed files only' if self.create_changed_files_only.get() else 'full resolved scope'}; Imports: {'include' if self.create_include_imports.get() else 'nicht automatisch include'}.",
-            f"- Absolute Projektpfade: {'aktiv' if self._create_export_absolute_paths_enabled() else 'aus'}.",
-            f"- Prompt Builder: nutzt dieselbe Export-Intelligenz und denselben Operator-Flow wie dieser Export.",
-            f"- Last-Git-Commit-Referenz: {'aktiv' if self._create_should_include_last_git_commit_reference(config) else 'aus'}; Status: {self.create_git_reference_status.get()}.",
+    def _human_worktree_export_prompt_text(self, active_targets: list[SaveTarget], export_prompt_text: str = "", custom_prompt_text: str = "") -> str:
+        """Compile the normal/Generator export into the same Human API style as Create.
+
+        Normal export is the base mode; Create is an extension of it. This prompt
+        introduces Generator targets, global settings, roles/references, tasks
+        and custom input without mutating Create-tab configuration.
+        """
+        profile = self._export_intelligence_profile(self._create_export_intelligence_value())
+        level = str(profile.get("id") or self._create_export_intelligence_value() or "mittel").strip().lower()
+        normalized = [target.normalized(self.schema) for target in (active_targets or []) if getattr(target, "enabled", True)]
+        try:
+            display_base = self._worktree_export_base()
+        except Exception:
+            display_base = Path(self.output_base.get() or ".")
+        ref_ids: list[str] = []
+        role_ids: list[str] = []
+        for target in normalized:
+            try:
+                refs, roles = self._target_expected_reference_role_ids(target)
+                ref_ids.extend(refs)
+                role_ids.extend(roles)
+            except Exception:
+                pass
+        ref_ids = self._dedupe_create_list(ref_ids)
+        role_ids = self._dedupe_create_list(role_ids)
+        config = self._current_create_config()
+        record = self._active_successful_create_build_for_current_stack() or {}
+        lines: list[str] = [
+            "# Human-compiled Normal/Generator export prompt",
+            "",
+            self._export_human_prompt_text("prompt_intro"),
+            "",
+            self._export_human_prompt_text("export_intelligence_context", level=profile.get("label") or level, description=profile.get("description") or ""),
+            self._export_human_prompt_text(str(profile.get("human_contract_text_id") or "medium_intelligence_contract")),
+            "",
+            "## Overview",
+            f"- Date: {date.today().isoformat()}",
+            f"- Project: {self.project_name.get().strip() or 'unnamed'}",
+            "- Mode: normal_generator_export",
+            f"- Active Generator targets: {len(normalized)}",
+            f"- Export as ZIP: {'yes' if self.export_as_zip.get() else 'no'}",
+            f"- Compact export: {'yes' if self.compact_export.get() else 'no'}",
+            f"- Changed-files-only: {'yes' if self.changed_files_only.get() else 'no'}",
+            f"- Include imports: {'yes' if self.include_imports.get() else 'no'}",
+            "- Create relation: Create export extends this normal export basis, but Create-tab values have priority and are not overwritten by Generator state.",
+            "",
         ]
-        selected = config.get("selected_create_chain_entry") if isinstance(config.get("selected_create_chain_entry"), dict) else {}
-        if selected:
-            label = self._humanize_prompt_value(selected.get("display_name") or selected.get("label") or selected.get("id") or "")
-            lines.append(f"- Selected chain entry: {label}.")
-        roots = self._create_context_roots(record)
-        useful_roots = [f"{key}: {value}" for key, value in roots.items() if value]
-        if useful_roots and bool(profile.get("include_tree_preview", False)):
-            lines.append("- Resolved context roots:")
-            lines.extend(self._human_list_lines(useful_roots, prefix="  -", limit=detail_limit))
-        return lines
+        lines.extend(self._human_operator_flow_lines(self._operator_flow_contract(), profile))
+        lines.extend(["", *self._human_global_settings_lines(profile, surface="normal_generator_export")])
+        lines.extend(["", "## Active Generator targets and boundaries"])
+        if not normalized:
+            lines.append("- No active Generator target resolved. Export must stop instead of using inactive templates.")
+        else:
+            for index, target in enumerate(normalized, start=1):
+                lines.extend([
+                    f"### Target {index}: {self._compile_project_path_for_export(target.path, display_base)} → {target.ai_target}",
+                    f"- Path type: {target.path_type}",
+                    f"- File types: {', '.join(target.file_types or []) or '-'}",
+                    f"- Boilerplate profiles: {', '.join(target.boilerplate_profiles or []) or '-'}",
+                    "- Evidence rule: target exists because it was set in Generator or synchronized from Create/Project evidence; inactive defaults are not export input.",
+                ])
+                if str(target.path_type).lower() in {"wrapper", "root"}:
+                    row = {"relative_path": target.path, "path": self._compile_project_path_for_export(target.path, display_base), "boilerplate_profiles": target.boilerplate_profiles or [], "file_types": target.file_types or [], "roles": [], "boilerplates": []}
+                    lines.extend(self._wrapper_boilerplate_phase_lines(row, profile))
+        role_lines = self._human_role_reference_planning_lines({"roles": role_ids, "references": ref_ids}, profile)
+        if role_lines:
+            lines.extend(["", *role_lines])
+        tasks_payload = self._create_tasks_sidecar_payload()
+        task_lines = self._format_tasks_sidecar_reference_lines(tasks_payload)
+        if task_lines:
+            lines.extend(["", *task_lines])
+        custom_prompt = str(custom_prompt_text or "").strip()
+        manual_prompt = str(export_prompt_text or "").strip()
+        lines.extend(["", "## Custom inputs"])
+        lines.append("- Prompt Builder left CUSTOM_USER_PROMPT: " + ("present; exported as TASKS.TXT sidecar." if custom_prompt else "none."))
+        if manual_prompt:
+            cleaned = self._sanitize_compiled_human_prompt(manual_prompt)
+            preview = cleaned[:1200] + ("..." if len(cleaned) > 1200 else "")
+            lines.extend(["- Prompt Builder right prompt is present and preserved as custom context:", "", preview])
+        else:
+            lines.append("- Prompt Builder right prompt: none; generated target prompt rules remain in manifests/prompts.")
+        lines.extend([
+            "",
+            "## Export file contract",
+            "- USER_PROMPT.txt is the human handoff and stays outside ZIP exports.",
+            "- TASKS.TXT is the Prompt Builder task sidecar and stays outside ZIP exports when the left CUSTOM_USER_PROMPT is present.",
+            "- JSON manifests remain machine-readable evidence; do not replace USER_PROMPT.txt or TASKS.TXT with USER_PROMPT.json or TASK.json.",
+            "- EXPORT_MANIFEST.json remains the file/scope truth; PROMPT_MANIFEST.json carries roles, references, schema chain and target context.",
+            "",
+            "## Validation and response contract",
+            self._export_human_prompt_text("validation_intro"),
+            "- Separate affected files, validation, rollback and known gaps.",
+            "- Do not invent files, roles, references, tasks, schemas or success metrics that are not in the export evidence.",
+        ])
+        text = "\n".join(str(line).rstrip() for line in lines if line is not None).strip()
+        return self._sanitize_compiled_human_prompt(text)
+
+    def _human_cross_tab_control_lines(self, config: dict, profile: dict, record: dict | None = None) -> list[str]:
+        """Return compact inline JSON reference for cross-tab state; no USER_PROMPT section block."""
+        record = record or {}
+        return [
+            f"- Manifest-Hinweis: cross-tab state is stored in PROMPT_MANIFEST.json.create_prompt_context and EXPORT_MANIFEST.json.create_context (mode={self.create_mode.get()}, stack={self.create_stack.get()}, absolute_paths={'yes' if self._create_export_absolute_paths_enabled() else 'no'})."
+        ]
 
     def _strip_machine_dump_sections(self, text: str) -> str:
         """Remove machine-routing dumps from human prompt surfaces.
@@ -15131,9 +16381,25 @@ raise SystemExit(2)
         cleaned = "\n".join(kept).strip()
         return cleaned if cleaned else raw.strip()
 
+    def _strip_forbidden_user_prompt_sections(self, text: str) -> str:
+        """Remove verbose sections that must only be referenced through JSON sidecars."""
+        cleaned = str(text or "").replace("\r", "")
+        forbidden_patterns = [
+            r"Global Tabs\s*/\s*Human API settings",
+            r"Cross-tab control",
+            r"Shortcut commands",
+            r"Manifest-Guided Project Processing",
+            r"AI-CALLBACK\s*/\s*PROGRESS\.json",
+        ]
+        for pattern in forbidden_patterns:
+            cleaned = re.sub(rf"(?ms)^##\s+{pattern}\s*\n.*?(?=^##\s+|\Z)", "", cleaned)
+        cleaned = re.sub(r"\n{3,}", "\n\n", cleaned)
+        return cleaned.strip()
+
     def _sanitize_compiled_human_prompt(self, text: str) -> str:
         """Remove raw schema placeholders and machine dumps from human-facing surfaces."""
         cleaned = self._strip_machine_dump_sections(str(text or "").replace("\r", ""))
+        cleaned = self._strip_forbidden_user_prompt_sections(cleaned)
         cleaned = re.sub(r"(?ms)^Active target:\n.*?(?=^Operator voice:\n)", "Target context:\n- Use the human-readable section `Active targets and target boundaries` and PROMPT_MANIFEST.json; raw Active-Target dumps are not repeated here.\n\n", cleaned)
         cleaned = re.sub(r"(?ms)^Dependency groups:\n.*?(?=^(?:Package dependency layer|Micro tasks|Terminal timeline steps|Editable token map|Chainable mode boilerplates|Target match boilerplate|Feature modules|Refactor modules):\n|\Z)", "Dependency-Manifest-Verweis:\n- Dependency-Gruppen werden im Build Prompt nicht als Paketliste gezeigt; Details stehen in PROMPT_MANIFEST.json.\n\n", cleaned)
         cleaned = re.sub(r"(?ms)^Package dependency layer:\n.*?(?=^(?:Micro tasks|Terminal timeline steps|Editable token map|Chainable mode boilerplates|Target match boilerplate|Feature modules|Refactor modules):\n|\Z)", "Package dependency reference:\n- Package names, versions and install/validation tokens are exclusively in PROMPT_MANIFEST.json.\n\n", cleaned)
@@ -15568,7 +16834,7 @@ raise SystemExit(2)
                     if isinstance(values, list) and "TASKS.TXT" not in values:
                         values.append("TASKS.TXT")
                 if manifest_name == "EXPORT_MANIFEST.json":
-                    data["zip_sidecar_policy"] = "Only the ZIP plus user-facing sidecars TASK.json, USER_PROMPT.json, CMD.json and PROGRESS.json remain outside after ZIP export; PROGRESS.json is also injected into the ZIP."
+                    data["zip_sidecar_policy"] = "ZIP exports keep USER_PROMPT.txt and TASKS.TXT as text sidecars outside the ZIP; USER_PROMPT.json and TASK.json aliases are not written."
             manifest_path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
     def _compile_human_create_prompt_text(self, config: dict | None = None, build_record: dict | None = None, *, surface: str = "user_prompt_export") -> str:
@@ -15587,7 +16853,9 @@ raise SystemExit(2)
         chain_entries = self._human_selected_chain_entries(raw_chain_schema, selected_entry, profile, config)
         target_path = str(config.get("path") or self.create_target_path.get() or ".")
         build_target = str(config.get("build_target") or self.create_build_target.get() or "wrapper")
-        create_tree = self._compact_create_working_tree_context(self._create_export_base_for_record(record), config, record, self._scope_paths_for_worker()) if bool(profile.get("include_tree_preview", False)) else {}
+        prompt_base = self._create_export_base_for_record(record)
+        display_target_path = self._compile_project_path_for_export(target_path, prompt_base)
+        create_tree = self._compact_create_working_tree_context(prompt_base, config, record, self._scope_paths_for_worker()) if bool(profile.get("include_tree_preview", False)) else {}
         lines: list[str] = [
             "# Human-compiled Create prompt",
             "",
@@ -15602,16 +16870,17 @@ raise SystemExit(2)
             f"- Mode: {self.create_mode.get()}",
             f"- Routine: {context.get('routine') or '-'}",
             f"- Stack: {self.create_stack.get()}",
-            f"- Target path: {target_path}",
+            f"- Target path: {display_target_path}",
             f"- Build-Ziel: {build_target}",
             f"- Export intelligence: {profile.get('label') or level}",
             "- Machine manifests remain part of the export, but this text is the human-readable work instruction.",
             "",
         ]
         lines.extend(self._human_operator_flow_lines(operator_flow, profile))
-        lines.extend(["", "## Cross-tab control"])
-        lines.append(self._export_human_prompt_text("tab_control_intro"))
-        lines.extend(self._human_cross_tab_control_lines(config, profile, record))
+        lines.extend(["", *self._human_cross_tab_control_lines(config, profile, record)])
+        global_setting_lines = self._human_global_settings_lines(profile, surface="create_export")
+        if global_setting_lines:
+            lines.extend(["", *global_setting_lines])
         active_target_lines = self._human_active_target_lines(config, profile, record)
         if active_target_lines:
             lines.extend(["", *active_target_lines])
@@ -15624,7 +16893,7 @@ raise SystemExit(2)
         if self._create_should_include_last_git_commit_reference(config):
             git_payload = self._last_git_commit_reference_for_manifest(config, reason="user_prompt_export")
             lines.extend(["", *self._format_last_git_commit_reference_lines(git_payload, detail="full" if self._create_high_export_intelligence_enabled() else "summary")])
-        lines.extend(["", "## Shortcut commands"] + self._human_shortcut_command_contract_lines())
+        lines.extend(["", *self._human_shortcut_command_contract_lines()])
         lines.extend(["", "## Context and scope rules"])
         evidence_source = self._humanize_prompt_value(evidence.get("source") or "Create Mapping / Start project") if isinstance(evidence, dict) else "Create Mapping / Start project"
         callback_contract = self._ai_response_callback_contract()
@@ -15642,7 +16911,8 @@ raise SystemExit(2)
             lines.append(f"- Detected scope in Create working tree: {create_tree.get('file_count', 0)} files, {create_tree.get('directory_count', 0)} directories.")
             if str(profile.get("id") or "") == "hoch":
                 lines.append("- Individual paths are not embedded as a raw dump in USER_PROMPT.txt. Use the manifest files for the complete recursive file list.")
-        lines.extend(["", *self._human_manifest_reference_lines(config, profile, create_tree), "", "## Compiled schema chain"])
+        lines.extend(["", *self._human_manifest_reference_lines(config, profile, create_tree)])
+        lines.extend(["", *self._human_api_schema_boilerplate_phase_lines(config, profile, record, prompt_base), "", "## Compiled schema chain"])
         lines.append(self._export_human_prompt_text("chain_intro"))
         if not chain_entries:
             lines.append("- No matching chain plan reference resolved.")
@@ -15679,6 +16949,80 @@ raise SystemExit(2)
         # Guardrail: USER_PROMPT.txt must not leak raw schema token syntax.
         text = re.sub(r"\{\$([^}:|]+)(?::([^}]+))?\}", lambda m: (m.group(1) or "").replace("_", " "), text)
         return text
+
+
+    def _create_human_api_schema_resolution_payload(self, config: dict, profile: dict | None = None, record: dict | None = None, base: Path | None = None) -> dict:
+        """Resolve Create Schema/Boilerplate content for Human API handoff.
+
+        USER_PROMPT.txt introduces the phases. PROMPT_MANIFEST.json stores the
+        complete JSON content for the exact schema rows used by the selected
+        stack, catalog entry, active targets and weights.
+        """
+        record = record or self._active_successful_create_build_for_current_stack() or {}
+        try:
+            base_path = Path(base or self._create_export_base_for_record(record)).resolve()
+        except Exception:
+            base_path = Path(str(base or self.output_base.get() or "."))
+        selected_entry = config.get("selected_create_chain_entry") if isinstance(config.get("selected_create_chain_entry"), dict) else self._find_create_catalog_entry(config=config)
+        chain_schema = config.get("create_chain_schema") or (config.get("create_mode_context") or {}).get("chain_schema") or self._create_chain_schema(self.create_mode.get(), [], config)
+        parameter_profile = config.get("create_mode_parameters") or self._create_mode_parameter_profile()
+        try:
+            targets = self._create_export_save_targets(config, record, base_path)
+        except Exception:
+            targets = [SaveTarget(str(config.get("path") or "."), str(config.get("path_type") or "wrapper"), str(config.get("ai_target") or "ChatGPT"), config.get("profiles", []), config.get("file_types", []))]
+        context = {
+            "selected_stack_category": config.get("category", self.create_stack_category.get()),
+            "selected_stack": self.create_stack.get(),
+            "selected_chain_entry": selected_entry or {},
+            "chain_schema": chain_schema if isinstance(chain_schema, dict) else {},
+            "create_mode_parameters": parameter_profile if isinstance(parameter_profile, dict) else {},
+            "create_parameter_boilerplates": config.get("create_parameter_boilerplates", self._create_mode_parameter_boilerplates(parameter_profile if isinstance(parameter_profile, dict) else {})),
+            "profiles": config.get("profiles", []),
+            "references": config.get("references", []),
+            "roles": config.get("roles", []),
+            "file_types": config.get("file_types", []),
+        }
+        resolution = build_used_schema_resolution(self.schema, targets, {}, compact_export_context=context)
+        resolution["human_api_context"] = dict(resolution.get("human_api_context") or {})
+        resolution["human_api_context"].update({
+            "stack_category": str(config.get("category", self.create_stack_category.get()) or "Custom"),
+            "stack": str(self.create_stack.get() or config.get("stack") or "Custom"),
+            "catalog_entry_id": str((selected_entry or {}).get("id") or "") if isinstance(selected_entry, dict) else "",
+            "catalog_entry_label": str((selected_entry or {}).get("display_name") or (selected_entry or {}).get("label") or "") if isinstance(selected_entry, dict) else "",
+            "mode": self.create_mode.get(),
+            "routine": (config.get("create_mode_context") or {}).get("routine") or self._create_mode_context(config=config).get("routine"),
+        })
+        return resolution
+
+    def _human_api_schema_boilerplate_phase_lines(self, config: dict, profile: dict, record: dict | None = None, base: Path | None = None) -> list[str]:
+        resolution = self._create_human_api_schema_resolution_payload(config, profile, record, base)
+        context = resolution.get("human_api_context", {}) if isinstance(resolution.get("human_api_context"), dict) else {}
+        counts = resolution.get("counts", {}) if isinstance(resolution.get("counts"), dict) else {}
+        used_keys = [key for key, count in counts.items() if count]
+        parameter_profile = config.get("create_mode_parameters") or self._create_mode_parameter_profile()
+        values = parameter_profile.get("values", {}) if isinstance(parameter_profile, dict) and isinstance(parameter_profile.get("values"), dict) else {}
+        lines = [
+            "## Human API schema/boilerplate phases",
+            "- Contract: USER_PROMPT.txt introduces Schema/Boilerplate as phases; full JSON content is resolved only in PROMPT_MANIFEST.json.used_schema_resolution.content.",
+            "- Export rule: schema/ contains only explicitly used schema rows; no full schema dump and no unselected catalog browsing.",
+            "### Phase 1 — Stack identity",
+            f"- Stack-Kategorie: {context.get('stack_category') or config.get('category') or 'Custom'}",
+            f"- Stack: {context.get('stack') or self.create_stack.get() or 'Custom'}",
+            f"- Katalog-Entry: {context.get('catalog_entry_label') or context.get('catalog_entry_id') or 'none selected'}",
+            "### Phase 2 — Weighted execution order",
+        ]
+        if values:
+            for key, value in values.items():
+                lines.append(f"- {self._humanize_prompt_value(key)}: {value}")
+        else:
+            lines.append("- No explicit weight values resolved; use schema/default weight rows from PROMPT_MANIFEST.json.used_schema_resolution.")
+        lines.extend([
+            "### Phase 3 — Required schema content",
+            "- Resolve only these used schema families: " + (", ".join(used_keys) if used_keys else "none"),
+            "- Read the row content from PROMPT_MANIFEST.json.used_schema_resolution.content before deriving files, packages, boilerplate or feature/refactor steps.",
+            "- Do not activate or infer additional schema rows unless the user explicitly changes Stack-Kategorie, Stack, Katalog-Entry, targets or weights.",
+        ])
+        return lines
 
     def _create_export_prompt_text(self, config: dict | None = None, build_record: dict | None = None, *, surface: str = "user_prompt_export") -> str:
         """Return the human-facing USER_PROMPT.txt body.
@@ -15807,30 +17151,12 @@ raise SystemExit(2)
         return payload
 
     def _human_progress_reference_lines(self, config: dict | None = None, profile: dict | None = None, build_record: dict | None = None) -> list[str]:
-        profile = profile or self._export_intelligence_profile(self._create_export_intelligence_value())
+        """Return compact inline PROGRESS.json reference; no USER_PROMPT section block."""
         payload = self._create_progress_json_payload(config, build_record)
-        intro = payload.get("human_introduction", {}) if isinstance(payload.get("human_introduction"), dict) else {}
         active = payload.get("active_callback", {}) if isinstance(payload.get("active_callback"), dict) else {}
-        level = str(profile.get("id") or self._create_export_intelligence_value() or "mittel").strip().lower()
-        lines = [
-            "## AI-CALLBACK / PROGRESS.json",
-            f"- File: {self._progress_json_file_name()} is always exported, kept outside the ZIP and additionally written into the ZIP.",
-            f"- Active template: {active.get('template')} / {active.get('design_type')}",
+        return [
+            f"- Manifest-Hinweis: AI-CALLBACK response design is stored in {self._progress_json_file_name()} (active={active.get('template')}/{active.get('design_type')}); USER_PROMPT introduces the response contract without duplicating callback templates."
         ]
-        if level == "niedrig":
-            lines.append("- Low export intelligence: USER_PROMPT deliberately keeps this section short; the complete mathematical callback introduction is in PROGRESS.json.")
-            return lines
-        lines.extend([
-            f"- Purpose: {intro.get('purpose')}",
-            f"- Canvas rule: {intro.get('canvas_rule')}",
-            "- Introduced states: " + ", ".join(payload.get("status_order", [])),
-            "- Introduced design types: " + ", ".join(payload.get("design_type_order", [])),
-            "- This requirement controls only response shape, not tool rights, scope or validation boundaries.",
-        ])
-        if level == "hoch":
-            for design in payload.get("design_type_order", []):
-                lines.append(f"- {design}: {self._progress_design_intro(str(design))}")
-        return lines
 
     def _create_context_artifact_names(self, config: dict | None = None) -> list[str]:
         names = [
@@ -15939,11 +17265,11 @@ raise SystemExit(2)
         return messages
 
     def _apply_create_zip_sidecar_contract(self, export_dir: Path, config: dict, tasks_payload: dict) -> list[str]:
-        """Keep only the user-facing Create ZIP sidecars outside the export ZIP.
+        """Keep outside ZIP sidecars human-first while preserving JSON inside ZIP.
 
-        PROGRESS.json is intentionally both an outside sidecar and a ZIP member,
-        because the callback design is part of the runtime prompt contract and a
-        portable export artifact.
+        The Export ZIP itself must contain the machine JSON context (CMD.json,
+        PROGRESS.json, PROMPT_MANIFEST.json, EXPORT_MANIFEST.json, etc.). Only the
+        outside export folder is cleaned to the final ZIP plus human text sidecars.
         """
         export_dir = Path(export_dir)
         if not bool(self.create_export_as_zip.get()):
@@ -15951,60 +17277,66 @@ raise SystemExit(2)
         zip_paths = sorted(list(export_dir.glob("*_scope_clone.zip")) + list(export_dir.glob("*_compact_context.zip")))
         if not zip_paths:
             return []
-        prompt_text = self._create_export_prompt_text(config, self._active_successful_create_build_for_current_stack())
-        progress_payload = self._create_progress_json_payload(config, self._active_successful_create_build_for_current_stack())
-        user_prompt_payload = {
-            "artifact": "USER_PROMPT.json",
-            "created_at": datetime.now().isoformat(timespec="seconds"),
-            "format": "human_prompt_text_wrapped_in_json",
-            "text_file_alias": "USER_PROMPT.txt",
-            "prompt_text": prompt_text,
-            "ai_response_callback": self._ai_response_callback_contract(),
-            "progress_manifest": self._progress_json_file_name(),
-        }
-        task_payload = dict(tasks_payload or {})
-        task_payload["artifact"] = "TASK.json"
-        cmd_payload = self._create_cmd_manifest_payload(config)
-        sidecars = {
-            "TASK.json": task_payload,
-            "USER_PROMPT.json": user_prompt_payload,
-            "CMD.json": cmd_payload,
-            self._progress_json_file_name(): progress_payload,
-        }
-        for name, payload in sidecars.items():
-            (export_dir / name).write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-
         messages: list[str] = []
-        allowed = set(sidecars.keys()) | {path.name for path in zip_paths}
-        files_to_pack = [path for path in sorted(export_dir.iterdir(), key=lambda item: item.name) if path.is_file() and path.name not in {zp.name for zp in zip_paths}]
+        record = self._active_successful_create_build_for_current_stack()
+        prompt_text = self._create_export_prompt_text(config, record)
+        user_prompt_path = export_dir / "USER_PROMPT.txt"
+        user_prompt_path.write_text(prompt_text.rstrip() + "\n", encoding="utf-8")
+        cmd_path = export_dir / "CMD.TXT"
+        cmd_path.write_text(self._create_cmd_text_payload(config), encoding="utf-8")
+        text_sidecar_names = {"USER_PROMPT.txt", "CMD.TXT"}
+        if isinstance(tasks_payload, dict) and str(tasks_payload.get("raw_text") or "").strip():
+            tasks_path = export_dir / "TASKS.TXT"
+            tasks_path.write_text(self._tasks_sidecar_text(tasks_payload), encoding="utf-8")
+            text_sidecar_names.add("TASKS.TXT")
+
+        manifest_payload = {
+            "artifact": "MANIFEST.json",
+            "schema_version": "2026.create.zip_manifest.v2",
+            "created_at": datetime.now().isoformat(timespec="seconds"),
+            "project_name": self.project_name.get().strip(),
+            "create_mode": self.create_mode.get(),
+            "create_stack": self.create_stack.get(),
+            "selected_chain_entry": (config or {}).get("selected_create_chain_entry"),
+            "human_sidecars_outside_zip": sorted(text_sidecar_names),
+            "json_context_policy": "Machine JSON files remain inside the ZIP; the outside folder is human-sidecar-only.",
+            "required_json_inside_zip": ["CMD.json", self._progress_json_file_name(), "PROMPT_MANIFEST.json", "EXPORT_MANIFEST.json", "PROJECT_METADATA.json", "AI_MANAGER.json"],
+            "validation_focus": (config or {}).get("validation_focus", []),
+        }
+
         for zip_path in zip_paths:
             tmp_path = zip_path.with_suffix(zip_path.suffix + ".tmp")
             try:
                 with zipfile.ZipFile(zip_path, "r") as source, zipfile.ZipFile(tmp_path, "w", compression=zipfile.ZIP_DEFLATED) as target:
-                    skip_names = {path.name for path in files_to_pack}
+                    existing_names = {info.filename for info in source.infolist()}
                     for info in source.infolist():
-                        if info.filename in skip_names:
-                            continue
+                        # Preserve generated JSON/MD context in the ZIP. Only text
+                        # sidecars are refreshed outside; they are not destructive.
                         target.writestr(info, source.read(info.filename))
-                    for path in files_to_pack:
-                        target.write(path, path.name)
+                    if "MANIFEST.json" not in existing_names:
+                        target.writestr("MANIFEST.json", json.dumps(manifest_payload, indent=2, ensure_ascii=False) + "\n")
                 tmp_path.replace(zip_path)
-                messages.append(f"ZIP   Create sidecar contract packed into {zip_path.name}")
+                messages.append(f"ZIP   preserved machine JSON context in {zip_path.name}")
             except Exception as exc:
                 try:
                     if tmp_path.exists():
                         tmp_path.unlink()
                 except Exception:
                     pass
-                messages.append(f"WARN  Create sidecar contract not packed into {zip_path.name}: {exc}")
-        for path in files_to_pack:
-            if path.name not in allowed:
-                try:
-                    path.unlink()
-                    messages.append(f"CLEAN outside sidecar moved into ZIP: {path.name}")
-                except Exception as exc:
-                    messages.append(f"WARN  outside sidecar cleanup skipped for {path.name}: {exc}")
-        messages.extend(f"WRITE {export_dir / name}" for name in sidecars)
+                messages.append(f"WARN  Create ZIP JSON preservation failed for {zip_path.name}: {exc}")
+
+        zip_names = {path.name for path in zip_paths}
+        allowed_outside = set(zip_names) | text_sidecar_names
+        for path in sorted(export_dir.iterdir(), key=lambda item: item.name):
+            if not path.is_file() or path.name in allowed_outside:
+                continue
+            try:
+                path.unlink()
+                messages.append(f"CLEAN outside artifact: {path.name}")
+            except Exception as exc:
+                messages.append(f"WARN  outside artifact cleanup skipped for {path.name}: {exc}")
+        messages.extend(f"WRITE {export_dir / name} (outside ZIP text sidecar)" for name in sorted(text_sidecar_names))
+        messages.append("ZIP_SIDECARS outside_files=ZIP, CMD.TXT, USER_PROMPT.txt, optional TASKS.TXT; machine JSON preserved inside ZIP")
         return messages
 
     def _write_create_export_context_sidecars(self, base: Path, export_dir: Path, config: dict, build_record: dict | None = None) -> list[str]:
@@ -16025,6 +17357,7 @@ raise SystemExit(2)
         active_target_payload = self._create_active_targets_payload(config, record, base)
         project_mapping_payload = self._create_project_mapping_payload(config)
         dependency_layer_payload = self._effective_dependency_layer(config)
+        human_api_schema_resolution = self._create_human_api_schema_resolution_payload(config, self._export_intelligence_profile(self._create_export_intelligence_value()), record, base)
         blocked = {
             "CREATE_" + "EXPORT_MANIFEST.json",
             "CREATE_" + "PROMPT_MANIFEST.json",
@@ -16075,6 +17408,7 @@ raise SystemExit(2)
             "source_clone": self._create_source_clone_manifest or None,
             "active_targets": active_target_payload.get("targets", []),
             "project_mapping": project_mapping_payload,
+            "human_api_schema_resolution": {"policy": human_api_schema_resolution.get("policy"), "counts": human_api_schema_resolution.get("counts", {}), "human_api_context": human_api_schema_resolution.get("human_api_context", {})},
             "dependency_layer_summary": {
                 "group_count": len(dependency_layer_payload) if isinstance(dependency_layer_payload, list) else 0,
                 "targets": sorted({str(group.get("target") or "") for group in dependency_layer_payload if isinstance(group, dict) and str(group.get("target") or "").strip()}),
@@ -16082,18 +17416,19 @@ raise SystemExit(2)
             },
             "last_git_commit_reference": last_git_reference,
             "tasks_sidecar": {"file": "TASKS.TXT", "enabled": bool(str(tasks_payload.get("raw_text") or "").strip()), "parsed_as": tasks_payload.get("parsed_as"), "phase_count": len(tasks_payload.get("task_phases") or [])},
-            "cmd_manifest": "CMD.json",
-            "settings": {
-                "project_tree_source_mode": "create_working_dir",
+            "cmd_manifest": "CMD.TXT",
+            "export_rules": {
+                "scope_source": "create_working_dir",
                 "changed_files_only": bool(self.create_changed_files_only.get()),
                 "include_imports": bool(self.create_include_imports.get()),
-                "schema_mirror": bool(self.create_schema_mirror.get()),
-                "create_export_as_zip": bool(self.create_export_as_zip.get()),
-                "create_compact_export": bool(self.create_compact_export.get()),
+                "packaging": "zip" if bool(self.create_export_as_zip.get()) else "folder",
+                "detail_level": "compact" if bool(self.create_compact_export.get()) else "full",
                 "export_intelligence": self._create_export_intelligence_value(),
-                "last_git_commit_enabled": bool(self._create_should_include_last_git_commit_reference(config)),
-                "absolute_project_paths": bool(self._create_export_absolute_paths_enabled()),
+                "last_git_commit_reference": "included" if bool(self._create_should_include_last_git_commit_reference(config)) else "excluded",
+                "project_paths": "project_scope_absolute_and_relative" if bool(self._create_export_absolute_paths_enabled()) else "portable_relative",
                 "path_policy": self._create_export_path_policy_payload(base),
+                "text_sidecars": ["USER_PROMPT.txt", "TASKS.TXT if left prompt exists"],
+                "machine_manifests": ["MANIFEST.json inside ZIP"],
             },
             "write_policy": "No duplicate create-specific sidecars; create context is merged into EXPORT_MANIFEST.json and PROMPT_MANIFEST.json.",
         }
@@ -16111,8 +17446,8 @@ raise SystemExit(2)
             "export_intelligence": self._create_export_intelligence_value(),
             "path_policy": self._create_export_path_policy_payload(base),
             "human_prompt_locale_source": "schema/human_prompt_locale.json",
-            "mode_catalog": self._create_mode_catalog(config),
-            "chain_schema": config.get("create_chain_schema") or self._create_chain_schema(self.create_mode.get(), [], config),
+            "mode_catalog": self._compact_create_mode_catalog_for_export(self._create_mode_catalog(config)),
+            "chain_schema": self._compact_create_chain_schema_for_export(config.get("create_chain_schema") or self._create_chain_schema(self.create_mode.get(), [], config)),
             "package_control": self._package_control_findings(config),
             "operator_flow": self._operator_flow_contract(),
             "operator_research_plan": self._create_operator_research_plan(config),
@@ -16127,6 +17462,8 @@ raise SystemExit(2)
             "active_targets": active_target_payload.get("targets", []),
             "project_mapping": project_mapping_payload,
             "dependency_layer": dependency_layer_payload,
+            "used_schema_resolution": human_api_schema_resolution,
+            "human_api_schema_resolution": human_api_schema_resolution,
             "create_mode_parameters": config.get("create_mode_parameters", self._create_mode_parameter_profile()),
             "create_parameter_boilerplates": config.get("create_parameter_boilerplates", self._create_mode_parameter_boilerplates(config.get("create_mode_parameters", self._create_mode_parameter_profile()))),
             "create_parameter_context": config.get("create_parameter_context", self._create_parameter_context_priority(config.get("create_mode_parameters", self._create_mode_parameter_profile()))),
@@ -16139,16 +17476,18 @@ raise SystemExit(2)
         export_manifest["create_context"] = export_context
         export_manifest["create_context_artifacts"] = {
             "written": [name for name in self._create_context_artifact_names(config) if name not in blocked],
-            "cmd_manifest": "CMD.json",
+            "cmd_manifest": "CMD.TXT",
             "progress_manifest": self._progress_json_file_name(),
             "last_git_commit_manifest": "LAST_GIT_COMMIT.json" if self._create_should_include_last_git_commit_reference(config) else None,
-            "write_policy": "Create context is consolidated into EXPORT_MANIFEST.json and PROMPT_MANIFEST.json; duplicate create-specific sidecars are not written. PROGRESS.json remains the dedicated callback-design sidecar.",
+            "write_policy": "ZIP export keeps machine details compact: outside has only text sidecars and ZIP; MANIFEST.json inside ZIP points to schema/context references.",
         }
         export_manifest_path.write_text(json.dumps(export_manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
         prompt_manifest_path = export_dir / "PROMPT_MANIFEST.json"
         prompt_manifest = read_json_object(prompt_manifest_path)
         clean_file_lists(prompt_manifest)
+        prompt_manifest["used_schema_resolution"] = human_api_schema_resolution
+        prompt_manifest["human_api_schema_resolution"] = human_api_schema_resolution
         prompt_manifest["create_prompt_context"] = prompt_context
         prompt_manifest_path.write_text(json.dumps(prompt_manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
@@ -16254,6 +17593,41 @@ raise SystemExit(2)
             return manual
         return fallback
 
+    def _create_export_save_targets(self, config: dict, record: dict | None, base: Path) -> list[SaveTarget]:
+        """Return every active Create/Generator target for generate_files without using absolute paths as write destinations."""
+        rows = self._create_active_target_manifest_rows(config, record, base)
+        targets: list[SaveTarget] = []
+        seen: set[tuple[str, str, str]] = set()
+        for row in rows:
+            if not isinstance(row, dict) or row.get("enabled") is False:
+                continue
+            rel = str(row.get("relative_path") or row.get("path") or ".").replace("\\", "/").strip() or "."
+            if rel.startswith("@") or "://" in rel:
+                continue
+            try:
+                candidate = Path(rel)
+                if candidate.is_absolute():
+                    try:
+                        candidate = candidate.relative_to(Path(base).resolve())
+                        rel = candidate.as_posix() or "."
+                    except Exception:
+                        rel = candidate.as_posix().lstrip("/") or "."
+            except Exception:
+                pass
+            rel = re.sub(r"^\./+", "", rel.replace("\\", "/")).strip("/") or "."
+            path_type = str(row.get("path_type") or config.get("path_type") or config.get("build_target") or "wrapper").strip() or "wrapper"
+            ai_target = str(row.get("ai_target") or config.get("ai_target") or self.ai_target_var.get() or "ChatGPT").strip() or "ChatGPT"
+            profiles = [str(item) for item in (row.get("boilerplate_profiles") if isinstance(row.get("boilerplate_profiles"), list) else config.get("profiles", [])) if str(item).strip()]
+            file_types = [str(item) for item in (row.get("file_types") if isinstance(row.get("file_types"), list) else config.get("file_types", [])) if str(item).strip()]
+            key = (rel, path_type, ai_target)
+            if key in seen:
+                continue
+            seen.add(key)
+            targets.append(SaveTarget(rel, path_type, ai_target, profiles, file_types))
+        if not targets:
+            targets.append(SaveTarget(config.get("path", "."), config.get("path_type", "wrapper"), config.get("ai_target", "ChatGPT"), config.get("profiles", []), config.get("file_types", [])))
+        return targets
+
     def _generate_create_export(self, build_record: dict | None = None) -> None:
         self._ensure_create_mode_matches_start_reference("create_export")
         selected_record_ready = False
@@ -16277,13 +17651,41 @@ raise SystemExit(2)
             return
         export_dir = self._next_create_export_path()
         old_tree_source = self.project_tree_source_mode.get()
-        self.project_tree_source_mode.set("create_working_dir")
         create_scope_paths = self._scope_paths_for_generation() if bool(self.create_include_imports.get()) else self._scope_paths_for_worker()
         # Context sidecars are written after the generator finishes so compact/ZIP
         # exports cannot clean them away. Non-compact folder exports are refreshed
-        # there as well, keeping one authoritative write path.
-        export_prompt = self._prompt_builder_generated_prompt_text_for_export(self._create_export_prompt_text(config, record))
-        targets = [SaveTarget(config.get("path", "."), config.get("path_type", "wrapper"), config.get("ai_target", "ChatGPT"), config.get("profiles", []), config.get("file_types", []))]
+        # there as well, keeping one authoritative write path. Project-backed
+        # Create exports must always carry a weighted prompt: use the Prompt
+        # Builder right box when it already contains one, otherwise compile one
+        # immediately from Build.complete / ProjectRoot evidence.
+        fallback_export_prompt = self._create_export_prompt_text(config, record)
+        weighted_prompt_required = self._prompt_builder_requires_weighted_prompt(record)
+        export_prompt = self._prompt_builder_generated_prompt_text_for_export("" if weighted_prompt_required else fallback_export_prompt)
+        auto_weighted_prompt_generated = False
+        if weighted_prompt_required and not export_prompt:
+            try:
+                custom_task = self._prompt_builder_default_weighted_task_text(config, record)
+                weighted_raw = self._build_weighted_prompt_text_for_context(
+                    custom_task,
+                    config=config,
+                    record=record,
+                    base=base,
+                    scope_paths=create_scope_paths,
+                    include_imports=False,
+                    progress_prefix="Create export weighted prompt",
+                )
+                export_prompt = self._wrap_human_prompt_builder_output("custom_weighted_prompt", weighted_raw, custom_task=custom_task)
+                auto_weighted_prompt_generated = True
+                if hasattr(self, "prompt_text"):
+                    self.prompt_text.delete("1.0", "end")
+                    self.prompt_text.insert("1.0", export_prompt)
+                    self._apply_text_widget_theme()
+            except Exception as exc:
+                self._set_progress(f"Create export weighted prompt fallback failed: {exc}", 0)
+                export_prompt = fallback_export_prompt
+        if not export_prompt:
+            export_prompt = fallback_export_prompt
+        targets = self._create_export_save_targets(config, record, base)
         params = {
             "output_base": base,
             "ai_language": self.ai_language.get(),
@@ -16314,15 +17716,30 @@ raise SystemExit(2)
             "absolute_project_paths": self._create_export_absolute_paths_enabled(),
             "compact_export_context": {
                 "source": "create",
+                "normal_export_basis": {
+                    "supported": True,
+                    "worktree_export_as_zip": bool(self.export_as_zip.get()),
+                    "worktree_compact_export": bool(self.compact_export.get()),
+                    "scope_include_imports": bool(self.include_imports.get()),
+                    "scope_changed_files_only": bool(self.changed_files_only.get()),
+                    "create_priority_rule": "Create-tab values override normal Generator defaults during Create export; Generator state is read as context only.",
+                },
                 "export_path_policy": "stable <project>_create_stable when overwrite is ON; otherwise <project>_create_<timestamp>_<id>",
                 "path_policy": self._create_export_path_policy_payload(base),
                 "overwrite_existing_generated_files": bool(self.overwrite.get()),
                 "create_mode": self.create_mode.get(),
+                "selected_stack_category": config.get("category", self.create_stack_category.get()),
                 "selected_stack": self.create_stack.get(),
-                "selected_chain_entry": config.get("selected_create_chain_entry"),
+                "selected_chain_entry": config.get("selected_create_chain_entry") if isinstance(config.get("selected_create_chain_entry"), dict) else self._find_create_catalog_entry(config=config),
+                "profiles": config.get("profiles", []),
+                "references": config.get("references", []),
+                "roles": config.get("roles", []),
+                "file_types": config.get("file_types", []),
+                "create_mode_parameters": config.get("create_mode_parameters", self._create_mode_parameter_profile()),
+                "create_parameter_boilerplates": config.get("create_parameter_boilerplates", self._create_mode_parameter_boilerplates(config.get("create_mode_parameters", self._create_mode_parameter_profile()))),
                 "export_intelligence": self._create_export_intelligence_value(),
                 "human_prompt_locale_source": "schema/human_prompt_locale.json",
-                "chain_schema": config.get("create_chain_schema") or self._create_chain_schema(self.create_mode.get(), [], config),
+                "chain_schema": self._compact_create_chain_schema_for_export(config.get("create_chain_schema") or self._create_chain_schema(self.create_mode.get(), [], config)),
                 "package_control": self._package_control_findings(config),
                 "operator_flow": self._operator_flow_contract(),
                 "operator_research_plan": self._create_operator_research_plan(config),
@@ -16334,14 +17751,15 @@ raise SystemExit(2)
                 "shortcut_command_contract": self._human_shortcut_command_contract_lines(),
                 "cmd_manifest": self._create_cmd_manifest_payload(config),
                 "selected_export_tree_scope": list(create_scope_paths or []),
-                "prompt_builder_right_prompt_used": export_prompt != self._create_export_prompt_text(config, record),
+                "prompt_builder_right_prompt_used": export_prompt != fallback_export_prompt,
+                "prompt_builder_weighted_prompt_required": bool(weighted_prompt_required),
+                "prompt_builder_auto_weighted_prompt_generated": bool(auto_weighted_prompt_generated),
                 "create_working_tree": self._compact_create_working_tree_context(base, config, record, list(create_scope_paths or [])),
             },
         }
         def worker():
             return generate_files(progress_callback=self._progress_callback, **params)
         def success(messages: list[str]) -> None:
-            self.project_tree_source_mode.set("create_working_dir")
             try:
                 messages.extend(self._write_create_export_context_sidecars(base, export_dir, config, record))
             except Exception as exc:
@@ -16355,7 +17773,12 @@ raise SystemExit(2)
                 messages.append(f"TASKS/ZIP sidecar contract skipped: {exc}")
             self._show_text("\n".join(messages + [f"Create export context: {export_dir}"]))
             self._refresh_output_tree()
-            self._refresh_project_tree()
+            # Export is a write-only routine. A successful export must not
+            # re-scan or re-sync the Project Tree, because that can route back
+            # into _sync_create_from_project_scope(...) and silently reset the
+            # Create mode/mapping after the user has already built the context.
+            self._refresh_project_tree_source_options()
+            self._update_project_tree_status()
             self.notebook.select(self.output_tab)
         def fail_restore(exc: Exception) -> None:
             self.project_tree_source_mode.set(old_tree_source)
@@ -16369,13 +17792,8 @@ raise SystemExit(2)
             return
         # The inline Export button exports the current stack's completed build first.
         # Selection in the Builds tab is only used by the Builds-tab Export button.
-        record = self._active_successful_create_build_for_current_stack()
-        if record:
-            self.project_tree_source_mode.set("create_working_dir")
-            self._generate_create_export(record)
-        else:
-            self.project_tree_source_mode.set("create_working_dir")
-            self._generate_create_export(None)
+        record = self._active_successful_create_build_for_current_stack() if self._use_create_working_dir_for_project_tree() else None
+        self._generate_create_export(record)
 
     def _export_selected_create_build(self) -> None:
         record = self._selected_create_build_record()
@@ -16972,7 +18390,7 @@ raise SystemExit(2)
                 raw = ""
         seed = f"{self._patch_target_mode()}::{raw}"
         key = hashlib.sha1(seed.encode("utf-8", errors="ignore")).hexdigest()[:12] if raw else f"no_{self._patch_target_mode()}"
-        root = Path(tempfile.gettempdir()) / "prompt-guide-patch-work" / key
+        root = prompt_guide_runtime_root() / "patch-work" / key
         root.mkdir(parents=True, exist_ok=True)
         return root
 
@@ -17030,7 +18448,7 @@ raise SystemExit(2)
         """
         try:
             start = self._normalize_start_working_tree().resolve()
-            if start.exists() and start.is_dir() and not self._path_is_under_system_temp(start):
+            if start.exists() and start.is_dir() and not self._path_is_under_system_temp(start) and not self._path_is_synthetic_project_root(start):
                 return start
         except Exception:
             pass
@@ -17056,7 +18474,7 @@ raise SystemExit(2)
         for candidate in candidates:
             try:
                 root = candidate.resolve()
-                if root.exists() and root.is_dir() and self._path_is_under_system_temp(root) and "prompt-guide-create-preview" in str(root):
+                if root.exists() and root.is_dir() and self._is_prompt_guide_runtime_path(root, "create-preview"):
                     try:
                         self.create_temp_preview_dir.set(str(root))
                     except Exception:
@@ -17075,7 +18493,7 @@ raise SystemExit(2)
 
     def _patch_git_root(self, path: Path) -> Path | None:
         try:
-            completed = subprocess.run(["git", "-C", str(path), "rev-parse", "--show-toplevel"], capture_output=True, text=True, timeout=2.5)
+            completed = _run_subprocess_hidden(["git", "-C", str(path), "rev-parse", "--show-toplevel"], capture_output=True, text=True, timeout=2.5)
             if completed.returncode != 0:
                 return None
             root = Path(completed.stdout.strip()).resolve()
@@ -17096,8 +18514,8 @@ raise SystemExit(2)
         except Exception:
             return {"available": False, "reason": "working tree does not match git root", "git_root": str(git_root)}
         try:
-            branch = subprocess.run(["git", "-C", str(git_root), "branch", "--show-current"], capture_output=True, text=True, timeout=2.5)
-            status = subprocess.run(["git", "-C", str(git_root), "status", "--porcelain=v1", "--branch", "--untracked-files=normal"], capture_output=True, text=True, timeout=4.0)
+            branch = _run_subprocess_hidden(["git", "-C", str(git_root), "branch", "--show-current"], capture_output=True, text=True, timeout=2.5)
+            status = _run_subprocess_hidden(["git", "-C", str(git_root), "status", "--porcelain=v1", "--branch", "--untracked-files=normal"], capture_output=True, text=True, timeout=4.0)
             status_text = status.stdout.strip()
             status_lines = [line for line in status_text.splitlines() if line.strip()]
             changed_lines = [line for line in status_lines if not line.startswith("##")]
@@ -17199,7 +18617,7 @@ raise SystemExit(2)
         if not root.exists():
             return {"available": False, "reason": "git root does not exist", "git_root": str(root)}
         try:
-            completed = subprocess.run(
+            completed = _run_subprocess_hidden(
                 ["git", "-C", str(root), "log", "-1", "--date=iso-strict", "--format=%H%x1f%h%x1f%an%x1f%ae%x1f%aI%x1f%cn%x1f%cI%x1f%s"],
                 capture_output=True,
                 text=True,
@@ -17212,7 +18630,7 @@ raise SystemExit(2)
             if not full_hash:
                 return {"available": False, "reason": "no commits found", "git_root": str(root)}
 
-            body_completed = subprocess.run(
+            body_completed = _run_subprocess_hidden(
                 ["git", "-C", str(root), "log", "-1", "--format=%B"],
                 capture_output=True,
                 text=True,
@@ -17220,7 +18638,7 @@ raise SystemExit(2)
             )
             body = body_completed.stdout.strip() if body_completed.returncode == 0 else ""
 
-            changed_completed = subprocess.run(
+            changed_completed = _run_subprocess_hidden(
                 ["git", "-C", str(root), "show", "--name-status", "--format=", "--find-renames", "--find-copies", "HEAD"],
                 capture_output=True,
                 text=True,
@@ -17229,7 +18647,7 @@ raise SystemExit(2)
             changed_status = changed_completed.stdout.strip() if changed_completed.returncode == 0 else ""
             changed_files = self._parse_last_commit_changed_files(changed_status, root)
 
-            stat_completed = subprocess.run(
+            stat_completed = _run_subprocess_hidden(
                 ["git", "-C", str(root), "show", "--stat", "--summary", "--format=", "HEAD"],
                 capture_output=True,
                 text=True,
@@ -17644,7 +19062,7 @@ raise SystemExit(2)
                 else:
                     cmd = base_cmd[:1] + [f"-p{level}"] + base_cmd[1:]
                 try:
-                    completed = subprocess.run(cmd, cwd=str(apply_root), capture_output=True, text=True, timeout=12.0)
+                    completed = _run_subprocess_hidden(cmd, cwd=str(apply_root), capture_output=True, text=True, timeout=12.0)
                     if completed.returncode == 0:
                         return True, f"{engine} -p{level}"
                     detail = (completed.stderr or completed.stdout or "").strip().splitlines()[:2]
@@ -18942,6 +20360,7 @@ raise SystemExit(2)
         self.ai_callback_text.insert("1.0", self.ai_callback_text_value.get())
 
         ttk.Button(action_column, text="Build generator prompt", command=self._build_prompt_preview).pack(fill="x")
+        ttk.Button(action_column, text="Build weighted prompt", command=self._build_custom_prompt_preview).pack(fill="x", pady=(8, 0))
         ttk.Button(action_column, text="Save prompt preview", command=self._save_prompt_preview).pack(fill="x", pady=(8, 0))
         text_pane = ttk.PanedWindow(text_root, orient="horizontal")
         text_pane.pack(fill="both", expand=True)
@@ -18954,8 +20373,8 @@ raise SystemExit(2)
         ttk.Label(
             custom_box,
             text=(
-                "Own Prompt: write or paste the functional task text here. Build weighted prompt mixes it with export intelligence, "
-                "operator flow, weights, references, PROGRESS.json callback design and the selected Build.complete/@ tokens."
+                "Own Prompt: write or paste the functional task text here. Use the Actions column to build the weighted prompt; "
+                "it mixes this text with export intelligence, operator flow, weights, references, PROGRESS.json callback design and selected Build.complete/@ tokens."
             ),
             wraplength=620,
         ).pack(anchor="w", pady=(0, 6))
@@ -18963,7 +20382,7 @@ raise SystemExit(2)
         prompt_shortcuts.pack(fill="x", pady=(0, 8))
         ttk.Label(
             prompt_shortcuts,
-            text="Choose a token, insert it into the Own Prompt and build the weighted prompt inline; generator refresh/compile remains in the main actions.",
+            text="Choose a token and insert it into the Own Prompt; weighted prompt building now lives in the Actions card.",
             wraplength=900,
         ).pack(anchor="w", pady=(0, 5))
         shortcut_row = ttk.Frame(prompt_shortcuts)
@@ -18975,7 +20394,6 @@ raise SystemExit(2)
         self.prompt_builder_context_box.bind("<KeyRelease>", lambda _event: self._show_prompt_builder_context_preview())
         ttk.Button(shortcut_row, text="Insert", command=self._insert_prompt_builder_context_variable).pack(side="left", padx=(6, 0))
         ttk.Button(shortcut_row, text="Compile Own Prompt", command=lambda: self._compile_prompt_builder_shortcuts("custom")).pack(side="left", padx=(6, 0))
-        ttk.Button(shortcut_row, text="Build weighted prompt", command=self._build_custom_prompt_preview).pack(side="left", padx=(6, 0))
         ttk.Button(shortcut_row, text="Clear", command=self._clear_custom_prompt).pack(side="left", padx=(6, 0))
         ttk.Label(shortcut_row, textvariable=self.prompt_builder_context_preview).pack(side="left", padx=(10, 0), fill="x", expand=True)
         ttk.Label(prompt_shortcuts, textvariable=self.create_git_reference_status, wraplength=1050).pack(anchor="w", pady=(6, 0))
@@ -19065,6 +20483,110 @@ raise SystemExit(2)
             "disclaimer",
         }
 
+    def _persistent_app_setting_vars(self) -> set[str]:
+        """Return app settings that are safe to persist across launches.
+
+        The Settings tab may persist UI / preference state only.  Project
+        evidence, ProjectRoot paths, schema paths, export paths and runtime
+        tool paths are session state and must never be written to
+        app_settings.json or rehydrated from old files.  Persisting those paths
+        lets the default/runtime worktree become authoritative project input on
+        the next launch.
+        """
+        return {
+            "ui_language",
+            "info_show_startup_donation",
+            "ai_language",
+            "overwrite",
+            "copy_schema",
+            "export_as_zip",
+            "compact_export",
+            "create_export_as_zip",
+            "create_compact_export",
+            "create_export_intelligence",
+            "create_export_last_git_commit",
+            "create_export_absolute_paths",
+            "export_brutally_honest",
+            "ai_operator_execution_mode",
+            "ai_confirm_operators_before_start",
+            "ai_research_schemas_boilerplates",
+            "scope_selected_tree",
+            "include_imports",
+            "include_dependency_manifests",
+            "changed_files_only",
+            "create_changed_files_only",
+            "create_include_imports",
+            "create_clean_project",
+            "create_do_not_normalize",
+            "create_schema_mirror",
+            "create_zip_contract",
+        }
+
+    def _volatile_project_setting_vars(self) -> set[str]:
+        """Return app variables that must remain session-only project state."""
+        return {
+            "project_name",
+            "role_date",
+            "output_base",
+            "schema_dir",
+            "export_dir",
+            "project_tree_source_mode",
+            "create_mode",
+            "create_stack",
+            "create_stack_category",
+            "create_target_path",
+            "create_working_path",
+            "create_dependencies",
+            "create_build_target",
+            "create_project_source_path",
+            "create_temp_preview_dir",
+            "create_context_variable",
+            "prompt_builder_context_variable",
+            "patch_input_path",
+            "patch_selected_path",
+            "create_nvm_root_path",
+            "create_gradle_runtime_path",
+            "create_python_path",
+            "create_compiler_path",
+            "create_flutter_path",
+            "create_dotnet_path",
+            "create_go_path",
+            "create_rust_path",
+            "create_yesva_path",
+            "create_cmake_path",
+            "create_docker_path",
+            "create_dockerfile_path",
+        }
+
+    def _is_persistable_app_setting_spec(self, spec: dict) -> bool:
+        if spec.get("readonly"):
+            return False
+        var_name = str(spec.get("var") or "")
+        if not var_name:
+            return False
+        # Absolute or user-selected paths are never persisted from app_settings.
+        if spec.get("type") == "path" or spec.get("path_kind"):
+            return False
+        if var_name in self._volatile_project_setting_vars():
+            return False
+        return var_name in self._persistent_app_setting_vars()
+
+    def _sanitize_persisted_app_settings(self, stored: object) -> dict:
+        """Drop legacy ProjectRoot/path/session keys from app_settings.json."""
+        if not isinstance(stored, dict):
+            return {}
+        allowed = self._persistent_app_setting_vars()
+        volatile = self._volatile_project_setting_vars()
+        sanitized: dict[str, object] = {}
+        for key, value in stored.items():
+            name = str(key)
+            if name in volatile:
+                continue
+            if name not in allowed:
+                continue
+            sanitized[name] = value
+        return sanitized
+
     def _load_app_settings(self) -> dict:
         defaults = self._default_info_settings()
         locked_defaults = {key: defaults[key] for key in self._locked_info_setting_keys() if key in defaults}
@@ -19074,12 +20596,13 @@ raise SystemExit(2)
                 loaded = json.loads(path.read_text(encoding="utf-8"))
                 if isinstance(loaded, dict):
                     for key, value in loaded.items():
-                        if key in defaults and key not in locked_defaults:
+                        if key == "app_settings":
+                            defaults["app_settings"] = self._sanitize_persisted_app_settings(value)
+                        elif key in defaults and key not in locked_defaults:
                             defaults[key] = value
         except Exception:
             pass
-        if not isinstance(defaults.get("app_settings"), dict):
-            defaults["app_settings"] = {}
+        defaults["app_settings"] = self._sanitize_persisted_app_settings(defaults.get("app_settings"))
         defaults.update(locked_defaults)
         return defaults
 
@@ -19141,24 +20664,36 @@ raise SystemExit(2)
         stored = self._app_settings_cache.get("app_settings", {}) if isinstance(getattr(self, "_app_settings_cache", {}), dict) else {}
         if not isinstance(stored, dict):
             return
+        stored = self._sanitize_persisted_app_settings(stored)
         for spec in self._info_setting_specs():
-            if spec.get("readonly"):
+            if not self._is_persistable_app_setting_spec(spec):
                 continue
-            var_name = spec.get("var")
+            var_name = str(spec.get("var") or "")
             if not var_name or var_name not in stored:
                 continue
-            variable = getattr(self, str(var_name), None)
+            variable = getattr(self, var_name, None)
             if variable is None or not hasattr(variable, "set"):
                 continue
+            value = stored[var_name]
             try:
-                variable.set(self._coerce_setting_value_for_var(variable, stored[var_name]))
+                variable.set(self._coerce_setting_value_for_var(variable, value))
+            except Exception:
+                pass
+        try:
+            current_schema_dir = Path(self.schema_dir.get())
+            resolved_schema_dir = resolve_schema_dir(current_schema_dir)
+            if str(resolved_schema_dir) != str(current_schema_dir) or not any(resolved_schema_dir.rglob("*.json")):
+                self.schema_dir.set(str(resolved_schema_dir))
+        except Exception:
+            try:
+                self.schema_dir.set(str(default_schema_dir()))
             except Exception:
                 pass
 
     def _current_app_settings_payload(self) -> dict:
         payload: dict[str, object] = {}
         for spec in self._info_setting_specs():
-            if spec.get("readonly"):
+            if not self._is_persistable_app_setting_spec(spec):
                 continue
             var_name = str(spec.get("var") or "")
             variable = getattr(self, var_name, None)
@@ -19168,7 +20703,7 @@ raise SystemExit(2)
                 payload[var_name] = variable.get()
             except Exception:
                 pass
-        return payload
+        return self._sanitize_persisted_app_settings(payload)
 
     def _current_info_settings_payload(self) -> dict:
         defaults = self._default_info_settings()
@@ -19815,18 +21350,28 @@ raise SystemExit(2)
             self._prompt_builder_flow_refresh_after = None
             if not hasattr(self, "prompt_text"):
                 return
+            if getattr(self, "_active_task", None):
+                try:
+                    self._prompt_builder_flow_refresh_after = self.after(240, callback)
+                    self._set_progress("Prompt Builder: waiting for active task before weighted refresh", None, 0)
+                except Exception:
+                    pass
+                return
             try:
                 if not self._active_generator_targets():
                     return
             except Exception:
                 return
-            # Operator flow is exported into metadata and changes the Remember block.
-            # Rebuild the generated operator prompt so Prompt Builder always mirrors
-            # the Export-tab point of truth after a flow switch.
+            # Operator flow/export intelligence are exported into metadata and change
+            # the Remember block. Project-backed contexts must refresh as weighted
+            # prompts, not as plain operator-role previews.
             try:
-                self._build_prompt_preview(select_prompt_tab=take_focus)
+                if self._prompt_builder_requires_weighted_prompt():
+                    self._build_custom_prompt_preview(select_prompt_tab=take_focus, allow_auto_task=True)
+                else:
+                    self._build_prompt_preview(select_prompt_tab=take_focus)
             except Exception as exc:
-                self._set_progress(f"Prompt Builder: Operator-flow refresh skipped: {exc}", 0)
+                self._set_progress(f"Prompt Builder: refresh skipped: {exc}", 0)
         try:
             self._prompt_builder_flow_refresh_after = self.after(120, callback)
         except Exception:
@@ -19862,12 +21407,8 @@ raise SystemExit(2)
         self._refresh_export_settings_visibility()
         self._update_project_tree_status()
         self._schedule_prompt_builder_flow_refresh()
-        try:
-            self._schedule_create_preview_refresh()
-        except Exception:
-            pass
-        if self._use_create_working_dir_for_project_tree():
-            self._schedule_create_preview_refresh()
+        # Export-tab checkboxes are read-only generation options. They must not
+        # refresh/materialize the Create preview or mutate Create state.
 
     def _refresh_export_settings_visibility(self) -> None:
         use_create = self._use_create_working_dir_for_project_tree()
@@ -20157,26 +21698,168 @@ raise SystemExit(2)
                 self.export_dir.set(str(default_worktree_export_dir()))
             return base
 
+    def _request_project_root_tree_scan_once(self, reason: str, *, delay_ms: int = 0) -> None:
+        """Schedule one Project Tree scan for a Project Root change without loops.
+
+        If another worker is active, wait and retry silently instead of calling
+        _refresh_project_tree immediately. That avoids the "Task already running"
+        warning and prevents repeated Tree scan requests from Root change traces.
+        """
+        try:
+            root = self._normalize_start_working_tree().resolve()
+        except Exception:
+            return
+        if not root.exists() or not root.is_dir():
+            return
+        if self._path_is_synthetic_project_root(root):
+            self._reset_create_source_state()
+            try:
+                self._refresh_create_mode_options("synthetic_project_root")
+            except Exception:
+                pass
+            try:
+                self._refresh_project_tree_source_options()
+            except Exception:
+                pass
+            try:
+                self.create_project_mode_status.set("Create mode: new project abstraction — default/runtime Project Root ignored")
+            except Exception:
+                pass
+            try:
+                self._set_progress("Project Root scan skipped: default/runtime path is not project evidence", 1, 1)
+            except Exception:
+                pass
+            return
+        key = f"{reason}:{root}"
+        self._pending_project_root_tree_scan_key = key
+        pending = getattr(self, "_pending_project_root_tree_scan_after", None)
+        if pending:
+            try:
+                self.after_cancel(pending)
+            except Exception:
+                pass
+            self._pending_project_root_tree_scan_after = None
+
+        def run_once() -> None:
+            if self._pending_project_root_tree_scan_key != key:
+                self._pending_project_root_tree_scan_after = None
+                return
+            if getattr(self, "_active_task", None):
+                try:
+                    self._set_progress("Project Root change: waiting for active task before single Project Tree scan", 0)
+                except Exception:
+                    pass
+                self._pending_project_root_tree_scan_after = self.after(350, run_once)
+                return
+            self._pending_project_root_tree_scan_after = None
+            self._pending_project_root_tree_scan_key = ""
+            self._refresh_project_tree(force_scan=True, reason=reason)
+
+        self._pending_project_root_tree_scan_after = self.after(max(0, int(delay_ms)), run_once)
+
+
+    def _preunmount_before_project_root_change(self, new_root: str, *, reason: str = "project_root_change") -> bool:
+        """Always detach Create/preview state before a Project Root is replaced.
+
+        Project Root selection is the source-of-truth boundary for existing-project
+        mode. If the user forgot to press Unmount, selecting a new root must behave
+        as if Unmount happened first, then the new root is written and scanned.
+        """
+        try:
+            new_resolved = str(Path(new_root).expanduser().resolve())
+        except Exception:
+            new_resolved = str(new_root or "")
+        try:
+            old_resolved = str(self._normalize_start_working_tree().resolve())
+        except Exception:
+            old_resolved = str(self.output_base.get() or "")
+        if not new_resolved:
+            return False
+        if old_resolved and new_resolved == old_resolved:
+            return False
+        self._project_root_change_unmount_in_progress = True
+        self._project_root_preunmount_done_for_value = new_resolved
+        try:
+            # State-only detach. Do not refresh Project Tree/Create tabs from
+            # inside pre-unmount; the root-change scan scheduler owns the single
+            # follow-up scan. Refreshing here can create scan loops.
+            self._clear_create_mount_state("start_project_root_changed", None, remove_record=True, refresh=False)
+            try:
+                self.create_working_path.set("")
+            except Exception:
+                pass
+            try:
+                self.create_temp_preview_dir.set("")
+            except Exception:
+                pass
+            try:
+                self.create_project_source_path.set("")
+            except Exception:
+                pass
+            try:
+                self.project_tree_source_mode.set("normal_working_tree")
+            except Exception:
+                pass
+            try:
+                self._set_progress(f"Project Root change: Create unmounted before setting new root — {new_resolved}", 0)
+            except Exception:
+                pass
+            return True
+        except Exception as exc:
+            self._project_root_change_unmount_in_progress = False
+            self._project_root_preunmount_done_for_value = ""
+            try:
+                self._set_progress(f"Project Root pre-unmount skipped: {exc}", 0)
+            except Exception:
+                pass
+            return False
+
+
     def _browse_output(self) -> None:
         selected = filedialog.askdirectory(title="Choose project root / working tree", initialdir=str(self._normalize_start_working_tree()))
         if selected:
+            selected_root: Path | None = None
+            try:
+                selected_root = Path(selected).expanduser().resolve()
+            except Exception:
+                selected_root = None
+            if selected_root is not None and self._path_is_synthetic_project_root(selected_root):
+                try:
+                    messagebox.showwarning(
+                        "Invalid Project Root",
+                        "Prompt Guide runtime/default folders cannot be used as Project Root. Choose the real source project folder instead.",
+                    )
+                except Exception:
+                    pass
+                self._set_progress("Project Root selection rejected: default/runtime path cannot seed Create", 1, 1)
+                return
             old_base = self._normalize_start_working_tree()
             old_default = str(preferred_output_export_dir(old_base))
-            self.output_base.set(selected)
             try:
-                if Path(selected).expanduser().resolve() != old_base.resolve():
-                    self._clear_create_mount_state("working_tree_changed", None, remove_record=True, refresh=True)
+                same_root = Path(selected).expanduser().resolve() == old_base.resolve()
             except Exception:
-                pass
+                same_root = False
+            if same_root:
+                self._reset_start_project_root_read_state("working_tree_reloaded")
+            else:
+                # Important order: Create/preview state is unmounted before the
+                # new Project Root value is written. This prevents stale preview
+                # clones when the user forgets to press Unmount manually.
+                self._preunmount_before_project_root_change(selected, reason="start_browse")
+            self._project_root_browse_handles_scan_once = not same_root
+            try:
+                self.output_base.set(selected)
+            finally:
+                self._project_root_change_unmount_in_progress = False
             self._set_project_name_from_folder(Path(selected))
             if not self.export_dir.get().strip() or self.export_dir.get().strip() == old_default:
                 self.export_dir.set(str(default_worktree_export_dir()))
-            self._invalidate_project_tree_cache("working_tree_changed")
-            self._create_source_loaded_signature = ""
-            self._create_source_mount_signature = ""
-            self._create_source_clone_manifest = None
-            self._create_last_source_clone_signature = ""
-            self._refresh_project_tree(force_scan=True, reason="working_tree_changed")
+            self._invalidate_project_tree_cache("working_tree_reloaded" if same_root else "working_tree_changed")
+            self._create_last_scope_sync_signature = None
+            try:
+                self._request_project_root_tree_scan_once("working_tree_reloaded" if same_root else "working_tree_changed", delay_ms=0)
+            finally:
+                self._project_root_browse_handles_scan_once = False
             self._refresh_create_mode_options("start_browse")
             # Project-root runtime hints are now derived from the existing
             # Project Tree scan result. Do not start a second marker crawler here.
@@ -20201,11 +21884,29 @@ raise SystemExit(2)
         except Exception:
             current_root = str(self.output_base.get() or "")
         previous_root = str(getattr(self, "_last_start_project_root_value", "") or "")
+        if getattr(self, "_unmount_reset_in_progress", False):
+            self._last_start_project_root_value = current_root
+            self._create_last_scope_sync_signature = None
+            return
+        self._clear_manual_create_override_if_real_start_base(reason)
         if previous_root and current_root and previous_root != current_root:
-            self._clear_create_mount_state("start_project_root_changed", None, remove_record=True, refresh=True)
-        if previous_root and current_root and previous_root != current_root:
+            preunmounted = (
+                bool(getattr(self, "_project_root_change_unmount_in_progress", False))
+                and str(getattr(self, "_project_root_preunmount_done_for_value", "") or "") == current_root
+            )
+            if not preunmounted:
+                # Manual Settings/Entry edits reach this handler after the StringVar
+                # changed, so this is the fallback unmount boundary before any scan
+                # or Create re-sync can use the new root.
+                self._clear_create_mount_state("start_project_root_changed", None, remove_record=True, refresh=False)
+                try:
+                    self.create_working_path.set("")
+                except Exception:
+                    pass
+            self._create_last_scope_sync_signature = None
             self._create_manual_new_project_override = False
             self._create_manual_unmount_start_signature = ""
+            self._project_root_preunmount_done_for_value = ""
         self._last_start_project_root_value = current_root
         try:
             self._refresh_create_mode_options(reason)
@@ -20218,21 +21919,43 @@ raise SystemExit(2)
         except Exception:
             pass
 
+        try:
+            current_path = Path(current_root)
+            if self._path_is_synthetic_project_root(current_path):
+                self._reset_create_source_state()
+                self._create_manual_new_project_override = True
+                self._create_manual_unmount_start_signature = str(current_path.expanduser().resolve())
+                try:
+                    self.create_project_mode_status.set("Create mode: new project abstraction — default/runtime Project Root ignored")
+                except Exception:
+                    pass
+                try:
+                    self._refresh_project_tree_source_options()
+                except Exception:
+                    pass
+                try:
+                    self._set_progress("Project Root change: default/runtime path kept detached; no Project Tree scan scheduled", 1, 1)
+                except Exception:
+                    pass
+                return
+        except Exception:
+            pass
+
         def run_existing_scan() -> None:
             self._create_project_root_runtime_scan_after = None
             try:
                 root = self._normalize_start_working_tree().resolve()
             except Exception:
                 return
-            if not root.exists() or not root.is_dir():
+            if not root.exists() or not root.is_dir() or self._path_is_synthetic_project_root(root):
                 return
             if hasattr(self, "project_tree"):
                 self._refresh_project_tree(force_scan=True, reason=reason)
 
-        try:
-            self._create_project_root_runtime_scan_after = self.after(650, run_existing_scan)
-        except Exception:
-            run_existing_scan()
+        if getattr(self, "_project_root_browse_handles_scan_once", False):
+            self._set_progress("Project Root change: trace scan suppressed because Browse owns this scan", 0)
+            return
+        self._request_project_root_tree_scan_once(reason, delay_ms=650)
 
     def _python_version_from_text(self, text: object) -> str:
         value = str(text or "")
@@ -20360,7 +22083,7 @@ raise SystemExit(2)
             python_hint = self._normalize_python_version(sys.version) or self._normalize_python_version(platform.python_version())
         if markers.get("python") and not python_path:
             try:
-                python_path = str(Path(sys.executable)) if sys.executable else ""
+                python_path = self._python_runtime_executable()
             except Exception:
                 python_path = ""
 
@@ -20578,10 +22301,10 @@ raise SystemExit(2)
             for candidate in self._project_local_python_candidates(roots):
                 result.append((str(candidate), True))
             try:
-                if sys.executable:
-                    # Python is stageable (Anaconda, venv, custom interpreter).
-                    # Show the detected interpreter as an overridable path.
-                    result.append((str(Path(sys.executable)), True))
+                # Python is stageable (Anaconda, venv, custom interpreter).
+                # Show the detected interpreter as an overridable path without
+                # exposing the frozen GUI executable as a runnable Python host.
+                result.append((self._python_runtime_executable(), True))
             except Exception:
                 pass
         if eco == "gradle":
@@ -20620,7 +22343,7 @@ raise SystemExit(2)
         errors: list[str] = []
         for executable, pinned in self._runtime_probe_executable_candidates(eco, roots, selected_paths):
             try:
-                completed = subprocess.run(
+                completed = _run_subprocess_hidden(
                     self._runtime_command_for_probe(eco, executable),
                     cwd=str(roots[0]) if roots else None,
                     stdout=subprocess.PIPE,
@@ -20834,6 +22557,29 @@ raise SystemExit(2)
     def _with_target_enabled(self, target: SaveTarget, enabled: bool) -> SaveTarget:
         return SaveTarget(target.path, target.path_type, target.ai_target, target.boilerplate_profiles, target.file_types, enabled=enabled, write_rules=target.write_rules, write_manager=target.write_manager)
 
+    def _after_generator_targets_changed(self, reason: str = "generator_targets_changed") -> None:
+        """Synchronize dependent previews after Generator target edits.
+
+        This refresh is intentionally one-way: Generator changes update previews,
+        references and export readiness, but they do not overwrite Create-tab
+        mode/stack/path settings.
+        """
+        for callback in (
+            getattr(self, "_refresh_reference_preview", None),
+            getattr(self, "_schedule_prompt_builder_flow_refresh", None),
+            getattr(self, "_refresh_project_tree", None),
+            getattr(self, "_refresh_info_settings_overview", None),
+        ):
+            if callable(callback):
+                try:
+                    callback()
+                except Exception:
+                    pass
+        try:
+            self._set_progress(f"Generator targets synchronized ({reason})", 1, 1)
+        except Exception:
+            pass
+
     def _add_or_update_target(self) -> None:
         try:
             target = SaveTarget(self._normalize_generator_save_path(self.path_var.get().strip()), self.path_type_var.get().strip().lower(), self.ai_target_var.get().strip(), self._selected_profiles(), self._selected_file_types()).normalized(self.schema)
@@ -20854,6 +22600,7 @@ raise SystemExit(2)
             updated.append(target)
         self.targets = self._dedupe_generator_targets(updated)
         self._refresh_targets()
+        self._after_generator_targets_changed("save")
 
     def _remove_selected(self) -> None:
         selection = self.tree.selection()
@@ -20862,10 +22609,12 @@ raise SystemExit(2)
         keys = {self._generator_target_key(self.tree.item(item, "values")[1]) for item in selection}
         self.targets = [target for target in self.targets if self._generator_target_key(target.path) not in keys]
         self._refresh_targets()
+        self._after_generator_targets_changed("remove")
 
     def _reset_defaults(self) -> None:
         self.targets = self._inactive_default_generator_targets()
         self._refresh_targets()
+        self._after_generator_targets_changed("reset_defaults")
 
     def _on_select_target(self, _event=None) -> None:
         selection = self.tree.selection()
@@ -20897,6 +22646,7 @@ raise SystemExit(2)
                 break
         self.targets = self._dedupe_generator_targets(self.targets)
         self._refresh_targets()
+        self._after_generator_targets_changed("toggle_enabled")
 
     def _refresh_targets(self) -> None:
         self.targets = self._dedupe_generator_targets(list(self.targets))
@@ -21797,6 +23547,10 @@ raise SystemExit(2)
         finally:
             self._syncing_project_scope_preview = False
         self._update_project_tree_status()
+        try:
+            self._sync_generator_targets_from_project_tree_selection("manual_scope_text_selection")
+        except Exception as exc:
+            self._set_progress(f"Project Tree target sync skipped: {exc}", 0)
         if missing:
             try:
                 self.project_tree_status.set(f"Manual Selected Scope: {len(valid)} paths selected; {len(missing)} unknown/ignored: {', '.join(missing[:5])}")
@@ -21864,9 +23618,16 @@ raise SystemExit(2)
         return self._resolve_export_path(self.export_dir.get() if hasattr(self, "export_dir") else "", "worktree-export")
 
     def _project_tree_scan_signature(self) -> tuple[str, str]:
-        source = "create_working_dir" if self._use_create_working_dir_for_project_tree() else "normal_working_tree"
+        if self._use_create_working_dir_for_project_tree() and self._project_tree_create_source_available():
+            source = "create_working_dir"
+        else:
+            source = "normal_working_tree"
         base = self._active_project_tree_base().resolve()
         return (source, str(base))
+
+    def _is_export_tree_source_view_reason(self, reason: str | None) -> bool:
+        value = str(reason or "").strip()
+        return value in {"tree_source_user_selected", "export_tree_source_view_selected", "tree_source_auto_selected"}
 
     def _scope_fingerprint_entries(self, scope: dict) -> list[tuple[str, str]]:
         """Return the cached paths that are allowed to participate in a light change check."""
@@ -22140,8 +23901,8 @@ raise SystemExit(2)
         if self._active_tree_include_imports() and not self._is_import_index_ready():
             self._ensure_import_index_worker("Include Imports cache missing")
         self._on_project_tree_selection()
-        if self._use_create_working_dir_for_project_tree():
-            self._schedule_create_preview_refresh()
+        # Include Imports belongs to the currently selected Export/Prompt tree
+        # view. It must not refresh or materialize the Create preview.
 
     def _apply_cached_import_selection(self, selected_paths: list[str], focused: str = "") -> list[str]:
         if not self._active_tree_include_imports() or self._updating_import_selection:
@@ -22320,6 +24081,10 @@ raise SystemExit(2)
         selected_files = self._selected_project_file_paths()
         selected_tuple = tuple(sorted(set(selected_files)))
         focused_is_file = bool(focused and self._project_tree_kind_by_path.get(focused) == "file")
+        try:
+            self._sync_generator_targets_from_project_tree_selection("project_tree_selection")
+        except Exception as exc:
+            self._set_progress(f"Project Tree target sync skipped: {exc}", 0)
         if self._active_tree_include_imports() and selected_files:
             if selected_tuple == self._last_import_completed_selection:
                 if focused_is_file:
@@ -22443,6 +24208,10 @@ raise SystemExit(2)
         if not imported:
             self._set_progress("Imports: no additional local files found", 1, 1)
             self._update_project_tree_status()
+            try:
+                self._sync_generator_targets_from_project_tree_selection("project_tree_import_result_no_extra")
+            except Exception as exc:
+                self._set_progress(f"Project Tree target sync skipped: {exc}", 0)
             if focused and self._project_tree_kind_by_path.get(focused) == "file":
                 self._preview_project_tree_file(focused, [])
             return
@@ -22477,7 +24246,11 @@ raise SystemExit(2)
             self._updating_import_selection = False
             self._suppress_project_selection_until = time.monotonic() + 0.8
             self._update_project_tree_status()
-            self._set_progress(f"Imports: {len(imported)} files selected automatically", 1, 1)
+            try:
+                self._sync_generator_targets_from_project_tree_selection("project_tree_import_selection")
+            except Exception as exc:
+                self._set_progress(f"Project Tree target sync skipped: {exc}", 0)
+            self._set_progress(f"Imports: {len(imported)} files selected automatically; Generator/Prompt Builder targets synchronized", 1, 1)
             if focused and self._project_tree_kind_by_path.get(focused) == "file":
                 self._preview_project_tree_file(focused, imported)
 
@@ -22558,18 +24331,36 @@ raise SystemExit(2)
             previous_open_paths = ()
         signature = self._project_tree_scan_signature()
         base = Path(signature[1])
-        self._set_project_name_from_folder(base)
+        view_only_source_switch = self._is_export_tree_source_view_reason(reason)
+        if not view_only_source_switch and signature[0] == "normal_working_tree":
+            self._set_project_name_from_folder(base)
+        if force_scan and signature[0] == "normal_working_tree" and not view_only_source_switch:
+            # Manual refresh / same-folder re-read is a real evidence reload.
+            # Clear project-first sync and mounted source clone, but do not clone
+            # until the Create tab is opened.
+            self._create_last_scope_sync_signature = None
+            if reason in {"manual_refresh", "working_tree_reloaded"}:
+                self._reset_start_project_root_read_state(reason)
         cached_scope = self._project_tree_scope_cache.get(signature)
         if cached_scope is not None and not force_scan:
             self._set_progress("Project Tree: rendering existing snapshot without rescan", 0, 2)
             cached_reason = reason or self._project_tree_last_read_reason or "project_tree_scan"
-            if self._create_runtime_probe_allowed_reason(cached_reason):
+            if not view_only_source_switch and self._create_runtime_probe_allowed_reason(cached_reason):
                 try:
                     self._apply_runtime_hints_from_project_tree_scope(base, dict(cached_scope), cached_reason)
                     self._schedule_create_stack_runtime_check(cached_reason, delay_ms=120)
                 except Exception:
                     pass
-            self._render_project_tree_scope(dict(cached_scope), previous_selection, previous_open_paths, base, scan_signature=signature, preserve_import_cache=True, render_progress_start=1)
+            self._render_project_tree_scope(
+                dict(cached_scope),
+                previous_selection,
+                previous_open_paths,
+                base,
+                scan_signature=signature,
+                preserve_import_cache=True,
+                render_progress_start=1,
+                sync_create=not view_only_source_switch and signature[0] == "normal_working_tree",
+            )
             return
 
         self._project_tree_last_read_reason = reason or ("forced" if force_scan else "initial")
@@ -22600,13 +24391,22 @@ raise SystemExit(2)
             self._project_tree_scope_fingerprint_cache[signature] = str(payload.get("fingerprint") or "")
             self._project_tree_cache_check_result_cache[signature] = (time.monotonic(), False)
             read_reason = self._project_tree_last_read_reason or "project_tree_scan"
-            if self._create_runtime_probe_allowed_reason(read_reason):
+            if not view_only_source_switch and self._create_runtime_probe_allowed_reason(read_reason):
                 try:
                     self._apply_runtime_hints_from_project_tree_scope(base, scope, read_reason)
                     self._schedule_create_stack_runtime_check(read_reason, delay_ms=120)
                 except Exception:
                     pass
-            self._render_project_tree_scope(scope, previous_selection, previous_open_paths, base, scan_signature=signature, preserve_import_cache=False, render_progress_start=85)
+            self._render_project_tree_scope(
+                scope,
+                previous_selection,
+                previous_open_paths,
+                base,
+                scan_signature=signature,
+                preserve_import_cache=False,
+                render_progress_start=85,
+                sync_create=not view_only_source_switch and signature[0] == "normal_working_tree",
+            )
             return "progress_pending"
 
         self._run_background_task("Project Tree scan", worker, success, lambda exc: self.project_tree_status.set(f"Tree scan failed: {exc}"))
@@ -22657,7 +24457,7 @@ raise SystemExit(2)
 
         self._project_tree_delete_after = self.after(50, delete_chunk)
 
-    def _render_project_tree_scope(self, scope: dict, previous_selection: tuple[str, ...], previous_open_paths: tuple[str, ...], base: Path, *, scan_signature: tuple[str, str] | None = None, preserve_import_cache: bool = False, render_progress_start: int = 45) -> None:
+    def _render_project_tree_scope(self, scope: dict, previous_selection: tuple[str, ...], previous_open_paths: tuple[str, ...], base: Path, *, scan_signature: tuple[str, str] | None = None, preserve_import_cache: bool = False, render_progress_start: int = 45, sync_create: bool = True) -> None:
         if not hasattr(self, "project_tree"):
             return
         if self._project_tree_render_after:
@@ -22739,6 +24539,11 @@ raise SystemExit(2)
             except Exception:
                 pass
             self._restore_project_tree_path_selection(previous_selection)
+            if previous_selection:
+                try:
+                    self._sync_generator_targets_from_project_tree_selection("project_tree_render_restored_selection")
+                except Exception as exc:
+                    self._set_progress(f"Project Tree target sync skipped: {exc}", 0)
             self._set_progress("Project Tree: selection/open state restored", 1, 4)
             storage_note = "; dependency storage visible read-only" if bool(getattr(self, "project_tree_show_dependency_storage", tk.BooleanVar(value=False)).get()) else ""
             self.project_tree_status.set(
@@ -22748,17 +24553,26 @@ raise SystemExit(2)
             self._update_project_tree_status()
             self._project_tree_scope_signature = scan_signature or self._project_tree_scan_signature()
             self._project_tree_scope_loaded = True
-            self._set_progress("Project Tree: synchronizing Create/Export state", 3, 4)
-            # Project-first Create sync: Start-tab tree read is evidence; Create
-            # still works in its isolated temp preview until Run is confirmed.
-            try:
-                self._sync_create_from_project_scope(scope, base)
-                self._refresh_project_tree_source_options()
-                if getattr(self, "_create_project_first_mode", False):
-                    self._schedule_create_stack_runtime_check(self._project_tree_last_read_reason or "project_tree_scan", delay_ms=160)
-            except Exception as exc:
-                if hasattr(self, "create_project_mode_status"):
-                    self.create_project_mode_status.set(f"Create project sync failed: {exc}")
+            self._set_progress("Project Tree: updating Export source state", 3, 4)
+            if sync_create:
+                # Project-first Create sync is allowed only for real Start-tab
+                # Project Root reads. Export source switching is read-only and
+                # must never reset/mutate Create mode, mapping, clone or root.
+                try:
+                    self._sync_create_from_project_scope(scope, base)
+                    self._refresh_project_tree_source_options()
+                    if getattr(self, "_create_project_first_mode", False):
+                        self._schedule_create_stack_runtime_check(self._project_tree_last_read_reason or "project_tree_scan", delay_ms=160)
+                        if self._is_create_tab_active():
+                            self._schedule_create_source_load_retry("project_tree_synced")
+                except Exception as exc:
+                    if hasattr(self, "create_project_mode_status"):
+                        self.create_project_mode_status.set(f"Create project sync failed: {exc}")
+            else:
+                try:
+                    self._refresh_project_tree_source_options()
+                except Exception:
+                    pass
             self._set_progress("Project Tree ready", 4, 4)
             # Rendering a tree, expanding a folder or opening the Export tab must
             # never trigger Include Imports. The import index starts only from the
@@ -22839,7 +24653,112 @@ raise SystemExit(2)
                 self._syncing_project_scope_preview = False
             self._apply_text_widget_theme()
 
+    def _prompt_builder_requires_weighted_prompt(self, record: dict | None = None) -> bool:
+        """Project-backed Prompt Builder output is always a weighted prompt."""
+        try:
+            if isinstance(record, dict) and record.get("complete"):
+                return True
+        except Exception:
+            pass
+        try:
+            if self._active_successful_create_build_for_current_stack():
+                return True
+        except Exception:
+            pass
+        try:
+            if self._use_create_working_dir_for_project_tree() and self._project_tree_create_source_available():
+                return True
+        except Exception:
+            pass
+        try:
+            if self._has_start_tab_target_match():
+                return True
+        except Exception:
+            pass
+        try:
+            if bool(getattr(self, "_create_project_first_mode", False)) and bool(getattr(self, "_create_project_scope_snapshot", None)):
+                return True
+        except Exception:
+            pass
+        return False
+
+    def _prompt_builder_default_weighted_task_text(self, config: dict | None = None, record: dict | None = None) -> str:
+        """Create a task body when ProjectRoot/Build.complete needs weighted output.
+
+        Manual Own Prompt text remains authoritative. This fallback prevents the
+        Prompt Builder and Create Export from staying empty after a successful
+        ProjectRoot clone or Build.complete handoff.
+        """
+        manual = self._prompt_builder_custom_task_text() if hasattr(self, "custom_prompt_text") else ""
+        if manual:
+            return manual
+        record = record or self._active_successful_create_build_for_current_stack()
+        config = config or self._current_create_config()
+        base = None
+        try:
+            base = self._create_export_base_for_record(record)
+        except Exception:
+            try:
+                base = self._active_project_tree_base()
+            except Exception:
+                base = None
+        source_label = "Build.complete preview clone" if isinstance(record, dict) and record.get("complete") else "Project Root / Create Working Dir"
+        lines = [
+            "# Auto Weighted Project Prompt",
+            "",
+            f"- Source of truth: {source_label}.",
+            f"- Project base: {base or '-'}",
+            f"- Create mode: {self.create_mode.get()}; stack: {self.create_stack.get()}.",
+            "- Build a weighted prompt for the active project context, selected targets, schema weights, references, operator flow and PROGRESS.json callback contract.",
+            "- Treat this as a real project handoff: use the preview clone / Project Root evidence and do not fall back to boilerplate-only templates.",
+            "- Respect selected Export-tree scope and include-import settings; do not invent files outside the active project evidence.",
+            "",
+            self._create_export_prompt_text(config, record),
+        ]
+        return "\n".join(str(line).rstrip() for line in lines if line is not None).strip()
+
+    def _build_weighted_prompt_text_for_context(self, custom: str, *, config: dict | None = None, record: dict | None = None, base: Path | None = None, scope_paths: list[str] | None = None, include_imports: bool | None = None, progress_prefix: str = "Weighted prompt") -> str:
+        config = config or self._current_create_config()
+        record = record or self._active_successful_create_build_for_current_stack()
+        target = self._target_for_prompt()
+        base = Path(base or self._active_project_tree_base()).resolve()
+        export_dir = self._active_project_tree_export_dir(base)
+        schema_dir = Path(self.schema_dir.get())
+        ai_language = self.ai_language.get()
+        role_date = self.role_date.get().strip() or None
+        selected_refs = self._generator_reference_ids()
+        selected_roles = self._generator_operation_role_ids()
+        changed_files_only = self.changed_files_only.get()
+        targets = self._active_generator_targets()
+        if not targets:
+            raise RuntimeError("No active Generator target available for weighted prompt.")
+        self._progress_callback(f"{progress_prefix}: loading schema", None, 0)
+        schema = load_schema(schema_dir)
+        normalized_targets = [item.normalized(schema) for item in targets]
+        effective_scope = list(scope_paths if scope_paths is not None else (self._scope_paths_for_worker() or []))
+        effective_include_imports = self._active_tree_include_imports() if include_imports is None else bool(include_imports)
+        if effective_include_imports and effective_scope:
+            self._progress_callback(f"{progress_prefix}: resolving imports", None, 0)
+            effective_scope = expand_scope_paths_with_imports(base, effective_scope, export_dir)
+        self._progress_callback(f"{progress_prefix}: scanning project metadata", None, 0)
+        cached_scope = self._cached_project_scope_for_paths(base, effective_scope)
+        metadata = scan_project_metadata(base, normalized_targets, schema, effective_scope, export_dir, selected_refs, selected_roles, progress_callback=self._progress_callback, project_scope=cached_scope)
+        metadata["path_policy"] = self._create_export_path_policy_payload(base)
+        metadata["create_mode_parameters"] = self._create_mode_parameter_profile()
+        metadata["ai_response_callback"] = self._ai_response_callback_contract()
+        metadata["brutally_honest_introductions"] = self._brutally_honest_intro_enabled()
+        metadata["progress_manifest"] = self._progress_json_file_name()
+        metadata["build_complete_tokens"] = self._prompt_builder_build_complete_token_rows(custom, record)
+        metadata["response_policy"] = {
+            "changed_files_only": bool(changed_files_only),
+            "ai_instruction": "Return only changed files plus concise validation notes; do not paste unchanged files." if changed_files_only else "Normal scoped answer mode.",
+        }
+        metadata["operator_flow"] = self._operator_flow_contract()
+        self._progress_callback(f"{progress_prefix}: building weighted prompt", None, 0)
+        return build_custom_weighted_prompt(schema, target.normalized(schema), metadata, custom, ai_language, "custom_weighted_prompt", role_date)
+
     def _build_prompt_preview(self, *, select_prompt_tab: bool = True) -> None:
+        self._refresh_project_tree_source_options()
         target = self._target_for_prompt()
         base = self._active_project_tree_base()
         self._set_project_name_from_folder(base)
@@ -22869,6 +24788,7 @@ raise SystemExit(2)
             self._progress_callback("Prompt context: scanning project metadata", None, 0)
             cached_scope = self._cached_project_scope_for_paths(base, effective_scope)
             metadata = scan_project_metadata(base, normalized_targets, schema, effective_scope, export_dir, selected_refs, selected_roles, progress_callback=self._progress_callback, project_scope=cached_scope)
+            metadata["path_policy"] = self._create_export_path_policy_payload(base)
             metadata["create_mode_parameters"] = self._create_mode_parameter_profile()
             metadata["ai_response_callback"] = self._ai_response_callback_contract()
             metadata["brutally_honest_introductions"] = self._brutally_honest_intro_enabled()
@@ -22892,63 +24812,53 @@ raise SystemExit(2)
 
         self._run_background_task("Prompt build", worker, success)
 
-    def _build_custom_prompt_preview(self) -> None:
+    def _build_custom_prompt_preview(self, *, select_prompt_tab: bool = True, allow_auto_task: bool | None = None) -> None:
+        self._refresh_project_tree_source_options()
+        config = self._current_create_config()
+        record = self._active_successful_create_build_for_current_stack()
+        allow_auto = self._prompt_builder_requires_weighted_prompt(record) if allow_auto_task is None else bool(allow_auto_task)
         custom = self._prompt_builder_custom_task_text() if hasattr(self, "custom_prompt_text") else ""
+        if not custom and allow_auto:
+            custom = self._prompt_builder_default_weighted_task_text(config, record)
         if not custom:
             messagebox.showwarning("No own prompt", "Paste an own prompt first, or use Build Operator Role Prompt.")
             return
-        target = self._target_for_prompt()
-        base = self._active_project_tree_base()
-        self._set_project_name_from_folder(base)
-        export_dir = self._active_project_tree_export_dir(base)
-        schema_dir = Path(self.schema_dir.get())
-        ai_language = self.ai_language.get()
-        role_date = self.role_date.get().strip() or None
+        try:
+            base = self._active_project_tree_base()
+            self._set_project_name_from_folder(base)
+        except Exception:
+            base = None
         scope_paths = self._scope_paths_for_worker()
         include_imports = self._active_tree_include_imports()
-        selected_refs = self._generator_reference_ids()
-        selected_roles = self._generator_operation_role_ids()
-        changed_files_only = self.changed_files_only.get()
         targets = self._active_generator_targets()
         if not targets:
             messagebox.showwarning("No active Generator target", "Generator defaults are inactive templates. Link a Create target or read a matching Project Root first.")
             return
 
-        if self._create_should_include_last_git_commit_reference(self._current_create_config()):
+        if self._create_should_include_last_git_commit_reference(config):
             self._ensure_create_last_git_commit_reference(reason="prompt_builder_custom_build", force=False)
 
         def worker():
-            self._progress_callback("Custom prompt: loading schema", None, 0)
-            schema = load_schema(schema_dir)
-            normalized_targets = [item.normalized(schema) for item in targets]
-            effective_scope = list(scope_paths or [])
-            if include_imports and effective_scope:
-                self._progress_callback("Custom prompt: resolving imports", None, 0)
-                effective_scope = expand_scope_paths_with_imports(base, effective_scope, export_dir)
-            self._progress_callback("Custom prompt: scanning project metadata", None, 0)
-            cached_scope = self._cached_project_scope_for_paths(base, effective_scope)
-            metadata = scan_project_metadata(base, normalized_targets, schema, effective_scope, export_dir, selected_refs, selected_roles, progress_callback=self._progress_callback, project_scope=cached_scope)
-            metadata["create_mode_parameters"] = self._create_mode_parameter_profile()
-            metadata["ai_response_callback"] = self._ai_response_callback_contract()
-            metadata["progress_manifest"] = self._progress_json_file_name()
-            metadata["build_complete_tokens"] = self._prompt_builder_build_complete_token_rows(custom if 'custom' in locals() else "", self._active_successful_create_build_for_current_stack())
-            metadata["response_policy"] = {
-                "changed_files_only": bool(changed_files_only),
-                "ai_instruction": "Return only changed files plus concise validation notes; do not paste unchanged files." if changed_files_only else "Normal scoped answer mode.",
-            }
-            metadata["operator_flow"] = self._operator_flow_contract()
-            self._progress_callback("Custom prompt is being built", None, 0)
-            return build_custom_weighted_prompt(schema, target.normalized(schema), metadata, custom, ai_language, "custom_weighted_prompt", role_date)
+            return self._build_weighted_prompt_text_for_context(
+                custom,
+                config=config,
+                record=record,
+                base=base,
+                scope_paths=scope_paths,
+                include_imports=include_imports,
+                progress_prefix="Custom weighted prompt",
+            )
 
         def success(prompt: str) -> None:
             prompt = self._wrap_human_prompt_builder_output("custom_weighted_prompt", prompt, custom_task=custom)
             self.prompt_text.delete("1.0", "end")
             self.prompt_text.insert("1.0", prompt)
-            self.notebook.select(self.prompt_tab)
+            if select_prompt_tab:
+                self.notebook.select(self.prompt_tab)
             self._refresh_reference_preview()
             self._apply_text_widget_theme()
 
-        self._run_background_task("Custom prompt build", worker, success)
+        self._run_background_task("Custom weighted prompt build", worker, success)
 
     def _clear_custom_prompt(self) -> None:
         if hasattr(self, "custom_prompt_text"):
@@ -22975,7 +24885,7 @@ raise SystemExit(2)
 
     def _generate(self) -> None:
         self._set_project_name_from_folder(self._worktree_export_base())
-        export_prompt = self.prompt_text.get("1.0", "end").strip() if hasattr(self, "prompt_text") else ""
+        raw_export_prompt = self.prompt_text.get("1.0", "end").strip() if hasattr(self, "prompt_text") else ""
         custom_prompt = self._prompt_builder_custom_task_text() if hasattr(self, "custom_prompt_text") else ""
         include_imports_requested = bool(self.include_imports.get())
         scope_paths = self._scope_paths_for_generation() if include_imports_requested else self._scope_paths_for_worker()
@@ -22983,6 +24893,8 @@ raise SystemExit(2)
         if not active_targets:
             messagebox.showwarning("No active Generator target", "Export stopped: the 3 default targets are inactive templates. Read a matching Project Root or link a Create target first.")
             return
+        export_prompt = self._human_worktree_export_prompt_text(active_targets, raw_export_prompt, custom_prompt)
+        export_target_dir = self._next_worktree_export_path()
         params = {
             "output_base": self._worktree_export_base(),
             "ai_language": self.ai_language.get(),
@@ -22995,7 +24907,7 @@ raise SystemExit(2)
             "role_date": self.role_date.get().strip() or None,
             "scope_paths": scope_paths,
             "export_as_zip": self.export_as_zip.get(),
-            "export_dir": self._next_worktree_export_path(),
+            "export_dir": export_target_dir,
             "export_prompt_text": export_prompt,
             "selected_reference_ids": self._generator_reference_ids(),
             "selected_operation_role_ids": self._generator_operation_role_ids(),
@@ -23003,7 +24915,7 @@ raise SystemExit(2)
             # cache. Passing include_imports=False prevents generate_files from
             # doing a hidden export-time import scan.
             "include_imports": False,
-            "custom_prompt_text": custom_prompt,
+            "custom_prompt_text": "",
             "include_dependency_manifests": self.include_dependency_manifests.get(),
             "changed_files_only": self.changed_files_only.get(),
             "compact_export": self.compact_export.get(),
@@ -23015,8 +24927,12 @@ raise SystemExit(2)
                 "operator_flow": self._operator_flow_contract(),
                 "include_imports_requested": include_imports_requested,
                 "include_imports_source": "project_tree_cache",
+                "export_intelligence": self._create_export_intelligence_value(),
+                "human_prompt_locale_source": "schema/human_prompt_locale.json",
                 "ai_research_schemas_boilerplates": bool(self.ai_research_schemas_boilerplates.get()),
                 "library_editor_input_policy": "ignored_for_generation; targets/create_config/schema_matching_are_point_of_truth",
+                "tasks_sidecar": {"file": "TASKS.TXT", "enabled": bool(custom_prompt.strip())},
+                "text_sidecar_policy": "USER_PROMPT.txt and TASKS.TXT stay outside ZIP exports; USER_PROMPT.json/TASK.json aliases are disabled.",
             },
         }
 
@@ -23024,6 +24940,12 @@ raise SystemExit(2)
             return generate_files(progress_callback=self._progress_callback, **params)
 
         def success(messages: list[str]) -> None:
+            try:
+                sidecar_dir = export_target_dir if bool(self.export_as_zip.get()) else self._worktree_export_base()
+                self._write_tasks_sidecar_and_patch_manifest(sidecar_dir, self._create_tasks_sidecar_payload(custom_prompt))
+                messages.append(f"TASKS.TXT sidecar checked: {sidecar_dir}")
+            except Exception as exc:
+                messages.append(f"TASKS.TXT sidecar skipped: {exc}")
             self._show_text("\n".join(messages))
             self._refresh_output_tree()
             self.notebook.select(self.output_tab)
@@ -23080,7 +25002,9 @@ raise SystemExit(2)
 
     def _reload_schema(self) -> None:
         try:
-            self.schema = load_schema(Path(self.schema_dir.get()))
+            resolved_schema_dir = resolve_schema_dir(Path(self.schema_dir.get()))
+            self.schema_dir.set(str(resolved_schema_dir))
+            self.schema = load_schema(resolved_schema_dir)
             self._rebuild_dynamic_controls()
             self.targets = default_targets(self.schema)
             self._refresh_targets()
@@ -23221,18 +25145,22 @@ raise SystemExit(2)
             if system == "windows":
                 os.startfile(folder)  # type: ignore[attr-defined]
             elif system == "darwin":
-                subprocess.run(["open", str(folder)], check=False)
+                _run_subprocess_hidden(["open", str(folder)], check=False)
             else:
-                subprocess.run(["xdg-open", str(folder)], check=False)
+                _run_subprocess_hidden(["xdg-open", str(folder)], check=False)
         except Exception as exc:
             messagebox.showerror("Open folder failed", str(exc))
 
 
 def main() -> int:
+    # Required for frozen Windows/PyInstaller builds before any GUI process work.
+    multiprocessing.freeze_support()
     app = AIJsonGeneratorGUI()
     app.mainloop()
     return 0
 
 
 if __name__ == "__main__":
+    # Divert PyInstaller multiprocessing workers before the GUI app is created.
+    multiprocessing.freeze_support()
     raise SystemExit(main())
