@@ -83,14 +83,17 @@
         "Detected commands must come from package.json, pyproject.toml, build.json or explicit user input.",
         "If commands are missing, write a missing-evidence note instead of pretending.",
         "Keep examples copy-pasteable and scoped to the selected tree."
-      ]
+      ],
+      "selectable": false,
+      "runtime_only": true,
+      "ui_hidden_reason": "runtime/pipeline process; resolved internally, not a manual Boilerplate selection"
     },
     {
       "id": "OperationsDocs",
       "label": "Operations / Admin Documentation",
-      "purpose": "Document process logs, summaries, export manifests, validation gaps and operator handoff notes.",
+      "purpose": "Document TOKENS.jsons, summaries, compact handoff files, validation gaps and operator handoff notes.",
       "keywords": [
-        "process log",
+        "TOKENS.json",
         "summary",
         "handoff",
         "operator",
@@ -111,7 +114,10 @@
         "Process documentation records what happened, not what is guaranteed correct.",
         "Summaries must be updateable and not become stale undocumented truth.",
         "Validation gaps must remain visible."
-      ]
+      ],
+      "selectable": false,
+      "runtime_only": true,
+      "ui_hidden_reason": "runtime/pipeline process; resolved internally, not a manual Boilerplate selection"
     }
   ],
   "file_types": [
@@ -165,7 +171,7 @@
         "Do not store secrets or full file contents in logs."
       ],
       "quality_commands": [],
-      "weight_operator": "process_summary_log_weight_operator"
+      "weight_operator": "token_contract_weight_operator"
     }
   ],
   "weight_table": [
@@ -210,8 +216,8 @@
   ],
   "hooks": [
     {
-      "id": "process_summary_log_gate",
-      "label": "Process Log and Summary Gate",
+      "id": "token_contract_gate",
+      "label": "TOKENS.json and Summary Gate",
       "lifecycle_phase": "post_generation",
       "priority": 100,
       "target_path_types": [],
@@ -219,17 +225,17 @@
       "boilerplate_profiles": [],
       "file_types": [],
       "weight_profile": "documentation_traceability_standard",
-      "weight_operator": "process_summary_log_operator",
+      "weight_operator": "token_contract_operator",
       "inject_into": [
-        "AI_MANAGER",
+        "AI_RULES",
         "AI-RULES",
-        "PROCESS_LOG",
+        "TOKENS",
         "SUMMARY"
       ],
       "rules": [
-        "Always create or update PROCESS_LOG.md and SUMMARY.md after generation.",
-        "PROCESS_LOG.md is append-only per run; SUMMARY.md is the current scope snapshot.",
-        "Logs must include scope mode, file count, .gitignore posture, selected references and validation gaps.",
+        "Always create or update TOKENS.json after generation.",
+        "TOKENS.json is current per run and records current scope notes.",
+        "TOKENS.json must include scope mode, file count, .gitignore posture, selected references and validation gaps.",
         "Do not claim validation passed unless commands actually ran."
       ]
     },
@@ -257,8 +263,8 @@
       "weight_profile": "analytics_inventory_standard",
       "weight_operator": "library_analytics_operator",
       "inject_into": [
-        "PROJECT_METADATA",
-        "AI_MANAGER",
+        "LIBRARY",
+        "AI_RULES",
         "LIBRARY.log"
       ],
       "rules": [
@@ -353,7 +359,7 @@
       "weight_operator": "project_reference_inventory_operator",
       "inject_into": [
         "AI-RULES",
-        "PROJECT_METADATA",
+        "LIBRARY",
         "SUMMARY"
       ],
       "rules": [
@@ -366,21 +372,21 @@
   ],
   "weight_operators": [
     {
-      "id": "process_summary_log_operator",
-      "label": "Process Log / Summary Operator",
+      "id": "token_contract_operator",
+      "label": "TOKENS.json / Summary Operator",
       "applies_to_file_types": [],
       "applies_to_profiles": [],
       "applies_to_path_types": [],
       "minimal_change_bias": 8,
       "evidence_required": 8,
       "rules": [
-        "Maintain PROCESS_LOG.md as an append-only generation trace.",
-        "Maintain SUMMARY.md as the latest scope snapshot.",
+        "Maintain TOKENS.json as an current generation trace.",
+        "Maintain TOKENS.json as the latest scope snapshot.",
         "Mention validation status honestly; generated does not mean validated.",
-        "Keep process entries human-readable and timestamped."
+        "Keep token entries human-readable and timestamped."
       ],
       "source_ids": [
-        "process_log_reference",
+        "tokens_reference",
         "summary_documentation_reference"
       ]
     },
@@ -525,31 +531,31 @@
   ],
   "reference_domains": [
     {
-      "id": "process_log_reference",
-      "label": "Process Log Reference",
+      "id": "tokens_reference",
+      "label": "TOKENS.json Reference",
       "category": "documentation",
       "always_on": true,
       "applies_to_path_types": [],
       "applies_to_file_types": [],
       "applies_to_profiles": [],
       "trigger_keywords": [
-        "process log",
+        "TOKENS.json",
         "generation log",
         "audit trail",
         "summary",
         "handoff"
       ],
       "source_refs": [
-        "PROCESS_LOG.md",
-        "AI_GENERATION_LOG.json"
+        "TOKENS.json",
+        "TOKENS.json"
       ],
       "rules": [
-        "PROCESS_LOG.md records generation actions and scope posture per run.",
-        "The process log is not validation proof.",
-        "Keep it append-only and timestamped."
+        "TOKENS.json records generation actions and scope posture per run.",
+        "TOKENS.json is not validation proof.",
+        "Keep it current and timestamped."
       ],
       "guardrails": [
-        "Never store secrets or full source contents in the process log.",
+        "Never store secrets or full source contents in TOKENS.json.",
         "Never claim validation ran unless it actually ran."
       ]
     },
@@ -568,16 +574,16 @@
         "status"
       ],
       "source_refs": [
-        "SUMMARY.md",
-        "PROJECT_METADATA.json"
+        "TOKENS.json",
+        "LIBRARY.log"
       ],
       "rules": [
-        "SUMMARY.md is a current generated snapshot of scope, metadata and warnings.",
+        "TOKENS.json is a current generated snapshot of scope, metadata and warnings.",
         "It must distinguish detected facts from missing evidence.",
         "It should stay short enough to be reviewed quickly."
       ],
       "guardrails": [
-        "Do not treat SUMMARY.md as hand-authored truth.",
+        "Do not treat TOKENS.json as hand-authored truth.",
         "Refresh it when scope or metadata changes."
       ]
     },
@@ -608,7 +614,7 @@
       ],
       "source_refs": [
         "LIBRARY.log",
-        "PROJECT_METADATA.project_analytics"
+        "LIBRARY.project_analytics"
       ],
       "rules": [
         "Project size analytics are calculated from .gitignore-aware PROJECT_SCOPE.",
@@ -645,8 +651,8 @@
       ],
       "source_refs": [
         "PROJECT_SCOPE.file_references",
-        "PROJECT_METADATA.targets",
-        "AI_MANAGER.json"
+        "LIBRARY.targets",
+        "AI-RULES.json"
       ],
       "rules": [
         "Use project file references as citations/index anchors for documentation work.",
@@ -682,7 +688,7 @@
       "source_refs": [
         "README.md",
         "PROJECT_SCOPE",
-        "PROJECT_METADATA.detected commands"
+        "LIBRARY.detected commands"
       ],
       "rules": [
         "README must explain this project tree, not an imagined framework.",
@@ -807,13 +813,13 @@
         "migration"
       ],
       "source_refs": [
-        "PROCESS_LOG.md",
-        "AI_GENERATION_LOG.json",
-        "EXPORT_MANIFEST.json"
+        "TOKENS.json",
+        "TOKENS.json",
+        "USER_PROMPT.txt"
       ],
       "rules": [
         "Release notes must distinguish generated changes from manually validated changes.",
-        "Use process log entries and export manifests as evidence.",
+        "Use TOKENS.json entries and compact handoff files as evidence.",
         "Keep compatibility and migration notes explicit."
       ],
       "guardrails": [
@@ -847,9 +853,9 @@
         "handoff"
       ],
       "source_refs": [
-        "SUMMARY.md",
+        "TOKENS.json",
         "README.md",
-        "PROJECT_METADATA.json"
+        "LIBRARY.log"
       ],
       "rules": [
         "Admin docs must show how to regenerate rules, inspect outputs and verify validation status.",

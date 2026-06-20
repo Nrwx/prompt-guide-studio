@@ -1210,13 +1210,13 @@
       "priority": 92,
       "inject_into": [
         "PROJECT_SCOPE",
-        "EXPORT_MANIFEST",
+        "USER_PROMPT",
         "AI-CHAT-RESPONSE"
       ],
       "rules": [
         "Separate source, generated output, dependencies, caches and export artifacts.",
         "Do not delete source evidence blindly.",
-        "Every exportable artifact must be discoverable from EXPORT_MANIFEST.json."
+        "Every exportable artifact must be discoverable from USER_PROMPT.txt."
       ]
     },
     {
@@ -1342,7 +1342,7 @@
         "Represent Create output as an ordered, editable timeline of target-scoped steps.",
         "Timeline tokens such as {$npm_run_build} or {$install_node[dependency_version]} must stay explicit until the target implementation resolves them from manifests or user-supplied versions.",
         "Every timeline command must declare its target: wrapper, backend, frontend, assets or generated.",
-        "The timeline, project tree preview, dependency manifests and EXPORT_MANIFEST.json must describe the same artifact set."
+        "The timeline, project tree preview, dependency manifests and USER_PROMPT.txt must describe the same artifact set."
       ]
     },
     {
@@ -1432,7 +1432,7 @@
       "priority": 95,
       "inject_into": [
         "OUTPUT_CONTRACT",
-        "EXPORT_MANIFEST"
+        "USER_PROMPT"
       ],
       "rules": [
         "Create has a Create-only export directory and manifest contract.",

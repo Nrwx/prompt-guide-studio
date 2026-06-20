@@ -78,7 +78,10 @@
         "Separate observed facts from assumptions.",
         "Do not paste full source dumps."
       ],
-      "default_enabled": false
+      "default_enabled": false,
+      "selectable": false,
+      "runtime_only": true,
+      "ui_hidden_reason": "runtime/pipeline process; resolved internally, not a manual Boilerplate selection"
     },
     {
       "id": "SearchAndFix",
@@ -131,7 +134,10 @@
         "Use the wrapper to add boundaries, not a premature solution.",
         "Carry PROJECT_SCOPE, weights and references into the next prompt."
       ],
-      "default_enabled": false
+      "default_enabled": false,
+      "selectable": false,
+      "runtime_only": true,
+      "ui_hidden_reason": "runtime/pipeline process; resolved internally, not a manual Boilerplate selection"
     }
   ],
   "file_types": [
@@ -282,7 +288,7 @@
       "weight_operator": "custom_prompt_wrapper_operator",
       "inject_into": [
         "PROMPT",
-        "AI_MANAGER",
+        "AI_RULES",
         "AI-CHAT-RESPONSE"
       ],
       "rules": [
@@ -347,7 +353,7 @@
       "inject_into": [
         "PROMPT",
         "AI-RULES",
-        "SUMMARY.md"
+        "TOKENS.json"
       ],
       "rules": [
         "Summaries must be scope-limited.",

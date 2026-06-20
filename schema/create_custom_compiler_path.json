@@ -30,7 +30,7 @@
         "Template adapter must derive blueprint/name/class_name variables from each file path and skip the compiler folder itself.",
         "Discovery output must include template_adapter rendered_count, rendered_files, skipped_count and errors when template mode is used.",
         "Project context compilers remain supported: compile_project(context), compile(context), build(context), run(context), execute(context), main(context), and *Compiler class methods with the same context signatures.",
-        "Load PROMPT_MANIFEST.json into context as project_mapping/mapping when available before invoking a context compiler.",
+        "Load USER_PROMPT.txt into context as project_mapping/mapping when available before invoking a context compiler.",
         "Template compiler detection is only used when compile(...) clearly expects source/template text, vars_map, blueprint_var or entry."
       ]
     }
@@ -59,7 +59,7 @@
         "Recognize template compiler APIs separately from project compile(context) APIs.",
         "Do not reject a *Compiler class merely because compile requires a source/template argument.",
         "Prefer explicit project context entrypoints when the callable accepts context.",
-        "Pass PROMPT_MANIFEST.json as context[\"project_mapping\"] when available.",
+        "Pass USER_PROMPT.txt as context[\"project_mapping\"] when available.",
         "Use the template adapter only for source/template compile APIs, not for compile(context)."
       ]
     }

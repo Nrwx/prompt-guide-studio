@@ -22,7 +22,7 @@
       ],
       "intent": "Implement new or extended behavior in the existing project as the smallest useful, validatable slice.",
       "template": "Implement the feature in the existing project. Goal: {$feature_goal}. Target path: {$target_path:@wrapper}. Resolve mapping, existing entry points, affected files and validation first. Change only the smallest useful slice and provide patch, validation, rollback and known gaps.",
-      "example": "Implement the feature in the existing project. Goal: Export manifest shows a clear warning when validation is missing.",
+      "example": "Implement the feature in the existing project. Goal: Handoff index shows a clear warning when validation is missing.",
       "fields": [
         {
           "id": "feature_goal",
@@ -74,7 +74,7 @@
         "{$write_project_mapping}",
         "{$write_dependency_layer}",
         "{$compiler_run}",
-        "{$write_export_manifest}"
+        "{$write_handoff_index}"
       ],
       "references": [
         "professional_solution_engineering_reference",
@@ -108,7 +108,7 @@
         "validation_result",
         "rollback_note",
         "known_gaps",
-        "export_manifest_delta"
+        "handoff_index_delta"
       ],
       "professional_guardrails": [
         "Use only evidenced project paths from mapping, Build.complete, Start-tab goal or selected scope as write authority.",
@@ -194,7 +194,7 @@
         "{$write_project_mapping}",
         "{$write_dependency_layer}",
         "{$compiler_run}",
-        "{$write_export_manifest}"
+        "{$write_handoff_index}"
       ],
       "references": [
         "professional_solution_engineering_reference",
@@ -226,7 +226,7 @@
         "validation_result",
         "rollback_note",
         "known_gaps",
-        "export_manifest_delta"
+        "handoff_index_delta"
       ],
       "professional_guardrails": [
         "Change only files, that are evidenced by mapping, Build.complete, Start-tab goal or selected scope.",
@@ -359,7 +359,7 @@
         "{$write_project_mapping}",
         "{$write_dependency_layer}",
         "{$compiler_run}",
-        "{$write_export_manifest}"
+        "{$write_handoff_index}"
       ],
       "references": [
         "ptb_software_documentation_reference",
@@ -369,7 +369,7 @@
         "ptb_software_separation_reference",
         "summary_documentation_reference",
         "readme_tree_reference",
-        "process_log_reference",
+        "tokens_reference",
         "documentation_planning_reference"
       ],
       "roles": [
@@ -449,11 +449,11 @@
           "validation commands or manual gaps",
           "rollback"
         ],
-        "manifest_rule": "Every generated or changed documentation artifact must appear in EXPORT_MANIFEST.json or export_manifest_delta."
+        "manifest_rule": "Every generated or changed documentation artifact must appear in USER_PROMPT.txt or handoff_index_delta."
       },
       "resource_reuse_policy": {
         "scan_order": [
-          "existing README/SUMMARY/PROCESS_LOG",
+          "existing README/SUMMARY/TOKENS",
           "schema/reference domains and PTB operators",
           "selected scope files",
           "project tree import relations",
@@ -484,7 +484,7 @@
         "validation_result",
         "rollback_note",
         "known_gaps",
-        "export_manifest_delta",
+        "handoff_index_delta",
         "documentation_update_plan"
       ],
       "professional_guardrails": [
@@ -574,7 +574,7 @@
       "timeline_tokens": [
         "{$write_project_mapping}",
         "{$compiler_run}",
-        "{$write_export_manifest}"
+        "{$write_handoff_index}"
       ],
       "references": [
         "professional_solution_engineering_reference",
@@ -702,7 +702,7 @@
         "{$write_project_mapping}",
         "{$write_dependency_layer}",
         "{$compiler_run}",
-        "{$write_export_manifest}"
+        "{$write_handoff_index}"
       ],
       "references": [
         "professional_solution_engineering_reference",
@@ -754,7 +754,7 @@
         "validation_result",
         "rollback_note",
         "known_gaps",
-        "export_manifest_delta"
+        "handoff_index_delta"
       ],
       "professional_guardrails": [
         "Change only files, that are evidenced by mapping, Build.complete, Start-tab goal or selected scope.",
@@ -855,7 +855,7 @@
         "{$write_project_mapping}",
         "{$write_dependency_layer}",
         "{$compiler_run}",
-        "{$write_export_manifest}"
+        "{$write_handoff_index}"
       ],
       "references": [
         "unit_testing_reference",
@@ -923,7 +923,7 @@
         "validation_result",
         "rollback_note",
         "known_gaps",
-        "export_manifest_delta",
+        "handoff_index_delta",
         "test_matrix"
       ],
       "professional_guardrails": [
@@ -989,7 +989,7 @@
           "required": false,
           "options": [
             "prompt_builder_visible",
-            "export_manifest_only",
+            "handoff_index_only",
             "prompt_builder_and_export"
           ],
           "default": "prompt_builder_and_export",
@@ -1000,13 +1000,13 @@
         "{$git_reference_goal}",
         "{$target_path}",
         "{$include_status:branch_only|branch_and_dirty_status|branch_status_and_last_commit}",
-        "{$reference_write_mode:prompt_builder_visible|export_manifest_only|prompt_builder_and_export}",
+        "{$reference_write_mode:prompt_builder_visible|handoff_index_only|prompt_builder_and_export}",
         "{$LAST_GIT_COMMIT_REFERENCE_D}"
       ],
       "timeline_tokens": [
         "{$scan_patch_tab_git_reference}",
         "{$write_project_mapping}",
-        "{$write_export_manifest}",
+        "{$write_handoff_index}",
         "{$write_user_prompt_reference_d}"
       ],
       "references": [
@@ -1047,7 +1047,7 @@
         "validation_result",
         "rollback_note",
         "known_gaps",
-        "export_manifest_delta"
+        "handoff_index_delta"
       ],
       "professional_guardrails": [
         "Run Git commands read-only only and with timeout.",
@@ -1103,7 +1103,7 @@
       ],
       "timeline_tokens": [
         "{$write_project_mapping}",
-        "{$write_export_manifest}"
+        "{$write_handoff_index}"
       ],
       "references": [
         "professional_solution_engineering_reference",
@@ -1208,7 +1208,7 @@
         "{$write_project_mapping}",
         "{$write_dependency_layer}",
         "{$compiler_run}",
-        "{$write_export_manifest}"
+        "{$write_handoff_index}"
       ],
       "references": [
         "resource_reuse_reference",
@@ -1245,8 +1245,8 @@
         "import-related files",
         "existing tests/fixtures",
         "schema reference/operator ids",
-        "dependency manifest files",
-        "README/SUMMARY/PROCESS_LOG"
+        "dependency handoff files",
+        "README/SUMMARY/TOKENS"
       ],
       "acceptance_criteria": [
         "At least one local resource search is documented.",
@@ -1270,7 +1270,7 @@
         "validation_result",
         "rollback_note",
         "known_gaps",
-        "export_manifest_delta",
+        "handoff_index_delta",
         "resource_reuse_report"
       ],
       "professional_guardrails": [
@@ -1360,7 +1360,7 @@
         "{$write_project_mapping}",
         "{$write_dependency_layer}",
         "{$compiler_run}",
-        "{$write_export_manifest}"
+        "{$write_handoff_index}"
       ],
       "references": [
         "professional_solution_engineering_reference",
@@ -1396,7 +1396,7 @@
         "validation_result",
         "rollback_note",
         "known_gaps",
-        "export_manifest_delta"
+        "handoff_index_delta"
       ],
       "professional_guardrails": [
         "Use only evidenced project paths from mapping, Build.complete, Start-tab goal or selected scope as write authority.",
@@ -1490,7 +1490,7 @@
         "{$write_project_mapping}",
         "{$write_dependency_layer}",
         "{$compiler_run}",
-        "{$write_export_manifest}"
+        "{$write_handoff_index}"
       ],
       "references": [
         "resource_reuse_reference",
@@ -1546,7 +1546,7 @@
         "validation_result",
         "rollback_note",
         "known_gaps",
-        "export_manifest_delta",
+        "handoff_index_delta",
         "resource_reuse_report",
         "behavior_preservation_note"
       ],
@@ -1632,7 +1632,7 @@
         "{$write_project_mapping}",
         "{$write_dependency_layer}",
         "{$compiler_run}",
-        "{$write_export_manifest}"
+        "{$write_handoff_index}"
       ],
       "references": [
         "unit_testing_reference",
@@ -1701,7 +1701,7 @@
         "validation_result",
         "rollback_note",
         "known_gaps",
-        "export_manifest_delta",
+        "handoff_index_delta",
         "testability_note"
       ],
       "professional_guardrails": [
@@ -1762,7 +1762,7 @@
       ],
       "timeline_tokens": [
         "{$scan_patch_tab_git_reference}",
-        "{$write_export_manifest}"
+        "{$write_handoff_index}"
       ],
       "references": [
         "professional_solution_engineering_reference",
@@ -1833,7 +1833,7 @@
         "{$prompt_pipeline_boundary}"
       ],
       "timeline_tokens": [
-        "{$write_export_manifest}"
+        "{$write_handoff_index}"
       ],
       "references": [
         "repository_management_prompt_reference",
@@ -1901,7 +1901,7 @@
       ],
       "timeline_tokens": [
         "{$write_project_mapping}",
-        "{$write_export_manifest}"
+        "{$write_handoff_index}"
       ],
       "references": [
         "tool_wide_prompt_engineering_reference",
@@ -1987,7 +1987,7 @@
         "{$write_project_mapping}",
         "{$write_dependency_layer}",
         "{$compiler_run}",
-        "{$write_export_manifest}"
+        "{$write_handoff_index}"
       ],
       "references": [
         "create_stack_reference",
@@ -2080,7 +2080,7 @@
         "{$write_project_mapping}",
         "{$write_dependency_layer}",
         "{$compiler_run}",
-        "{$write_export_manifest}"
+        "{$write_handoff_index}"
       ],
       "references": [
         "create_stack_reference",
@@ -2173,7 +2173,7 @@
         "{$write_project_mapping}",
         "{$write_dependency_layer}",
         "{$compiler_run}",
-        "{$write_export_manifest}"
+        "{$write_handoff_index}"
       ],
       "references": [
         "create_stack_reference",
@@ -2265,7 +2265,7 @@
         "{$write_project_mapping}",
         "{$write_dependency_layer}",
         "{$compiler_run}",
-        "{$write_export_manifest}"
+        "{$write_handoff_index}"
       ],
       "references": [
         "create_stack_reference",
@@ -2357,7 +2357,7 @@
         "{$write_project_mapping}",
         "{$write_dependency_layer}",
         "{$compiler_run}",
-        "{$write_export_manifest}"
+        "{$write_handoff_index}"
       ],
       "references": [
         "create_stack_reference",
@@ -2449,7 +2449,7 @@
         "{$write_project_mapping}",
         "{$write_dependency_layer}",
         "{$compiler_run}",
-        "{$write_export_manifest}"
+        "{$write_handoff_index}"
       ],
       "references": [
         "create_stack_reference",
@@ -2542,7 +2542,7 @@
         "{$write_project_mapping}",
         "{$write_dependency_layer}",
         "{$compiler_run}",
-        "{$write_export_manifest}"
+        "{$write_handoff_index}"
       ],
       "references": [
         "create_stack_reference",
@@ -2628,12 +2628,12 @@
         "{$windows_packager:existing_toolchain|pyinstaller|electron_builder|dotnet_publish|manual_plan_only}"
       ],
       "timeline_tokens": [
-        "{$write_export_manifest}",
+        "{$write_handoff_index}",
         "{$compiler_run}"
       ],
       "references": [
         "create_stack_reference",
-        "process_log_reference",
+        "tokens_reference",
         "prompt_eval_reference"
       ],
       "roles": [
@@ -2710,12 +2710,12 @@
         "{$linux_package_profile:deb_plan|dpkg_build|appimage_plan|systemd_service_package|manual_plan_only}"
       ],
       "timeline_tokens": [
-        "{$write_export_manifest}",
+        "{$write_handoff_index}",
         "{$compiler_run}"
       ],
       "references": [
         "create_terminal_timeline_reference",
-        "process_log_reference",
+        "tokens_reference",
         "prompt_eval_reference"
       ],
       "roles": [
@@ -2796,7 +2796,7 @@
       ],
       "timeline_tokens": [
         "{$write_dependency_layer}",
-        "{$write_export_manifest}"
+        "{$write_handoff_index}"
       ],
       "references": [
         "create_stack_reference",
@@ -2871,7 +2871,7 @@
         "{$language_set}"
       ],
       "timeline_tokens": [
-        "{$write_export_manifest}"
+        "{$write_handoff_index}"
       ],
       "references": [
         "tool_wide_prompt_engineering_reference",
@@ -2951,7 +2951,7 @@
         "{$math_scope:single_module|extend_existing_utils|test_plan_only}"
       ],
       "timeline_tokens": [
-        "{$write_export_manifest}"
+        "{$write_handoff_index}"
       ],
       "references": [
         "professional_solution_engineering_reference",
@@ -3031,7 +3031,7 @@
         "{$material_depth:tokens_only|one_component|one_view|plan_first}"
       ],
       "timeline_tokens": [
-        "{$write_export_manifest}"
+        "{$write_handoff_index}"
       ],
       "references": [
         "tool_wide_prompt_engineering_reference",
@@ -3107,7 +3107,7 @@
         "{$sweep_limit:safe_lint_schema_sweep|targeted_module_sweep|manual_plan_only}"
       ],
       "timeline_tokens": [
-        "{$write_export_manifest}"
+        "{$write_handoff_index}"
       ],
       "references": [
         "repository_management_prompt_reference",
@@ -3202,8 +3202,8 @@
       "USER_PROMPT.txt",
       "Prompt Builder preview",
       "Create Preview pipeline config",
-      "EXPORT_MANIFEST.json",
-      "PROMPT_MANIFEST.json",
+      "USER_PROMPT.txt",
+      "USER_PROMPT.txt",
       "CMD.json"
     ]
   },

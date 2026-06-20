@@ -87,7 +87,7 @@
         "Start feature work with outcome, non-goals, target paths, evidence, output contract, validation and rollback posture.",
         "Search the selected PROJECT_SCOPE for existing hooks, weights, references, operators and schema fields before adding new ones.",
         "When schema is extended, keep arrays flat, id-addressable and backward-compatible.",
-        "Every generated/exported feature artifact must be represented in EXPORT_MANIFEST.json and prompt traceability files.",
+        "Every generated/exported feature artifact must be represented in USER_PROMPT.txt and prompt traceability files.",
         "Do not claim a feature is implemented unless the changed files and validation result are listed."
       ],
       "guardrails": [
@@ -195,8 +195,8 @@
       ]
     },
     {
-      "id": "export_manifest_required_gate",
-      "label": "Export Manifest Required Gate",
+      "id": "handoff_index_required_gate",
+      "label": "Handoff Index Required Gate",
       "lifecycle_phase": "06_validate_output",
       "priority": 96,
       "target_path_types": [
@@ -226,16 +226,16 @@
         "ts"
       ],
       "weight_profile": "export_traceability_standard",
-      "weight_operator": "export_manifest_operator",
+      "weight_operator": "handoff_index_operator",
       "inject_into": [
         "VALIDATION_POSTURE",
-        "EXPORT_MANIFEST",
-        "PROMPT_MANIFEST"
+        "USER_PROMPT",
+        "USER_PROMPT"
       ],
       "rules": [
-        "Treat EXPORT_MANIFEST.json as required for every generation/export run.",
-        "ZIP exports must include EXPORT_MANIFEST.json inside the ZIP and write the same sidecar next to the ZIP.",
-        "Prompt traceability files must stay in output/export and be listed by the manifest."
+        "Treat USER_PROMPT.txt as required for every generation/export run.",
+        "ZIP exports write USER_PROMPT.txt next to the ZIP as the human sidecar.",
+        "Prompt traceability stays in USER_PROMPT.txt and TOKENS.json."
       ]
     },
     {
@@ -318,7 +318,7 @@
         "WebAgent"
       ],
       "applies_to_hooks": [
-        "export_manifest_required_gate"
+        "handoff_index_required_gate"
       ],
       "weights": {
         "manifest_required": 10,
@@ -327,7 +327,7 @@
         "path_policy": 10
       },
       "rules": [
-        "Every exportable artifact must be discoverable from EXPORT_MANIFEST.json.",
+        "Every exportable artifact must be discoverable from USER_PROMPT.txt.",
         "Generated prompt audit files are export artifacts, not optional extras."
       ]
     },
@@ -398,8 +398,8 @@
       ]
     },
     {
-      "id": "export_manifest_operator",
-      "label": "Export Manifest Operator",
+      "id": "handoff_index_operator",
+      "label": "Handoff Index Operator",
       "applies_to_file_types": [
         "json",
         "md"
@@ -423,9 +423,9 @@
       "evidence_required": 10,
       "manifest_traceability": 10,
       "rules": [
-        "Write EXPORT_MANIFEST.json for generation-only and ZIP export runs.",
-        "Include EXPORT_MANIFEST.json inside ZIP exports, not only as an external sidecar.",
-        "List prompt/audit/report artifacts explicitly."
+        "Write USER_PROMPT.txt for generation-only and ZIP export runs.",
+        "Include USER_PROMPT.txt inside ZIP exports, not only as an external sidecar.",
+        "List only the compact prompt/log artifacts that are actually written."
       ],
       "source_ids": [
         "develop_feature_reference"

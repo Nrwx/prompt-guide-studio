@@ -51,7 +51,7 @@
     "CREATE_ACTIVE_TARGETS.json is the human target summary for prompts.",
     "CREATE_PROJECT_MAPPING.json remains the target root and tree boundary source.",
     "CREATE_DEPENDENCY_LAYER.json remains the target-scoped package source.",
-    "EXPORT_MANIFEST.json remains the exported-file truth."
+    "USER_PROMPT.txt remains the exported-file truth."
   ],
   "guardrails": [
     "Do not collapse active targets to wrapper only.",

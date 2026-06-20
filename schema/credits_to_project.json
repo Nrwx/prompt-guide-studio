@@ -280,7 +280,7 @@
       "timeline_tokens": [
         "{$scan_project_scope}",
         "{$write_project_mapping}",
-        "{$write_export_manifest}"
+        "{$write_handoff_index}"
       ],
       "references": [
         "project_credit_infobox_reference",
@@ -386,8 +386,8 @@
         "generated"
       ],
       "inject_into": [
-        "PROMPT_MANIFEST.json",
-        "EXPORT_MANIFEST.json",
+        "USER_PROMPT.txt",
+        "USER_PROMPT.txt",
         "USER_PROMPT.txt"
       ],
       "rules": [
@@ -430,7 +430,10 @@
     {
       "id": "ProjectCredits",
       "label": "Project Credits",
-      "description": "Editable copyright/meta infobox boilerplates for project files."
+      "description": "Editable copyright/meta infobox boilerplates for project files.",
+      "selectable": false,
+      "runtime_only": true,
+      "ui_hidden_reason": "runtime/pipeline process; resolved internally, not a manual Boilerplate selection"
     }
   ],
   "create_micro_tasks": [
@@ -440,7 +443,7 @@
       "tokens": [
         "{$credit_project}",
         "{$credit_owner}",
-        "{$write_export_manifest}"
+        "{$write_handoff_index}"
       ],
       "steps": [
         "resolve target file types",
@@ -458,7 +461,7 @@
       "ecosystem": "metadata_governance",
       "manifest_files": [
         "schema/credits_to_project.json",
-        "EXPORT_MANIFEST.json"
+        "USER_PROMPT.txt"
       ],
       "dependencies": [
         "project_credit_infoboxes",

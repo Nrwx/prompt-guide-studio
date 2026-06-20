@@ -73,7 +73,7 @@
       "label": "Schema Driven AI Rules",
       "path_type": "wrapper",
       "indicators": [
-        "AI_MANAGER.json",
+        "AI-RULES.json",
         "AI-RULES.json",
         "schema"
       ],

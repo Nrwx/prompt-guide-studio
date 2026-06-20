@@ -58,6 +58,8 @@
   "single_ai_target_rule": "Exactly one AI target is selected per WRITE_AI_RULES_TO target.",
   "metadata_scan_rule": "Read package.json, requirements.txt, requirements.json, pyproject.toml, build.json, lockfiles and known folders when present; compute evidence_score and evidence_strength.",
   "prompt_tab_rule": "The Prompt Tab generates pure operator-role prompts with access boundaries, evidence strength, validation posture and no unresolved variables. It does not solve the task.",
+  "own_weighted_prompt_token_rule": "Build.complete and @ tokens may be placed above the Own Prompt or inside the Own Weighted Prompt. Exported USER_PROMPT.txt, TASKS.TXT, AI-RULES.json and schema handoff resources may contain @tokens only as placeholders; concrete values must live in TOKENS.json.",
+  "tokens_json_rule": "TOKENS.json is mandatory for exports. It is the only generated artifact that carries concrete values for @project_root, @export_dir, @project_scope, @target_n_path, @target_n_scope, @create_* and operator-flow placeholders. Consumers must serialize token values from TOKENS.json before deriving paths, requirements or execution boundaries.",
   "scope_export_rule": "Build recursive PROJECT_SCOPE from selected tree paths. Respect .gitignore, exclude .git/ and output/export/, include generated AI-RULES.json in configured target paths, and write optional prompt text outside the ZIP. Prompt Builder exports may add TASKS.TXT as a declared sidecar outside ZIP/folder output when CUSTOM_USER_PROMPT input exists; LAST-GIT-COMMIT references must be declared in manifests when enabled or selected.",
   "reference_tab_rule": "The References / Roles tab selects source-backed reference domains and operation roles. Selected references are always active; unselected references can activate dynamically from scope evidence, file types, path type, profiles and detected metadata. References are guardrails/source anchors, not static generators.",
   "create_pipeline_rule": "Create-tab work uses a separate working path and Create-only export contract; other tabs keep their own export path unless explicitly changed.",
@@ -66,7 +68,7 @@
   "target_match_module_rule": "Target match boilerplates, feature_modules and refactor_modules are stack-node-bound overlays. They decide where existing-project Create work lands and which bounded feature/refactor contract applies without mutating create_stack_nodes.",
   "create_mode_parameter_controls_rule": "Slider-style controls for feature_for_existing_project and refactor_existing_stack: precision 0-100, architecture 0-100, documentation_level 0-5, usability 0-10, security 0-10, weight 0-10. Lower weight means thinner/lighter work.",
   "create_mode_parameter_schema_rule": "Feature/Refactor parameters now have one schema boilerplate, one reference domain, one operation role and one weight operator each in schema/create_mode_parameters.json. Resolve these before Create context sorting.",
-  "create_parameter_context_sort_rule": "Create context sorting uses create_parameter_context: Weight controls context breadth; security/architecture/precision receive boundary priority; active drivers are exported to mapping and prompt manifests.",
+  "create_parameter_context_sort_rule": "Create context sorting uses create_parameter_context: Weight controls context breadth; security/architecture/precision receive boundary priority; active drivers are exported to mapping and TOKENS.json and role handoffs.",
   "schema_files": [
     "create_mode_parameters.json",
     "create_custom_compiler_path.json",
@@ -101,7 +103,7 @@
     "Export-tab Operator flow is the Prompt Builder point of truth: changing it schedules regeneration of the generated operator prompt Remember block.",
     "context-reactive feature plans: discovery/proposal and autonomous one-slice development are feature-only, evidence-ranked and bounded; randomness is only a tie-breaker, never write authority.",
     "Reactive Human Prompt Builder Patch: schema/human_prompt_locale.json now contains surface-specific human intro texts for USER_PROMPT export, Create Preview, Prompt Builder, shortcut compile and mapping preview. Export intelligence low/medium/high controls all human-compiled prompt surfaces.",
-    "Manifest detail patch: medium/high USER_PROMPT compilation keeps declared details by translating actual manifest files, roles, references and plan schemas into human text; low mode stays compact."
+    "Handoff detail patch: medium/high USER_PROMPT compilation keeps declared details by translating actual handoff files, roles, references and plan schemas into human text; low mode stays compact."
   ],
   "custom_compiler_path_rule": "Compiler path is an explicit Create/Compiler editor value. When set, it is resolved before {$compiler_run}; only project-local Python API entrypoints are loaded and CREATE_COMPILER_DISCOVERY.json records the result.",
   "export_settings_point_of_truth_rule": {
@@ -127,9 +129,9 @@
     "id": "compact_export_selected_scope_rule",
     "rule": "Compact export must include files selected in the Export Tab / Selected Scope Preview with project-relative paths, matching normal export behavior.",
     "details": [
-      "Compact control artifacts remain present: USER_PROMPT.txt, PROJECT_TREE.md, ROLE_OPERATOR_BOILERPLATE_MANIFEST.json, EXPORT_CONDITIONS.json and EXPORT_MANIFEST.json.",
+      "Compact control artifacts remain present: USER_PROMPT.txt, TOKENS.json, PROJECT_TREE.md, ROLE_OPERATOR_BOILERPLATE_MANIFEST.json and EXPORT_CONDITIONS.json.",
       "Selected Project Tree / Selected Scope files are copied into the compact staging area before ZIP creation.",
-      "If a selected project file collides with a compact control artifact name, it is remapped under PROJECT_SCOPE/ and recorded in EXPORT_CONDITIONS.json and EXPORT_MANIFEST.json.",
+      "If a selected project file collides with a compact control artifact name, it is remapped under PROJECT_SCOPE/ and recorded in EXPORT_CONDITIONS.json and USER_PROMPT.txt.",
       "Unselected project files remain excluded."
     ]
   },
@@ -162,7 +164,7 @@
   },
   "generator_target_activation_rule": {
     "id": "generator_target_activation_rule",
-    "rule": "Generator default targets are inactive catalog templates. Export, prompt metadata and AI_MANAGER may only use the single active target linked by Create or a scanned Project Root match.",
+    "rule": "Generator default targets are inactive catalog templates. Export, prompt metadata and AI_RULES may only use the single active target linked by Create or a scanned Project Root match.",
     "details": [
       "The default wrapper/backend/frontend rows remain visible as inactive templates.",
       "A scanned project tree with schema/boilerplate evidence creates one project-scoped active target for the loaded root.",
@@ -264,7 +266,7 @@
       "evidence_matrix",
       "documentation_update_plan",
       "validation_or_manual_gap",
-      "export_manifest_delta"
+      "handoff_index_delta"
     ],
     "claim_boundary": "No generated documentation may claim legal conformity, certification or approval."
   },
@@ -276,7 +278,7 @@
   },
   "human_prompt_export_rule": {
     "summary": "USER_PROMPT.txt must be compiled into natural human text from project config, selected chain entries and localizable schema/human_prompt_locale.json strings.",
-    "raw_schema_policy": "Raw mode catalogs, schema dumps, token syntax and manifests stay in JSON/manifest artifacts, not in USER_PROMPT.txt.",
+    "raw_schema_policy": "Raw mode catalogs and schema dumps stay out of USER_PROMPT.txt. @tokens are allowed there only as placeholders and must resolve through TOKENS.json.",
     "export_intelligence_levels": {
       "niedrig": "Selected plan and hard rules only.",
       "mittel": "Standard compiled context with selected plan, relevant plan references, roles, parameters and short scope preview.",
@@ -299,7 +301,7 @@
     "requirements": [
       "Do not embed raw Project scope, Reference routing, Operation roles, Hook route, Weight profile or validation posture dumps in USER_PROMPT.txt.",
       "Explain that export files must be processed recursively from the manifest-approved roots and scope.",
-      "Refer to PROMPT_MANIFEST.json, ROLE_OPERATOR_BOILERPLATE_MANIFEST.json, EXPORT_MANIFEST.json and EXPORT_MANIFEST.json for exact machine-readable details.",
+      "Refer to USER_PROMPT.txt and ROLE_OPERATOR_BOILERPLATE_MANIFEST.json for execution details.",
       "Compile every selected or visible feature/refactor chain entry as purpose, boundary, inputs, acceptance and validation in human language.",
       "Keep the Remember block explicit enough to enforce confirm_then_execute, start_immediately and sequential_roles operator modes."
     ],
@@ -310,9 +312,9 @@
     "requirements": [
       "Low mode may stay compact.",
       "Medium/high mode must include declared manifest file descriptions, plan references, role/reference planning, recursive scope processing and validation contract.",
-      "Only files declared by the selected export mode or listed in EXPORT_MANIFEST.json may be named as export artifacts.",
+      "Only files declared by the selected export mode or listed in USER_PROMPT.txt may be named as export artifacts.",
       "Undeclared modules/manifests must not be summarized as text; missing evidence is a Known Gap.",
-      "Raw routing tables stay in JSON manifests and are compiled into human execution language."
+      "Raw routing tables stay in compact JSON handoffs and are compiled into human execution language."
     ]
   },
   "last_git_commit_reference_rule": {
@@ -345,7 +347,9 @@
     "automatic": true,
     "not_create_catalog_entry": true,
     "not_user_selectable": true,
-    "rule": "The left CUSTOM_USER_PROMPT input is parsed as JSON/list/plain text and exported as TASKS.TXT sidecar when present. Create Tab must not expose it as a plan, slice, catalog entry or module."
+    "rule": "The left CUSTOM_USER_PROMPT input is parsed as JSON/list/plain text and exported as TASKS.TXT sidecar when present. TASKS.TXT must explain the @TOKENS.json and refer to TOKENS.json for concrete values. Create Tab must not expose it as a plan, slice, catalog entry or module.",
+    "schema_mirror": false,
+    "write_policy": "Root TASKS.TXT is the human sidecar. It is not mirrored into /schema; schema resources carry only schema rows and token-contract rules."
   },
   "user_prompt_shortcut_command_rule": {
     "owner": "USER_PROMPT export hook",
@@ -446,6 +450,6 @@
     "owner": "Patch Tab",
     "select": "Patch Target combobox switches between Create Temp Preview and Working/Project Tree.",
     "use_git_to_patch": "USE-GIT-TO-PATCH enables git apply with detected -pN strip level when a repo is mapped; absolute diff -ruN patches are normalized to project-relative stage paths.",
-    "guardrail": "Stage files live outside the target root until Commit; generated prompt/export manifests are filtered from staged commits."
+    "guardrail": "Stage files live outside the target root until Commit; generated prompt/compact handoff files are filtered from staged commits."
   }
 }

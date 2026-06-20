@@ -1,0 +1,46 @@
+{
+  "artifact": "schema/create_node_categories.json",
+  "schema_subset": "create_node_categories",
+  "policy": "Resolved rows only; not a full schema catalog.",
+  "create_node_categories": [
+    {
+      "id": "scene_create_pipeline",
+      "label": "Create Pipeline / Repository Builder",
+      "kind": "technical_scene",
+      "source_taxonomy": "tool_internal_create_context_build",
+      "code": "CREATE_PIPELINE",
+      "responsibility": "Create-tab working path, timeline compile/run, isolated export and repository management prompt contracts",
+      "applies_to_path_types": [
+        "wrapper",
+        "backend",
+        "frontend",
+        "assets",
+        "generated"
+      ],
+      "default_file_types": [
+        "json",
+        "md",
+        "py",
+        "js",
+        "ts",
+        "vue",
+        "scss",
+        "shell",
+        "yaml",
+        "dockerfile"
+      ],
+      "default_profiles": [
+        "CreatePipeline",
+        "TerminalTimeline",
+        "RepositoryManagement",
+        "ProfessionalSolutionEngineering"
+      ],
+      "reference_categories": [
+        "create_project",
+        "prompt_engineering",
+        "dependency",
+        "export"
+      ]
+    }
+  ]
+}

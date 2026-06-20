@@ -159,7 +159,7 @@
         "Keep dependencies swappable and document assumptions.",
         "Prefer a timeline-based Context Build over one-shot scaffolding.",
         "Expose dependency choices as option groups, but write only the selected manifest entries.",
-        "Keep ZIP export, USER_PROMPT.txt and EXPORT_MANIFEST.json in sync."
+        "Keep ZIP export, USER_PROMPT.txt in sync."
       ]
     },
     {
@@ -197,7 +197,7 @@
       "rules": [
         "Separate source, generated output, dependencies, caches and exports.",
         "Do not delete source evidence blindly.",
-        "Every artifact must be discoverable from EXPORT_MANIFEST.json."
+        "Every artifact must be discoverable from USER_PROMPT.txt."
       ]
     },
     {

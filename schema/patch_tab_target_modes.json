@@ -36,11 +36,11 @@
     "stage_only": true,
     "commit_button_applies_stage_to_selected_target": true,
     "denied_artifacts_filtered_from_stage": [
-      "EXPORT_MANIFEST.json",
-      "PROMPT_MANIFEST.json",
       "USER_PROMPT.txt",
-      "PROCESS_LOG.md",
-      "SUMMARY.md"
+      "USER_PROMPT.txt",
+      "USER_PROMPT.txt",
+      "TOKENS.json",
+      "TOKENS.json"
     ],
     "traceability": "PATCH_IMPORT_MANIFEST.json is written to the Patch branch metadata root when a diff applies."
   }

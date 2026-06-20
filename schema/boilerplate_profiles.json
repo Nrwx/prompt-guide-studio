@@ -468,7 +468,10 @@
         "Use existing project evidence and selected Project Tree scope before creating new abstractions.",
         "Keep dependencies swappable and explicitly documented."
       ],
-      "default_enabled": false
+      "default_enabled": false,
+      "selectable": false,
+      "runtime_only": true,
+      "ui_hidden_reason": "runtime/pipeline process; resolved internally, not a manual Boilerplate selection"
     },
     {
       "id": "CleanProject",
@@ -703,7 +706,10 @@
         "A micro task must have one named output artifact, one validation posture and one rollback note.",
         "Do not turn micro tasks into broad refactors or hidden scaffolding."
       ],
-      "default_enabled": false
+      "default_enabled": false,
+      "selectable": false,
+      "runtime_only": true,
+      "ui_hidden_reason": "runtime/pipeline process; resolved internally, not a manual Boilerplate selection"
     },
     {
       "id": "CreatePipeline",
@@ -728,7 +734,10 @@
         "Create has its own working path and export boundary.",
         "Compile/Run may only use explicit timeline commands resolved from known tokens or reviewed user input."
       ],
-      "default_enabled": false
+      "default_enabled": false,
+      "selectable": false,
+      "runtime_only": true,
+      "ui_hidden_reason": "runtime/pipeline process; resolved internally, not a manual Boilerplate selection"
     },
     {
       "id": "TerminalTimeline",
@@ -753,7 +762,10 @@
         "Commands must be target-scoped and reviewable before execution.",
         "Unresolved/descriptive timeline tokens must be skipped instead of guessed."
       ],
-      "default_enabled": false
+      "default_enabled": false,
+      "selectable": false,
+      "runtime_only": true,
+      "ui_hidden_reason": "runtime/pipeline process; resolved internally, not a manual Boilerplate selection"
     },
     {
       "id": "RepositoryManagement",
@@ -775,9 +787,12 @@
       ],
       "rules": [
         "Use project tree and manifests as evidence before generating repository operations.",
-        "Keep generated artifacts discoverable from EXPORT_MANIFEST.json."
+        "Keep generated artifacts discoverable from USER_PROMPT.txt."
       ],
-      "default_enabled": false
+      "default_enabled": false,
+      "selectable": false,
+      "runtime_only": true,
+      "ui_hidden_reason": "runtime/pipeline process; resolved internally, not a manual Boilerplate selection"
     },
     {
       "id": "ProjectTreePreview",
@@ -796,7 +811,10 @@
         "preview tree",
         "temp clone",
         "mapping"
-      ]
+      ],
+      "selectable": false,
+      "runtime_only": true,
+      "ui_hidden_reason": "runtime/pipeline process; resolved internally, not a manual Boilerplate selection"
     },
     {
       "id": "BoilerplateDependencyCRUD",
@@ -831,7 +849,10 @@
         "timeline checkbox",
         "compile timeline",
         "run selected hooks"
-      ]
+      ],
+      "selectable": false,
+      "runtime_only": true,
+      "ui_hidden_reason": "runtime/pipeline process; resolved internally, not a manual Boilerplate selection"
     }
   ]
 }

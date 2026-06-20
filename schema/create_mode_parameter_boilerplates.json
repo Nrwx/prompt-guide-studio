@@ -1,0 +1,361 @@
+{
+  "artifact": "schema/create_mode_parameter_boilerplates.json",
+  "schema_subset": "create_mode_parameter_boilerplates",
+  "policy": "Resolved rows only; not a full schema catalog.",
+  "create_mode_parameter_boilerplates": [
+    {
+      "id": "create_parameter_weight_schema",
+      "parameter_id": "weight",
+      "label": "Weight Parameter Schema Boilerplate",
+      "modes": [
+        "feature_for_existing_project",
+        "refactor_existing_stack"
+      ],
+      "boilerplate_profile_id": "CreateParameterWeight",
+      "type": "create_mode_parameter_schema",
+      "slider": {
+        "id": "weight",
+        "label": "Weight",
+        "min": 0,
+        "max": 10,
+        "default": 5
+      },
+      "purpose": "Controls implementation thickness; lower values produce thinner, lighter feature/refactor slices.",
+      "context_bucket": "context_budget",
+      "resolution_order": 1,
+      "schema_contract": {
+        "required_fields": [
+          "id",
+          "label",
+          "value",
+          "max",
+          "normalized",
+          "context_bucket",
+          "operator_role_id",
+          "reference_id",
+          "weight_operator_id"
+        ],
+        "value_range": {
+          "min": 0,
+          "max": 10
+        },
+        "export_keys": [
+          "create_mode_parameters",
+          "create_parameter_boilerplates",
+          "create_parameter_context",
+          "USER_PROMPT.txt",
+          "USER_PROMPT.txt"
+        ],
+        "validation": [
+          "value stays inside declared range",
+          "unknown fields are preserved",
+          "schema is exported before Create context sorting"
+        ]
+      },
+      "boilerplate_template": "Resolve Weight before selecting Create context. Use its normalized value to shape context_budget priority, validation posture and feature/refactor thickness.",
+      "reference_id": "create_parameter_weight_reference",
+      "operator_role_id": "create_parameter_weight_operator",
+      "weight_operator_id": "create_parameter_weight_weight_operator",
+      "rules": [
+        "Resolve slider value before prompt/context sorting.",
+        "Do not activate in new_project_abstraction mode.",
+        "Keep output changed-files-only unless the user explicitly expands scope."
+      ]
+    },
+    {
+      "id": "create_parameter_security_schema",
+      "parameter_id": "security",
+      "label": "Security Parameter Schema Boilerplate",
+      "modes": [
+        "feature_for_existing_project",
+        "refactor_existing_stack"
+      ],
+      "boilerplate_profile_id": "CreateParameterSecurity",
+      "type": "create_mode_parameter_schema",
+      "slider": {
+        "id": "security",
+        "label": "Security",
+        "min": 0,
+        "max": 10,
+        "default": 8
+      },
+      "purpose": "Controls prompt-injection boundaries, export safety and destructive-action refusal.",
+      "context_bucket": "security",
+      "resolution_order": 5,
+      "schema_contract": {
+        "required_fields": [
+          "id",
+          "label",
+          "value",
+          "max",
+          "normalized",
+          "context_bucket",
+          "operator_role_id",
+          "reference_id",
+          "weight_operator_id"
+        ],
+        "value_range": {
+          "min": 0,
+          "max": 10
+        },
+        "export_keys": [
+          "create_mode_parameters",
+          "create_parameter_boilerplates",
+          "create_parameter_context",
+          "USER_PROMPT.txt",
+          "USER_PROMPT.txt"
+        ],
+        "validation": [
+          "value stays inside declared range",
+          "unknown fields are preserved",
+          "schema is exported before Create context sorting"
+        ]
+      },
+      "boilerplate_template": "Resolve Security before selecting Create context. Use its normalized value to shape security priority, validation posture and feature/refactor thickness.",
+      "reference_id": "create_parameter_security_reference",
+      "operator_role_id": "create_parameter_security_operator",
+      "weight_operator_id": "create_parameter_security_weight_operator",
+      "rules": [
+        "Resolve slider value before prompt/context sorting.",
+        "Do not activate in new_project_abstraction mode.",
+        "Keep output changed-files-only unless the user explicitly expands scope."
+      ]
+    },
+    {
+      "id": "create_parameter_precision_schema",
+      "parameter_id": "precision",
+      "label": "Precision Parameter Schema Boilerplate",
+      "modes": [
+        "feature_for_existing_project",
+        "refactor_existing_stack"
+      ],
+      "boilerplate_profile_id": "CreateParameterPrecision",
+      "type": "create_mode_parameter_schema",
+      "slider": {
+        "id": "precision",
+        "label": "Precision",
+        "min": 0,
+        "max": 100,
+        "default": 75
+      },
+      "purpose": "Controls exactness against mapping, schema and existing structure.",
+      "context_bucket": "boundary",
+      "resolution_order": 10,
+      "schema_contract": {
+        "required_fields": [
+          "id",
+          "label",
+          "value",
+          "max",
+          "normalized",
+          "context_bucket",
+          "operator_role_id",
+          "reference_id",
+          "weight_operator_id"
+        ],
+        "value_range": {
+          "min": 0,
+          "max": 100
+        },
+        "export_keys": [
+          "create_mode_parameters",
+          "create_parameter_boilerplates",
+          "create_parameter_context",
+          "USER_PROMPT.txt",
+          "USER_PROMPT.txt"
+        ],
+        "validation": [
+          "value stays inside declared range",
+          "unknown fields are preserved",
+          "schema is exported before Create context sorting"
+        ]
+      },
+      "boilerplate_template": "Resolve Precision before selecting Create context. Use its normalized value to shape boundary priority, validation posture and feature/refactor thickness.",
+      "reference_id": "create_parameter_precision_reference",
+      "operator_role_id": "create_parameter_precision_operator",
+      "weight_operator_id": "create_parameter_precision_weight_operator",
+      "rules": [
+        "Resolve slider value before prompt/context sorting.",
+        "Do not activate in new_project_abstraction mode.",
+        "Keep output changed-files-only unless the user explicitly expands scope."
+      ]
+    },
+    {
+      "id": "create_parameter_architecture_schema",
+      "parameter_id": "architecture",
+      "label": "Architecture Parameter Schema Boilerplate",
+      "modes": [
+        "feature_for_existing_project",
+        "refactor_existing_stack"
+      ],
+      "boilerplate_profile_id": "CreateParameterArchitecture",
+      "type": "create_mode_parameter_schema",
+      "slider": {
+        "id": "architecture",
+        "label": "Architecture",
+        "min": 0,
+        "max": 100,
+        "default": 70
+      },
+      "purpose": "Controls target boundaries, module separation and architecture evidence.",
+      "context_bucket": "architecture",
+      "resolution_order": 20,
+      "schema_contract": {
+        "required_fields": [
+          "id",
+          "label",
+          "value",
+          "max",
+          "normalized",
+          "context_bucket",
+          "operator_role_id",
+          "reference_id",
+          "weight_operator_id"
+        ],
+        "value_range": {
+          "min": 0,
+          "max": 100
+        },
+        "export_keys": [
+          "create_mode_parameters",
+          "create_parameter_boilerplates",
+          "create_parameter_context",
+          "USER_PROMPT.txt",
+          "USER_PROMPT.txt"
+        ],
+        "validation": [
+          "value stays inside declared range",
+          "unknown fields are preserved",
+          "schema is exported before Create context sorting"
+        ]
+      },
+      "boilerplate_template": "Resolve Architecture before selecting Create context. Use its normalized value to shape architecture priority, validation posture and feature/refactor thickness.",
+      "reference_id": "create_parameter_architecture_reference",
+      "operator_role_id": "create_parameter_architecture_operator",
+      "weight_operator_id": "create_parameter_architecture_weight_operator",
+      "rules": [
+        "Resolve slider value before prompt/context sorting.",
+        "Do not activate in new_project_abstraction mode.",
+        "Keep output changed-files-only unless the user explicitly expands scope."
+      ]
+    },
+    {
+      "id": "create_parameter_documentation_level_schema",
+      "parameter_id": "documentation_level",
+      "label": "DocumentationLevel Parameter Schema Boilerplate",
+      "modes": [
+        "feature_for_existing_project",
+        "refactor_existing_stack"
+      ],
+      "boilerplate_profile_id": "CreateParameterDocumentation",
+      "type": "create_mode_parameter_schema",
+      "slider": {
+        "id": "documentation_level",
+        "label": "DocumentationLevel",
+        "min": 0,
+        "max": 5,
+        "default": 3
+      },
+      "purpose": "Controls documentation depth in prompt contracts, handoff notes and validation gaps.",
+      "context_bucket": "documentation",
+      "resolution_order": 30,
+      "schema_contract": {
+        "required_fields": [
+          "id",
+          "label",
+          "value",
+          "max",
+          "normalized",
+          "context_bucket",
+          "operator_role_id",
+          "reference_id",
+          "weight_operator_id"
+        ],
+        "value_range": {
+          "min": 0,
+          "max": 5
+        },
+        "export_keys": [
+          "create_mode_parameters",
+          "create_parameter_boilerplates",
+          "create_parameter_context",
+          "USER_PROMPT.txt",
+          "USER_PROMPT.txt"
+        ],
+        "validation": [
+          "value stays inside declared range",
+          "unknown fields are preserved",
+          "schema is exported before Create context sorting"
+        ]
+      },
+      "boilerplate_template": "Resolve DocumentationLevel before selecting Create context. Use its normalized value to shape documentation priority, validation posture and feature/refactor thickness.",
+      "reference_id": "create_parameter_documentation_reference",
+      "operator_role_id": "create_parameter_documentation_operator",
+      "weight_operator_id": "create_parameter_documentation_weight_operator",
+      "rules": [
+        "Resolve slider value before prompt/context sorting.",
+        "Do not activate in new_project_abstraction mode.",
+        "Keep output changed-files-only unless the user explicitly expands scope."
+      ]
+    },
+    {
+      "id": "create_parameter_usability_schema",
+      "parameter_id": "usability",
+      "label": "Usability Parameter Schema Boilerplate",
+      "modes": [
+        "feature_for_existing_project",
+        "refactor_existing_stack"
+      ],
+      "boilerplate_profile_id": "CreateParameterUsability",
+      "type": "create_mode_parameter_schema",
+      "slider": {
+        "id": "usability",
+        "label": "Usability",
+        "min": 0,
+        "max": 10,
+        "default": 7
+      },
+      "purpose": "Controls user-facing flow, messages, ergonomics and discoverability.",
+      "context_bucket": "ux",
+      "resolution_order": 40,
+      "schema_contract": {
+        "required_fields": [
+          "id",
+          "label",
+          "value",
+          "max",
+          "normalized",
+          "context_bucket",
+          "operator_role_id",
+          "reference_id",
+          "weight_operator_id"
+        ],
+        "value_range": {
+          "min": 0,
+          "max": 10
+        },
+        "export_keys": [
+          "create_mode_parameters",
+          "create_parameter_boilerplates",
+          "create_parameter_context",
+          "USER_PROMPT.txt",
+          "USER_PROMPT.txt"
+        ],
+        "validation": [
+          "value stays inside declared range",
+          "unknown fields are preserved",
+          "schema is exported before Create context sorting"
+        ]
+      },
+      "boilerplate_template": "Resolve Usability before selecting Create context. Use its normalized value to shape UX priority, validation posture and feature/refactor thickness.",
+      "reference_id": "create_parameter_usability_reference",
+      "operator_role_id": "create_parameter_usability_operator",
+      "weight_operator_id": "create_parameter_usability_weight_operator",
+      "rules": [
+        "Resolve slider value before prompt/context sorting.",
+        "Do not activate in new_project_abstraction mode.",
+        "Keep output changed-files-only unless the user explicitly expands scope."
+      ]
+    }
+  ]
+}

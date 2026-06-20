@@ -51,8 +51,8 @@
       "USER_PROMPT.txt",
       "Prompt Builder preview",
       "Create Preview pipeline config",
-      "CREATE_EXPORT_MANIFEST.json",
-      "CREATE_PROMPT_MANIFEST.json",
+      "CREATE_USER_PROMPT.txt",
+      "CREATE_USER_PROMPT.txt",
       "CREATE_CMD_MANIFEST.json",
       "CMD.json"
     ],

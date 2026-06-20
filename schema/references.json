@@ -2173,7 +2173,7 @@
       "source_refs": [],
       "rules": [
         "Prune dependency/build/cache/export noise from evidence and exports unless explicitly included.",
-        "Keep generated artifacts discoverable via EXPORT_MANIFEST.json.",
+        "Keep generated artifacts discoverable via USER_PROMPT.txt.",
         "Do not delete source files without a named rollback point."
       ],
       "guardrails": [
@@ -2483,8 +2483,8 @@
       ],
       "source_refs": [
         {
-          "label": "Project EXPORT_MANIFEST contract",
-          "url": "EXPORT_MANIFEST.json",
+          "label": "Project USER_PROMPT contract",
+          "url": "USER_PROMPT.txt",
           "authority": "project_schema"
         }
       ],
@@ -3643,7 +3643,7 @@
         "Resolve dependencies, target path, file types, references, weights and validation before implementation.",
         "Prefer existing project conventions over generic boilerplate.",
         "Resolve the Create output timeline, dependency groups and project tree blueprint before implementation.",
-        "Keep generated artifacts discoverable through EXPORT_MANIFEST.json when ZIP export is selected."
+        "Keep generated artifacts discoverable through USER_PROMPT.txt when ZIP export is selected."
       ],
       "validation_focus": [
         "target path and scope explicit",
@@ -3889,7 +3889,7 @@
       "validation_focus": [
         "timeline steps are ordered and target-scoped",
         "dependency manifests are named explicitly",
-        "EXPORT_MANIFEST.json and USER_PROMPT.txt remain compatible with ZIP export",
+        "USER_PROMPT.txt remain compatible with ZIP export",
         "known version/evidence gaps are stated"
       ]
     },
@@ -3900,7 +3900,7 @@
       "reference_domains": [
         "create_micro_tasks_reference",
         "readme_tree_reference",
-        "process_log_reference",
+        "tokens_reference",
         "summary_documentation_reference"
       ],
       "applies_to_path_types": [

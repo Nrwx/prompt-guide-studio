@@ -80,7 +80,7 @@
           "documentation"
         ],
         "control": "Main dependency summary",
-        "main_dependency": "README/SUMMARY/PROCESS_LOG/traceability docs"
+        "main_dependency": "README/SUMMARY/TOKENS/traceability docs"
       },
       {
         "id": "prompt_eval",
@@ -89,7 +89,7 @@
           "mixed"
         ],
         "control": "Main dependency summary",
-        "main_dependency": "PROMPT_MANIFEST / eval checklist / schema contract"
+        "main_dependency": "USER_PROMPT / validation checklist / schema contract"
       },
       {
         "id": "terminal",

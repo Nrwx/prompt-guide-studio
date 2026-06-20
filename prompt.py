@@ -108,6 +108,7 @@ from ai_json_generator_core import (
     clone_project_scope_to_directory,
     _project_dependency_names,
     CODE_IMPORT_SCAN_EXTENSIONS,
+    DEPENDENCY_STORAGE_DIR_NAMES,
 )
 from core.process_utils import (
     popen_subprocess_hidden as _popen_subprocess_hidden,
@@ -127,6 +128,84 @@ DEFAULT_CREATE_STACK = "Python backend service"
 DEFAULT_CREATE_STACK_CATEGORY = "Backend / Python"
 DEFAULT_CREATE_TARGET_PATH = "./backend"
 DEFAULT_CREATE_BUILD_TARGET = "backend"
+
+# Profiles in this set are runtime/pipeline implementation details.  They stay
+# in the schema so existing manifests, stacks and exporters can resolve them,
+# but they must not appear as user-selectable Boilerplate modules.
+RUNTIME_ONLY_BOILERPLATE_PROFILE_IDS = {
+    "Create",
+    "RepositoryManagement",
+    "PromptEngineering",
+    "ContextEngineering",
+    "PromptEvaluation",
+    "PromptSecurity",
+    "CreatePipeline",
+    "ProjectTreePreview",
+    "TimelineCheckboxControl",
+    "CreateParameterPrecision",
+    "CreateParameterArchitecture",
+    "CreateParameterDocumentation",
+    "CreateParameterUsability",
+    "CreateParameterSecurity",
+    "CreateParameterWeight",
+    "CustomPrompt",
+    "MicroTasks",
+    "TerminalTimeline",
+    "DependencyManifestExport",
+    "CreateVueProject",
+    "ProjectCredits",
+    "Summarize",
+    "Readme",
+    "OperationsDocs",
+    "ImportAwareExport",
+}
+RUNTIME_ONLY_BOILERPLATE_PROFILE_ALIASES = {
+    "repositorymanagement",
+    "repositorymanagementpromptpack",
+    "promptengineering",
+    "contextengineering",
+    "promptevaluation",
+    "promptsecurity",
+    "create",
+    "createpipeline",
+    "projecttreepreview",
+    "timelinecheckboxcontrol",
+    "createparameterprecision",
+    "createparameterarchitecture",
+    "createparameterusabillity",
+    "createparameterusability",
+    "createparametersecurity",
+    "createparameterweight",
+    "custompromptmicrotasks",
+    "customprompt",
+    "microtasks",
+    "terminaltimeline",
+    "dependencymanifestexport",
+    "createcueproject",
+    "createvueproject",
+    "summerizeprojectcredits",
+    "summarizeprojectcredits",
+    "projectcredits",
+    "summerize",
+    "summarize",
+    "readme",
+    "operationdocs",
+    "operationsdocs",
+    "importawaeexport",
+    "importawareexport",
+}
+
+# Prompt-/Context-/Evaluation-/Security-Engineering are runtime wrappers, not
+# selectable TASK boilerplates.  They are embedded as a Human API mantle around
+# generated TASK phases so their context leads the handoff without becoming a
+# duplicate user task.
+HUMAN_API_ENGINEERING_WRAPPER_PROFILE_IDS = (
+    "PromptEngineering",
+    "ContextEngineering",
+    "PromptEvaluation",
+    "PromptSecurity",
+)
+
 
 START_TAB_GUIDE_STEPS = [
     "Choose the original project folder as the working tree.",
@@ -1240,11 +1319,7 @@ class AIJsonGeneratorGUI(tk.Tk):
         _project_tree_path_selection(). It is for checking where dependency
         storage exists, not for editing or AI scope expansion.
         """
-        dependency_names = {
-            "node_modules", ".venv", "venv", "env", ".pnpm-store", ".yarn",
-            "vendor", "Pods", ".gradle", "build", "dist", ".next", ".nuxt",
-            "target", "DerivedData",
-        }
+        dependency_names = set(DEPENDENCY_STORAGE_DIR_NAMES)
         result: list[str] = []
         try:
             root = Path(base).expanduser().resolve()
@@ -2338,7 +2413,7 @@ class AIJsonGeneratorGUI(tk.Tk):
         ttk.Button(schema_row, text="Choose schema folder", command=self._browse_schema).pack(side="left", padx=(8, 0))
         ttk.Button(schema_row, text="Reload schema", command=self._reload_schema).pack(side="left", padx=(8, 0))
 
-        ttk.Label(settings, text=f"System theme: {self.system_theme.get('platform')} / {self.system_theme.get('mode')} / {self.system_theme.get('source')} — PROCESS_LOG.md, SUMMARY.md and LIBRARY.log are always written.").grid(row=4, column=1, columnspan=5, sticky="w", padx=(8, 0), pady=4)
+        ttk.Label(settings, text=f"System theme: {self.system_theme.get('platform')} / {self.system_theme.get('mode')} / {self.system_theme.get('source')} — TOKENS.json and LIBRARY.log are always written.").grid(row=4, column=1, columnspan=5, sticky="w", padx=(8, 0), pady=4)
         ttk.Button(settings, text="Reload system theme", command=self._reload_system_theme).grid(row=4, column=0, sticky="w", pady=4)
         settings.columnconfigure(1, weight=1)
 
@@ -2668,7 +2743,7 @@ class AIJsonGeneratorGUI(tk.Tk):
 
     def _normalize_create_stack_config(self, label: str, config: dict) -> dict:
         config = dict(config or {})
-        config.setdefault("category", "Custom")
+        config.setdefault("category", "Other")
         config.setdefault("path", "./generated")
         config.setdefault("path_type", config.get("build_target", "generated"))
         config.setdefault("ai_target", "Codex")
@@ -2703,27 +2778,25 @@ class AIJsonGeneratorGUI(tk.Tk):
         timeline = self._dedupe_create_list(config.get("timeline") or [])
         if not any("{$create_target" in item for item in timeline):
             timeline.insert(0, f"{{$create_target[{config.get('build_target', 'generated')}]}}")
-        required_tokens = ["{$write_temp_project_tree}", "{$apply_temp_tree_to_working_path}", "{$write_project_mapping}", "{$write_dependency_layer}", "{$compiler_run}", "{$write_export_manifest}"]
+        required_tokens = ["{$write_temp_project_tree}", "{$apply_temp_tree_to_working_path}", "{$write_project_mapping}", "{$write_dependency_layer}", "{$compiler_run}", "{$write_handoff_index}"]
         for token in required_tokens:
             if token not in timeline:
-                if "{$write_export_manifest}" in timeline and token != "{$write_export_manifest}":
-                    timeline.insert(timeline.index("{$write_export_manifest}"), token)
+                if "{$write_handoff_index}" in timeline and token != "{$write_handoff_index}":
+                    timeline.insert(timeline.index("{$write_handoff_index}"), token)
                 else:
                     timeline.append(token)
         config["timeline"] = timeline
         placeholders = dict(config.get("placeholders") or {})
         placeholders.setdefault("{$write_temp_project_tree}", "compile editable temp preview tree without modifying the working path")
         placeholders.setdefault("{$apply_temp_tree_to_working_path}", "copy checked temp preview tree into the Create working path on Run")
-        placeholders.setdefault("{$write_project_mapping}", "write PROMPT_MANIFEST.json into Create-only export")
-        placeholders.setdefault("{$write_dependency_layer}", "write PROMPT_MANIFEST.json into Create-only export")
+        placeholders.setdefault("{$write_project_mapping}", "skip removed project mapping sidecar")
+        placeholders.setdefault("{$write_dependency_layer}", "skip removed dependency sidecar")
         placeholders.setdefault("{$compiler_run}", "run boilerplate-aligned compiler/test tasks when the required manifests or tools exist")
-        placeholders.setdefault("{$write_export_manifest}", "write EXPORT_MANIFEST.json into Create-only export")
+        placeholders.setdefault("{$write_handoff_index}", "write compact handoff index")
         config["placeholders"] = placeholders
         config["artifacts"] = self._dedupe_create_list((config.get("artifacts") or []) + [
             "CREATE_PREVIEW_TREE.json",
-            "PROMPT_MANIFEST.json",
-            "PROMPT_MANIFEST.json",
-            "EXPORT_MANIFEST.json",
+            "USER_PROMPT.txt",
         ])
         config["micro_task_ids"] = self._dedupe_create_list((config.get("micro_task_ids") or []) + [
             "task_terminal_auto_join",
@@ -2760,8 +2833,8 @@ class AIJsonGeneratorGUI(tk.Tk):
                 },
                 "tree": ["backend/", "backend/app/", "backend/app/api/", "backend/app/services/", "backend/tests/", "backend/requirements.txt", "backend/README.md"],
                 "timeline": ["{$create_target[backend]}", "{$write_file[requirements.txt]}", "{$install_python[dependency_version]}", "{$python_compileall}", "{$pytest_optional}"],
-                "placeholders": {"{$install_python[dependency_version]}": "pip install <dependency>==<version>", "{$python_compileall}": "python -m compileall backend"},
-                "artifacts": ["requirements.txt", "pyproject.toml(optional)", "README.md", "PROCESS_LOG.md", "EXPORT_MANIFEST.json"],
+                "placeholders": {"{$install_python[dependency_version]}": "pip install <dependency>==<version>", "{$python_compileall}": "python syntax check backend (dependency folders excluded)"},
+                "artifacts": ["requirements.txt", "pyproject.toml(optional)", "README.md", "TOKENS.json", "USER_PROMPT.txt"],
             },
             "Vue frontend app": {
                 "category": "Web / Frontend",
@@ -2782,7 +2855,7 @@ class AIJsonGeneratorGUI(tk.Tk):
                 "tree": ["frontend/", "frontend/src/", "frontend/src/components/", "frontend/src/views/", "frontend/src/styles/", "frontend/src/services/", "frontend/package.json", "frontend/README.md"],
                 "timeline": ["{$create_target[frontend]}", "{$install_node[dependency_version]}", "{$write_file[package.json]}", "{$write_component[src/components]} optional", "{$npm_run_lint}", "{$npm_run_build}"],
                 "placeholders": {"{$install_node[dependency_version]}": "npm install <dependency>@<version>", "{$npm_run_build}": "npm run build", "{$npm_run_lint}": "npm run lint"},
-                "artifacts": ["package.json", "vite.config.*", "src/components/*", "README.md", "EXPORT_MANIFEST.json"],
+                "artifacts": ["package.json", "vite.config.*", "src/components/*", "README.md", "USER_PROMPT.txt"],
             },
             "Web App / full context build": {
                 "category": "Web / Fullstack",
@@ -2798,12 +2871,12 @@ class AIJsonGeneratorGUI(tk.Tk):
                     "backend_optional": ["fastapi", "pydantic", "pytest"],
                     "design": ["scss", "tailwindcss(optional)", "bootstrap(optional)"],
                     "ops": ["Dockerfile(optional)", "scripts/dev.sh(optional)"],
-                    "manifest": ["package.json", "requirements.txt(optional)", "EXPORT_MANIFEST.json"]
+                    "manifest": ["package.json", "requirements.txt(optional)", "USER_PROMPT.txt"]
                 },
-                "tree": ["web-app/", "web-app/frontend/src/components/", "web-app/frontend/src/styles/", "web-app/backend/app/", "web-app/scripts/", "web-app/docs/", "web-app/EXPORT_MANIFEST.json"],
-                "timeline": ["{$create_target[wrapper]}", "{$create_target[frontend]}", "{$create_target[backend]} optional", "{$install_node[dependency_version]}", "{$install_python[dependency_version]} optional", "{$write_export_manifest}", "{$npm_run_build}"],
-                "placeholders": {"{$write_export_manifest}": "record every generated/exported artifact", "{$create_target[wrapper]}": "prepare root context and delegation", "{$npm_run_build}": "npm run build"},
-                "artifacts": ["frontend/package.json", "backend/requirements.txt(optional)", "scripts/*.sh", "PROMPT_MANIFEST.json", "EXPORT_MANIFEST.json"],
+                "tree": ["web-app/", "web-app/frontend/src/components/", "web-app/frontend/src/styles/", "web-app/backend/app/", "web-app/scripts/", "web-app/docs/", "web-app/USER_PROMPT.txt"],
+                "timeline": ["{$create_target[wrapper]}", "{$create_target[frontend]}", "{$create_target[backend]} optional", "{$install_node[dependency_version]}", "{$install_python[dependency_version]} optional", "{$write_handoff_index}", "{$npm_run_build}"],
+                "placeholders": {"{$write_handoff_index}": "record every generated/exported artifact", "{$create_target[wrapper]}": "prepare root context and delegation", "{$npm_run_build}": "npm run build"},
+                "artifacts": ["frontend/package.json", "backend/requirements.txt(optional)", "scripts/*.sh", "USER_PROMPT.txt"],
             },
             "WebGL engine / shader lab": {
                 "category": "Graphics / 3D / GPU",
@@ -2823,7 +2896,7 @@ class AIJsonGeneratorGUI(tk.Tk):
                 "tree": ["webgl-engine/src/", "webgl-engine/src/renderer/", "webgl-engine/src/shaders/", "webgl-engine/src/math/", "webgl-engine/public/", "webgl-engine/package.json"],
                 "timeline": ["{$create_target[frontend]}", "{$install_node[dependency_version]}", "{$write_shader_pipeline}", "{$write_projection_math}", "{$npm_run_build}"],
                 "placeholders": {"{$write_shader_pipeline}": "create shader module boundaries and uniform contract", "{$write_projection_math}": "document projection/view matrix assumptions"},
-                "artifacts": ["package.json", "src/shaders/*", "src/renderer/*", "docs/gpu_cpu_boundary.md", "EXPORT_MANIFEST.json"],
+                "artifacts": ["package.json", "src/shaders/*", "src/renderer/*", "docs/gpu_cpu_boundary.md", "USER_PROMPT.txt"],
             },
             "Android app": {
                 "category": "Mobile / Android",
@@ -2840,9 +2913,9 @@ class AIJsonGeneratorGUI(tk.Tk):
                     "manifest": ["settings.gradle", "build.gradle", "AndroidManifest.xml"]
                 },
                 "tree": ["android/", "android/app/src/main/yesva/", "android/app/src/main/res/", "android/app/build.gradle", "android/settings.gradle", "android/README.md"],
-                "timeline": ["{$create_target[generated]}", "{$write_gradle_settings}", "{$install_android[dependency_version]}", "{$gradle_build_optional}", "{$write_export_manifest}"],
+                "timeline": ["{$create_target[generated]}", "{$write_gradle_settings}", "{$install_android[dependency_version]}", "{$gradle_build_optional}", "{$write_handoff_index}"],
                 "placeholders": {"{$install_android[dependency_version]}": "declare Gradle dependency with version catalog or build.gradle", "{$gradle_build_optional}": "./gradlew build when wrapper exists"},
-                "artifacts": ["settings.gradle", "app/build.gradle", "AndroidManifest.xml", "README.md", "EXPORT_MANIFEST.json"],
+                "artifacts": ["settings.gradle", "app/build.gradle", "AndroidManifest.xml", "README.md", "USER_PROMPT.txt"],
             },
             "Flutter app": {
                 "category": "Mobile / Cross-platform",
@@ -2859,9 +2932,9 @@ class AIJsonGeneratorGUI(tk.Tk):
                     "manifest": ["pubspec.yaml"]
                 },
                 "tree": ["flutter/", "flutter/lib/", "flutter/lib/features/", "flutter/test/", "flutter/pubspec.yaml", "flutter/README.md"],
-                "timeline": ["{$create_target[generated]}", "{$write_file[pubspec.yaml]}", "{$install_flutter[dependency_version]}", "{$flutter_test_optional}", "{$write_export_manifest}"],
+                "timeline": ["{$create_target[generated]}", "{$write_file[pubspec.yaml]}", "{$install_flutter[dependency_version]}", "{$flutter_test_optional}", "{$write_handoff_index}"],
                 "placeholders": {"{$install_flutter[dependency_version]}": "flutter pub add <dependency>:<version>", "{$flutter_test_optional}": "flutter test when SDK evidence exists"},
-                "artifacts": ["pubspec.yaml", "lib/*", "test/*", "README.md", "EXPORT_MANIFEST.json"],
+                "artifacts": ["pubspec.yaml", "lib/*", "test/*", "README.md", "USER_PROMPT.txt"],
             },
             "Node.js tool / backend": {
                 "category": "Backend / Node.js",
@@ -2880,7 +2953,7 @@ class AIJsonGeneratorGUI(tk.Tk):
                 "tree": ["node/", "node/src/", "node/src/bin/", "node/src/lib/", "node/test/", "node/package.json", "node/README.md"],
                 "timeline": ["{$create_target[backend]}", "{$write_file[package.json]}", "{$install_node[dependency_version]}", "{$npm_run_test_optional}", "{$npm_run_build}"],
                 "placeholders": {"{$npm_run_test_optional}": "npm test when script exists", "{$npm_run_build}": "npm run build when script exists"},
-                "artifacts": ["package.json", "src/*", "test/*", "README.md", "EXPORT_MANIFEST.json"],
+                "artifacts": ["package.json", "src/*", "test/*", "README.md", "USER_PROMPT.txt"],
             },
             "Anaconda / scientific Python": {
                 "category": "Data / Scientific Python",
@@ -2898,7 +2971,7 @@ class AIJsonGeneratorGUI(tk.Tk):
                 "tree": ["science/", "science/src/", "science/notebooks/", "science/data/", "science/tests/", "science/environment.yml", "science/README.md"],
                 "timeline": ["{$create_target[backend]}", "{$write_file[environment.yml]}", "{$install_conda[dependency_version]}", "{$python_compileall}", "{$pytest_optional}"],
                 "placeholders": {"{$install_conda[dependency_version]}": "conda env update -f environment.yml when conda is selected"},
-                "artifacts": ["environment.yml", "requirements.txt(optional)", "src/*", "tests/*", "EXPORT_MANIFEST.json"],
+                "artifacts": ["environment.yml", "requirements.txt(optional)", "src/*", "tests/*", "USER_PROMPT.txt"],
             },
             "C / C++ native module": {
                 "category": "Native / Systems",
@@ -2910,9 +2983,9 @@ class AIJsonGeneratorGUI(tk.Tk):
                 "dependencies": "CMake | compiler toolchain | Catch2(optional) | fmt(optional) | spdlog(optional)",
                 "dependency_groups": {"runtime": ["standard library"], "build": ["CMake", "compiler"], "quality": ["ctest", "Catch2(optional)"], "manifest": ["CMakeLists.txt"]},
                 "tree": ["native/", "native/include/", "native/src/", "native/tests/", "native/CMakeLists.txt", "native/README.md"],
-                "timeline": ["{$create_target[backend]}", "{$write_file[CMakeLists.txt]}", "{$install_native[dependency_version]}", "{$cmake_build_optional}", "{$write_export_manifest}"],
+                "timeline": ["{$create_target[backend]}", "{$write_file[CMakeLists.txt]}", "{$install_native[dependency_version]}", "{$cmake_build_optional}", "{$write_handoff_index}"],
                 "placeholders": {"{$cmake_build_optional}": "cmake -S . -B build && cmake --build build when toolchain evidence exists"},
-                "artifacts": ["CMakeLists.txt", "include/*", "src/*", "tests/*", "EXPORT_MANIFEST.json"],
+                "artifacts": ["CMakeLists.txt", "include/*", "src/*", "tests/*", "USER_PROMPT.txt"],
             },
             "Math functions library": {
                 "category": "Math / Algorithms",
@@ -2926,7 +2999,7 @@ class AIJsonGeneratorGUI(tk.Tk):
                 "tree": ["math/", "math/src/", "math/tests/", "math/docs/", "math/README.md"],
                 "timeline": ["{$create_target[backend]}", "{$write_math_contract}", "{$install_python[dependency_version]}", "{$pytest_optional}"],
                 "placeholders": {"{$write_math_contract}": "define formulas, domains, units, tolerances and validation data"},
-                "artifacts": ["src/*", "tests/*", "docs/formulas.md", "EXPORT_MANIFEST.json"],
+                "artifacts": ["src/*", "tests/*", "docs/formulas.md", "USER_PROMPT.txt"],
             },
             "SVG / illustration asset pack": {
                 "category": "Design / Illustration",
@@ -2938,9 +3011,9 @@ class AIJsonGeneratorGUI(tk.Tk):
                 "dependencies": "svg | design tokens | asset manifest | optimization optional",
                 "dependency_groups": {"assets": ["SVG", "PNG/WebP optional"], "metadata": ["materials.json", "asset manifest"], "quality": ["manual visual review"]},
                 "tree": ["assets/", "assets/svg/", "assets/raster/", "assets/materials.json", "assets/README.md"],
-                "timeline": ["{$create_target[generated]}", "{$write_asset_manifest}", "{$write_svg_component_optional}", "{$write_export_manifest}"],
+                "timeline": ["{$create_target[generated]}", "{$write_asset_manifest}", "{$write_svg_component_optional}", "{$write_handoff_index}"],
                 "placeholders": {"{$write_asset_manifest}": "map each asset to source, license, style, variant and output path"},
-                "artifacts": ["svg/*", "materials.json", "README.md", "EXPORT_MANIFEST.json"],
+                "artifacts": ["svg/*", "materials.json", "README.md", "USER_PROMPT.txt"],
             },
             "Architecture documentation pack": {
                 "category": "Documentation / Architecture",
@@ -2950,11 +3023,11 @@ class AIJsonGeneratorGUI(tk.Tk):
                 "references": ["architecture_reference_map", "documentation_project_reference", "readme_tree_reference", "library_analytics_reference", "onboarding_admin_reference"],
                 "roles": ["create_stack_operator", "software_documentation_operator", "readme_author_operator", "analytics_inventory_operator", "onboarding_docs_operator"],
                 "dependencies": "markdown | project metadata | Mermaid optional | inventory tables",
-                "dependency_groups": {"docs": ["README.md", "ARCHITECTURE.md", "PROCESS_LOG.md"], "metadata": ["PROJECT_METADATA.json", "SUMMARY.md"]},
+                "dependency_groups": {"docs": ["README.md", "ARCHITECTURE.md", "TOKENS.json"], "metadata": ["LIBRARY.log"]},
                 "tree": ["docs/", "docs/ARCHITECTURE.md", "docs/SETUP.md", "docs/VALIDATION.md", "docs/README.md"],
-                "timeline": ["{$create_target[wrapper]}", "{$scan_project_scope}", "{$write_architecture_docs}", "{$write_export_manifest}"],
+                "timeline": ["{$create_target[wrapper]}", "{$scan_project_scope}", "{$write_architecture_docs}", "{$write_handoff_index}"],
                 "placeholders": {"{$scan_project_scope}": "use selected project tree, not imagined folders"},
-                "artifacts": ["ARCHITECTURE.md", "SETUP.md", "VALIDATION.md", "EXPORT_MANIFEST.json"],
+                "artifacts": ["ARCHITECTURE.md", "SETUP.md", "VALIDATION.md", "USER_PROMPT.txt"],
             },
             "Newspaper / content pipeline": {
                 "category": "Content / Publishing",
@@ -2966,9 +3039,9 @@ class AIJsonGeneratorGUI(tk.Tk):
                 "dependencies": "editorial schema | issue metadata | image manifest | fact-check checklist",
                 "dependency_groups": {"content": ["article templates", "issue manifest"], "assets": ["image manifest"], "quality": ["source/fact checklist"]},
                 "tree": ["publishing/", "publishing/issues/", "publishing/articles/", "publishing/assets/", "publishing/PUBLISHING_MANIFEST.json", "publishing/README.md"],
-                "timeline": ["{$create_target[generated]}", "{$write_editorial_schema}", "{$write_issue_manifest}", "{$write_export_manifest}"],
+                "timeline": ["{$create_target[generated]}", "{$write_editorial_schema}", "{$write_issue_manifest}", "{$write_handoff_index}"],
                 "placeholders": {"{$write_editorial_schema}": "define article metadata, status, sources and layout fields"},
-                "artifacts": ["PUBLISHING_MANIFEST.json", "articles/*", "assets/*", "EXPORT_MANIFEST.json"],
+                "artifacts": ["PUBLISHING_MANIFEST.json", "articles/*", "assets/*", "USER_PROMPT.txt"],
             },
             "Blender addon / 3D tool": {
                 "category": "Graphics / 3D / GPU",
@@ -2982,7 +3055,7 @@ class AIJsonGeneratorGUI(tk.Tk):
                 "tree": ["blender/", "blender/addon/", "blender/addon/operators/", "blender/addon/panels/", "blender/materials.json", "blender/README.md"],
                 "timeline": ["{$create_target[generated]}", "{$write_blender_addon_manifest}", "{$write_principled_bsdf_materials}", "{$python_compileall}"],
                 "placeholders": {"{$write_principled_bsdf_materials}": "write material parameters without inventing physical constants"},
-                "artifacts": ["addon/*", "materials.json", "README.md", "EXPORT_MANIFEST.json"],
+                "artifacts": ["addon/*", "materials.json", "README.md", "USER_PROMPT.txt"],
             },
             "Unity gameplay/tooling stack": {
                 "category": "Graphics / Game Engine",
@@ -2996,7 +3069,7 @@ class AIJsonGeneratorGUI(tk.Tk):
                 "tree": ["unity/", "unity/Assets/Scripts/", "unity/Assets/Shaders/", "unity/Packages/manifest.json", "unity/README.md"],
                 "timeline": ["{$create_target[generated]}", "{$write_unity_manifest}", "{$write_component_or_tool}", "{$unity_test_optional}"],
                 "placeholders": {"{$unity_test_optional}": "run Unity tests only when editor/project evidence exists"},
-                "artifacts": ["Packages/manifest.json", "Assets/Scripts/*", "Assets/Shaders/*", "EXPORT_MANIFEST.json"],
+                "artifacts": ["Packages/manifest.json", "Assets/Scripts/*", "Assets/Shaders/*", "USER_PROMPT.txt"],
             },
             "WELMEC / legal metrology software": {
                 "category": "Compliance / Metrology",
@@ -3008,9 +3081,9 @@ class AIJsonGeneratorGUI(tk.Tk):
                 "dependencies": "WELMEC 7.2 | WELMEC 7.3 | PTB 8.51 guides | audit manifest",
                 "dependency_groups": {"evidence": ["WELMEC", "PTB references"], "software": ["audit manifest", "risk documentation"], "quality": ["evidence traceability review"]},
                 "tree": ["legal-metrology/", "legal-metrology/docs/", "legal-metrology/src/", "legal-metrology/audit/", "legal-metrology/README.md"],
-                "timeline": ["{$create_target[generated]}", "{$write_audit_manifest}", "{$write_risk_docs}", "{$write_export_manifest}"],
+                "timeline": ["{$create_target[generated]}", "{$write_audit_manifest}", "{$write_risk_docs}", "{$write_handoff_index}"],
                 "placeholders": {"{$write_audit_manifest}": "map claims to cited evidence and generated artifacts"},
-                "artifacts": ["audit/*", "docs/*", "src/*", "EXPORT_MANIFEST.json"],
+                "artifacts": ["audit/*", "docs/*", "src/*", "USER_PROMPT.txt"],
             },
         }
         for label, config in self._schema_create_stack_catalog().items():
@@ -3367,6 +3440,55 @@ class AIJsonGeneratorGUI(tk.Tk):
             "generator_target_active": True,
         }
 
+    def _catalog_category_for_stack_label(self, stack_label: object) -> str:
+        label = str(stack_label or "").strip()
+        if not label:
+            return ""
+        catalog = self._create_stack_catalog()
+        row = catalog.get(label)
+        if isinstance(row, dict) and str(row.get("category") or "").strip():
+            return str(row.get("category") or "").strip()
+        lowered = label.lower()
+        for name, config in catalog.items():
+            if str(name).lower() == lowered and str(config.get("category") or "").strip():
+                return str(config.get("category") or "").strip()
+        return ""
+
+    def _is_placeholder_stack_category(self, value: object) -> bool:
+        text = str(value or "").strip().lower()
+        return text in {"", "custom", "none", "unknown", "not specified"}
+
+    def _resolved_create_stack_category(self, config: dict | None = None, record: dict | None = None) -> str:
+        """Resolve the real stack category from Build.complete or ProjectRoot evidence."""
+        config = config if isinstance(config, dict) else {}
+        record = record if isinstance(record, dict) else self._active_successful_create_build_for_current_stack()
+
+        def accept(value: object) -> str:
+            text = str(value or "").strip()
+            return "" if self._is_placeholder_stack_category(text) else text
+
+        if isinstance(record, dict):
+            manifest = record.get("build_complete_manifest") if isinstance(record.get("build_complete_manifest"), dict) else {}
+            project = manifest.get("project") if isinstance(manifest.get("project"), dict) else {}
+            for value in (project.get("category") if isinstance(project, dict) else "", record.get("category")):
+                resolved = accept(value)
+                if resolved:
+                    return resolved
+            resolved = self._catalog_category_for_stack_label(record.get("stack"))
+            if resolved:
+                return resolved
+
+        for detected in getattr(self, "_create_detected_targets", []) or []:
+            resolved = self._catalog_category_for_stack_label(detected.get("stack"))
+            if resolved:
+                return resolved
+
+        for value in (config.get("category"), self._catalog_category_for_stack_label(config.get("label")), self._catalog_category_for_stack_label(self.create_stack.get()), self.create_stack_category.get()):
+            resolved = accept(value)
+            if resolved:
+                return resolved
+        return "Other"
+
     def _custom_first_create_config_base(self) -> dict:
         generator = self._generator_config_from_active_targets()
         path = str(generator.get("path") or self.create_target_path.get().strip() or ".")
@@ -3375,7 +3497,7 @@ class AIJsonGeneratorGUI(tk.Tk):
         profiles = list(generator.get("profiles") or default_profile_ids(self.schema) or ["Create"])
         return {
             "label": self.project_name.get().strip() or self.create_stack.get().strip() or DEFAULT_PROJECT_NAME,
-            "category": "Custom",
+            "category": self._resolved_create_stack_category(),
             "path": path,
             "path_type": path_type,
             "ai_target": str(generator.get("ai_target") or self.ai_target_var.get() or "ChatGPT"),
@@ -3387,9 +3509,9 @@ class AIJsonGeneratorGUI(tk.Tk):
             "dependencies": self.create_dependencies.get().strip(),
             "dependency_groups": ({"custom": [self.create_dependencies.get().strip()]} if self.create_dependencies.get().strip() else {}),
             "tree": [path],
-            "timeline": ["{$write_project_mapping}", "{$write_export_manifest}"],
+            "timeline": ["{$write_project_mapping}", "{$write_handoff_index}"],
             "placeholders": {"{$custom_first}": "read Generator-owned active targets and Mapping active-state only"},
-            "artifacts": ["PROMPT_MANIFEST.json", "EXPORT_MANIFEST.json", "CREATE_BUILD_COMPLETE_MANIFEST.json"],
+            "artifacts": ["USER_PROMPT.txt", "CREATE_BUILD_COMPLETE_MANIFEST.json"],
             "custom_first": True,
             "mapping_policy": "Mapping toggles active target state only; roles/references are read from Generator or dynamic schema routing.",
         }
@@ -3415,7 +3537,7 @@ class AIJsonGeneratorGUI(tk.Tk):
             "entry_mode": context.get("id"),
             "routine": context.get("routine"),
             "stack": self.create_stack.get(),
-            "stack_category": "Custom",
+            "stack_category": self._resolved_create_stack_category(config),
             "target": config.get("build_target", self.create_build_target.get()),
             "custom_first": True,
             "feature_update_allowed": bool(context.get("id") in {"feature_for_existing_project", "refactor_existing_stack"} and (self._active_successful_create_build_for_current_stack() or self._has_start_tab_target_match())),
@@ -3433,7 +3555,7 @@ class AIJsonGeneratorGUI(tk.Tk):
         config = self._custom_first_create_config_base() if custom_first else dict(catalog.get(self.create_stack.get(), {}))
         if not config:
             config = {
-                "category": self.create_stack_category.get() or "Custom",
+                "category": self._resolved_create_stack_category(),
                 "path": self.create_target_path.get().strip() or ".",
                 "path_type": self.create_build_target.get().strip() or "wrapper",
                 "ai_target": self.ai_target_var.get() or "ChatGPT",
@@ -3445,11 +3567,11 @@ class AIJsonGeneratorGUI(tk.Tk):
                 "dependencies": self.create_dependencies.get().strip() or "custom / not yet resolved",
                 "dependency_groups": {"custom": [self.create_dependencies.get().strip() or "not specified"]},
                 "tree": [self.create_target_path.get().strip() or "./"],
-                "timeline": ["{$create_target[custom]}", "{$write_export_manifest}"],
+                "timeline": ["{$create_target[custom]}", "{$write_handoff_index}"],
                 "placeholders": {"{$create_target[custom]}": "user-defined target path"},
-                "artifacts": ["EXPORT_MANIFEST.json", "USER_PROMPT.txt"],
+                "artifacts": ["USER_PROMPT.txt"],
             }
-        config["category"] = "Custom" if custom_first else (self.create_stack_category.get().strip() or config.get("category", "Other"))
+        config["category"] = self._resolved_create_stack_category(config) if custom_first else (self.create_stack_category.get().strip() or config.get("category", "Other"))
         if custom_first and config.get("generator_target_active"):
             config["path"] = str(config.get("path") or ".")
             config["path_type"] = str(config.get("path_type") or "wrapper")
@@ -3561,7 +3683,7 @@ class AIJsonGeneratorGUI(tk.Tk):
             return ["- no dependency groups resolved; document as known gap if needed."]
         return [
             "- Dependency-Gruppen werden im Build Prompt nicht als Paketliste ausgeschrieben.",
-            "- Use PROMPT_MANIFEST.json as the machine-readable truth for groups, packages, versions, manifests, install and validation tokens.",
+            "- Use USER_PROMPT.txt as the machine-readable truth for groups, packages, versions, manifests, install and validation tokens.",
         ]
 
     def _format_create_micro_tasks(self, config: dict) -> list[str]:
@@ -3585,7 +3707,7 @@ class AIJsonGeneratorGUI(tk.Tk):
             return ["- no dependency layer resolved; do not guess package names."]
         lines: list[str] = [
             "- Dependency-Pakete, Versionen und Install-/Validierungstokens werden im Build Prompt bewusst nicht ausgeschrieben.",
-            "- Use PROMPT_MANIFEST.json as the only detail source for package names, versions, manifest files and target assignment.",
+            "- Use USER_PROMPT.txt, schema resources and dependency manifests as the detail source for package names, versions and target assignment.",
         ]
         seen_targets: set[str] = set()
         for entry in layer:
@@ -3594,7 +3716,7 @@ class AIJsonGeneratorGUI(tk.Tk):
                 continue
             seen_targets.add(target)
             manifests = ", ".join(str(item) for item in entry.get("manifest_files", [])) or "check manifest in dependency layer"
-            lines.append(f"- Target {target}: Details siehe PROMPT_MANIFEST.json; Manifest-Hinweis: {manifests}.")
+            lines.append(f"- Target {target}: Details siehe USER_PROMPT.txt; Manifest-Hinweis: {manifests}.")
         return lines
 
 
@@ -4847,7 +4969,7 @@ class AIJsonGeneratorGUI(tk.Tk):
         self.create_mode.set("feature_for_existing_project")
         first = self._create_detected_targets[0]
         self.create_stack.set(str(first.get("stack") or self.create_stack.get()))
-        self.create_stack_category.set("Custom")
+        self.create_stack_category.set(self._resolved_create_stack_category({"label": self.create_stack.get()}))
         self.create_target_path.set(str(first.get("path") or "."))
         self.create_build_target.set(str(first.get("path_type") or "wrapper"))
         self.create_project_mode_status.set("Create mode: feature for existing project — active state from Start tree; Generator targets preserved")
@@ -5817,7 +5939,7 @@ class AIJsonGeneratorGUI(tk.Tk):
             return False
         return True
 
-    def _dependency_target_root_path(self, target: str) -> Path:
+    def _dependency_target_root_path(self, target: str, fallback_target_path: Path | None = None) -> Path:
         target = str(target or "generated").lower().strip()
         role_for_target = {"wrapper": "wrapper_root", "backend": "backend_root", "frontend": "frontend_root", "assets": "asset", "generated": "generated"}.get(target, "")
         if hasattr(self, "create_preview_tree") and role_for_target:
@@ -5826,9 +5948,27 @@ class AIJsonGeneratorGUI(tk.Tk):
                     rel = str(row.get("path") or "").replace("\\", "/").strip("/")
                     root = self._create_temp_root()
                     return self._create_materialized_path(root, rel)
+        if fallback_target_path is not None:
+            return Path(fallback_target_path).resolve()
         rel = self._create_target_relative_path()
         root = self._create_temp_root()
         return self._create_materialized_path(root, rel)
+
+    def _dependency_manifest_target_path(self, row: dict, fallback_target_path: Path | None = None) -> Path:
+        """Resolve dependency installs to the preview/create folder that owns the manifest."""
+        root = self._create_temp_root()
+        manifest_value = str(row.get("manifest") or "").replace("\\", "/")
+        for raw in re.split(r"[,;\n]+", manifest_value):
+            rel = raw.strip().strip("`'\"")
+            if not rel or rel in {".", "./"}:
+                continue
+            if "*" in rel:
+                continue
+            name = rel.rsplit("/", 1)[-1].lower()
+            if name in {"package.json", "requirements.txt", "requirements-dev.txt", "requirements.json", "pyproject.toml", "environment.yml", "environment.yaml", "pubspec.yaml"}:
+                parent = rel.rsplit("/", 1)[0] if "/" in rel else "."
+                return self._create_materialized_path(root, parent).resolve()
+        return self._dependency_target_root_path(str(row.get("target") or "generated"), fallback_target_path)
 
     def _node_dependency_install_command(self, dependency: str, target_dir: Path) -> str:
         """Install one Node dependency without letting npm.cmd steal batch control.
@@ -5875,12 +6015,36 @@ class AIJsonGeneratorGUI(tk.Tk):
         )
         return self._python_inline_command(code)
 
-    def _dependency_install_command_for_row(self, row: dict) -> str:
+    def _python_dependency_install_command(self, dependency: str, target_dir: Path, row: dict) -> str:
+        """Install Python packages into a project-local venv dependency folder."""
+        base_python = self._python_runtime_executable(row.get("target", ""))
+        code = (
+            "import os, subprocess, sys\n"
+            "from pathlib import Path\n"
+            f"root=Path({str(target_dir)!r})\n"
+            f"dep={str(dependency)!r}\n"
+            f"base_python={str(base_python)!r}\n"
+            "root.mkdir(parents=True, exist_ok=True)\n"
+            "venv=root/'.venv'\n"
+            "py=venv/('Scripts/python.exe' if sys.platform.startswith('win') else 'bin/python')\n"
+            "if not py.exists():\n"
+            "    print('[create-python-venv]', venv)\n"
+            "    rc=subprocess.call([base_python, '-m', 'venv', str(venv)], shell=False)\n"
+            "    if rc:\n"
+            "        print(f'python venv creation failed ({rc}); skipped dependency install: {dep} -> {venv}')\n"
+            "        raise SystemExit(rc)\n"
+            "cmd=[str(py), '-m', 'pip', 'install', dep]\n"
+            "print('[create-pip-install]', ' '.join(cmd))\n"
+            "raise SystemExit(subprocess.call(cmd, shell=False))\n"
+        )
+        return self._python_inline_command(code)
+
+    def _dependency_install_command_for_row(self, row: dict, fallback_target_path: Path | None = None) -> str:
         if not self._is_installable_dependency_row(row):
             return ""
         package = str(row.get("package") or "").strip()
         ecosystem = str(row.get("ecosystem") or "generic").lower().strip()
-        target_dir = self._dependency_target_root_path(str(row.get("target") or "generated"))
+        target_dir = self._dependency_manifest_target_path(row, fallback_target_path)
         dependency = self._format_dependency_with_version(package, row.get("version", "--latest"), ecosystem)
         if not dependency:
             return ""
@@ -5888,9 +6052,22 @@ class AIJsonGeneratorGUI(tk.Tk):
             command = self._node_dependency_install_command(dependency, target_dir)
             return self._with_nvm(command, row.get("nvm_version") or self._nvm_version_for_target(row.get("target", "")), row.get("target", ""))
         if ecosystem in {"python", "pip", "pyproject", "conda", "scientific_python"}:
-            return self._shell_join([self._python_runtime_executable(row.get("target", "")), "-m", "pip", "install", dependency])
+            return self._python_dependency_install_command(dependency, target_dir, row)
         if ecosystem in {"flutter", "dart", "pub"}:
-            return self._shell_join(["dart", "pub", "add", dependency])
+            code = (
+                "import shutil, subprocess\n"
+                "from pathlib import Path\n"
+                f"root=Path({str(target_dir)!r})\n"
+                f"dep={dependency!r}\n"
+                "root.mkdir(parents=True, exist_ok=True)\n"
+                "dart=shutil.which('dart')\n"
+                "if not dart:\n"
+                "    print(f'dart unavailable; skipped dependency install: {dep} -> {root}')\n"
+                "    raise SystemExit(0)\n"
+                "print('[create-dart-pub-add]', dep, 'cwd=', root)\n"
+                "raise SystemExit(subprocess.call([dart, 'pub', 'add', dep], cwd=str(root)))\n"
+            )
+            return self._python_inline_command(code)
         if ecosystem in {"android", "gradle"}:
             version_note = self._normalize_gradle_version(row.get("gradle_version") or self.create_gradle_version.get() or "None") or "None"
             return self._python_print_command(f"gradle dependency declared for manifest editing: {dependency} -> {target_dir} (gradle={version_note})")
@@ -5953,7 +6130,7 @@ class AIJsonGeneratorGUI(tk.Tk):
             pass
         return self._shell_join(["sh", script])
 
-    def _dependency_install_commands_for_ecosystems(self, ecosystems: set[str], label: str) -> str:
+    def _dependency_install_commands_for_ecosystems(self, ecosystems: set[str], label: str, fallback_target_path: Path | None = None) -> str:
         """Resolve generic dependency tokens into concrete package install commands.
 
         A timeline token such as {$install_node[dependency_version]} must never
@@ -5972,12 +6149,12 @@ class AIJsonGeneratorGUI(tk.Tk):
             if ecosystem not in ecosystems or not package or not self._is_installable_dependency_row(row):
                 continue
             dependency = self._format_dependency_with_version(package, row.get("version", "--latest"), ecosystem)
-            target_dir = self._dependency_target_root_path(str(row.get("target") or "generated"))
+            target_dir = self._dependency_manifest_target_path(row, fallback_target_path)
             key = (ecosystem, str(target_dir), dependency)
             if key in seen:
                 continue
             seen.add(key)
-            command = self._dependency_install_command_for_row(row)
+            command = self._dependency_install_command_for_row(row, fallback_target_path)
             if command:
                 commands.append(command)
         return self._dependency_install_sequence_command(commands, label)
@@ -6416,7 +6593,7 @@ class AIJsonGeneratorGUI(tk.Tk):
                 "{$write_dependency_layer}",
                 *self._package_control_timeline_tokens(config),
                 "{$compiler_run}",
-                "{$write_export_manifest}",
+                "{$write_handoff_index}",
                 "{$apply_temp_tree_to_working_path}",
             ]
             return self._dedupe_create_list(lines)
@@ -6430,7 +6607,7 @@ class AIJsonGeneratorGUI(tk.Tk):
                 "{$write_dependency_layer}",
                 *self._package_control_timeline_tokens(config),
                 "{$compiler_run}",
-                "{$write_export_manifest}",
+                "{$write_handoff_index}",
                 "{$apply_temp_tree_to_working_path}",
             ]
             return self._dedupe_create_list(lines)
@@ -6439,10 +6616,10 @@ class AIJsonGeneratorGUI(tk.Tk):
         # generated artifacts mutate the temp preview first. Only after those
         # steps succeed does Run keep the temp build ready for export/patch review.
         lines = [line for line in lines if line != "{$apply_temp_tree_to_working_path}"]
-        for token in ["{$write_temp_project_tree}", "{$compiler_run}", "{$write_project_mapping}", "{$write_dependency_layer}", "{$write_export_manifest}"] + self._dependency_timeline_tokens(config) + self._package_control_timeline_tokens(config):
+        for token in ["{$write_temp_project_tree}", "{$compiler_run}", "{$write_project_mapping}", "{$write_dependency_layer}", "{$write_handoff_index}"] + self._dependency_timeline_tokens(config) + self._package_control_timeline_tokens(config):
             if token and token not in lines:
-                if "{$write_export_manifest}" in lines and token != "{$write_export_manifest}":
-                    lines.insert(lines.index("{$write_export_manifest}"), token)
+                if "{$write_handoff_index}" in lines and token != "{$write_handoff_index}":
+                    lines.insert(lines.index("{$write_handoff_index}"), token)
                 else:
                     lines.append(token)
         if "{$apply_temp_tree_to_working_path}" not in lines:
@@ -6457,7 +6634,7 @@ class AIJsonGeneratorGUI(tk.Tk):
         token = token.replace("write_temp_project_tree", "temp tree")
         token = token.replace("write_project_mapping", "mapping")
         token = token.replace("write_dependency_layer", "deps")
-        token = token.replace("write_export_manifest", "manifest")
+        token = token.replace("write_handoff_index", "handoff")
         token = token.replace("compiler_run", "compiler")
         token = token.replace("install_node", "npm")
         token = token.replace("install_python", "pip")
@@ -6681,7 +6858,7 @@ class AIJsonGeneratorGUI(tk.Tk):
         if py_targets or "python_compileall" in timeline_text:
             for target in sorted(py_targets):
                 root = self._dependency_target_root_path(target)
-                self._append_compiler_row_once(rows, seen, {"target": target, "kind": "python", "script": "compileall", "command": self._shell_join([self._python_runtime_executable(target), "-m", "compileall", root]), "python_version": self.create_python_version.get(), "python_path": self._selected_python_path_text(), "status": "version-bound" if self._normalize_python_version(self.create_python_version.get()) else "optional"})
+                self._append_compiler_row_once(rows, seen, {"target": target, "kind": "python", "script": "compileall", "command": self._python_compileall_command(root), "python_version": self.create_python_version.get(), "python_path": self._selected_python_path_text(), "status": "version-bound" if self._normalize_python_version(self.create_python_version.get()) else "optional"})
                 if self._target_has_test_files(root, "python"):
                     self._append_compiler_row_once(rows, seen, {"target": target, "kind": "python", "script": "pytest", "command": self._pytest_optional_command(root), "status": "test-optional"})
 
@@ -6887,7 +7064,7 @@ class AIJsonGeneratorGUI(tk.Tk):
                         "target": target,
                         "kind": "python",
                         "script": "compileall",
-                        "command": self._shell_join([self._python_runtime_executable(target), "-m", "compileall", root]),
+                        "command": self._python_compileall_command(root),
                         "nvm_version": "None",
                         "gradle_version": "None",
                         "status": "detected-script",
@@ -7094,7 +7271,7 @@ class AIJsonGeneratorGUI(tk.Tk):
             "temp_root": str(self._create_temp_root()),
             "working_dir": str(self._create_working_dir()),
             "export_dir": str(export_dir),
-            "mapping_path": str(export_dir / "PROMPT_MANIFEST.json"),
+            "mapping_path": str(export_dir / "USER_PROMPT.txt"),
             "discovery_path": str(export_dir / "CREATE_COMPILER_DISCOVERY.json"),
             "python_version": self._normalize_python_version(self.create_python_version.get()) or None,
             "python_path": self._selected_python_path_text() or None,
@@ -7522,7 +7699,7 @@ raise SystemExit(2)
             "project_first": bool(self._create_project_first_mode),
             "detected_targets": list(self._create_detected_targets),
             "active_targets": self._create_active_target_manifest_rows(config, base=workdir),
-            "active_targets_manifest": "PROMPT_MANIFEST.json",
+            "active_targets_manifest": "USER_PROMPT.txt",
             "path_type": config.get("path_type", "wrapper"),
             "build_target": config.get("build_target", self.create_build_target.get()),
             "ai_target": config.get("ai_target", "ChatGPT"),
@@ -10534,6 +10711,38 @@ raise SystemExit(2)
         )
         return self._with_nvm(self._python_inline_command(code), nvm_version or self._nvm_version_for_target(self.create_build_target.get()), self.create_build_target.get())
 
+    def _python_compileall_command(self, target_path: Path | None = None) -> str:
+        target = Path(target_path or self._create_terminal_target_path())
+        python_exe = self._python_runtime_executable(self.create_build_target.get())
+        ignored = sorted(set(DEPENDENCY_STORAGE_DIR_NAMES))
+        code = (
+            "import os, py_compile\n"
+            "from pathlib import Path\n"
+            f"root=Path({str(target)!r})\n"
+            f"ignored=set({ignored!r})\n"
+            "if not root.exists():\n"
+            "    print(f'compile skipped; target missing: {root}')\n"
+            "    raise SystemExit(0)\n"
+            "checked=0\n"
+            "failed=[]\n"
+            "for current, dirs, files in os.walk(root):\n"
+            "    dirs[:] = [d for d in sorted(dirs) if d not in ignored]\n"
+            "    for name in sorted(files):\n"
+            "        if not name.endswith('.py'):\n"
+            "            continue\n"
+            "        path=Path(current)/name\n"
+            "        checked += 1\n"
+            "        try:\n"
+            "            py_compile.compile(str(path), doraise=True)\n"
+            "        except Exception as exc:\n"
+            "            failed.append((path, exc))\n"
+            "            print(f'[compile-error] {path}: {exc}')\n"
+            "print(f'[create-python-compile] checked={checked} root={root}')\n"
+            "if failed:\n"
+            "    raise SystemExit(1)\n"
+        )
+        return self._python_inline_command(code)
+
     def _pytest_optional_command(self, target_path: Path | None = None) -> str:
         target = Path(target_path or self._create_terminal_target_path())
         python_exe = self._python_runtime_executable(self.create_build_target.get())
@@ -10610,11 +10819,11 @@ raise SystemExit(2)
         return Path(str(raw).replace("\\", "/").strip("/") or ".")
 
     def _create_terminal_target_path(self) -> Path:
-        # Create tasks run against the temp preview clone first. The temp root is
-        # already the selected wrapper/stack root, so `./web-app` resolves to the
-        # temp root itself, not temp_root/web-app.
+        # Create tasks run against the active terminal workdir. After
+        # Build.complete this must be the completed abstraction root, not a newly
+        # computed preview-clone path.
         rel = self._create_target_relative_path()
-        return self._create_materialized_path(self._create_temp_root(), rel).resolve()
+        return self._create_materialized_path(self._create_terminal_work_dir(), rel).resolve()
 
     def _create_target_root_path_for_target(self, target_name: str) -> Path:
         target = str(target_name or "generated").lower().strip()
@@ -10631,7 +10840,7 @@ raise SystemExit(2)
             for row in self._create_preview_tree_model():
                 if str(row.get("role") or "") == role_for_target and not row.get("ignored"):
                     rel = self._normalize_create_tree_rel(row.get("path") or ".")
-                    root = self._create_temp_root()
+                    root = self._create_terminal_work_dir()
                     return self._create_materialized_path(root, rel)
         return self._create_terminal_target_path()
 
@@ -10661,104 +10870,18 @@ raise SystemExit(2)
             )
         return self._python_inline_command(code)
 
-    def _write_create_export_manifest_command(self) -> str:
-        self._progress_callback("Create timeline: preparing export manifest", None, 0)
-        manifest = self._create_export_path() / "EXPORT_MANIFEST.json"
-        payload = {
-            "artifact": "EXPORT_MANIFEST.json",
-            "mode": "create_only_export",
-            "working_path": str(self._create_working_dir()),
-            "target_path": str(self._create_terminal_target_path()),
-            "created_by": "prompt-guide Create terminal pipeline",
-            "contract": "Create exports are isolated from normal tab exports unless explicitly included.",
-            "create_mode_context": self._current_create_config().get("create_mode_context", self._create_mode_context()),
-            "create_weight_profiles": self._current_create_config().get("create_weight_profiles", []),
-        }
-        code = (
-            "import json; from pathlib import Path; "
-            f"p=Path({str(manifest)!r}); p.parent.mkdir(parents=True, exist_ok=True); "
-            f"payload={payload!r}; "
-            "p.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + '\\n', encoding='utf-8'); "
-            "print('wrote create export manifest:', p)"
-        )
-        return self._python_inline_command(code)
+    def _write_create_handoff_index_command(self) -> str:
+        self._progress_callback("Create timeline: handoff index step compacted", None, 0)
+        return self._python_print_command("handoff index step compacted; USER_PROMPT.txt is the handoff")
 
     def _write_create_project_mapping_command(self) -> str:
-        """Write PROMPT_MANIFEST.json from the terminal, not by precomputing
-        the full mapping in the Tk callback.
-
-        The full GUI mapping preview can still call `_create_project_mapping_payload()`.
-        Timeline compile only needs a safe command string. Keeping this payload
-        lightweight prevents large Treeview/project mappings from freezing the
-        window before the Yes/No execution prompt appears.
-        """
-        output = self._create_export_path() / "PROMPT_MANIFEST.json"
-        payload = {
-            "artifact": "PROMPT_MANIFEST.json",
-            "mode": self.create_mode.get(),
-            "stack": self.create_stack.get(),
-            "working_path": str(self._create_working_dir()),
-            "target_path": str(self._create_terminal_target_path()),
-            "create_export_dir": str(self._create_export_path()),
-            "project_source_path": str(self._create_project_source_base or Path(self.output_base.get() or ".").resolve()),
-            "project_first": bool(self._create_project_first_mode),
-            "path_type": self.create_build_target.get(),
-            "build_target": self.create_build_target.get(),
-            "ai_target": self.ai_target_var.get() or "ChatGPT",
-            "nvm_version": self._normalize_nvm_version(self.create_nvm_version.get()) or None,
-            "nvm_root_path": self._selected_nvm_root_path_text() or None,
-            "gradle_version": self._normalize_gradle_version(self.create_gradle_version.get()) or None,
-            "temp_preview_dir": str(self._create_temp_root()),
-            "terminal": {
-                "auto_join": True,
-                "shell": "cmd.exe" if platform.system().lower().startswith("win") else str(os.environ.get("SHELL") or "/bin/sh"),
-                "temp_cwd": str(self._create_temp_root()),
-            },
-            "deferred_heavy_fields": ["tree_blueprint", "existing_manifest_scan", "package_control_full_scan"],
-            "rules": [
-                "Run Timeline writes this lightweight mapping before executing terminal tasks.",
-                "Full mapping preview remains available in the GUI but is not recomputed inside the Run button callback.",
-            ],
-        }
-        code = (
-            "import json; from pathlib import Path\n"
-            f"p=Path({str(output)!r})\n"
-            f"payload={payload!r}\n"
-            "p.parent.mkdir(parents=True, exist_ok=True)\n"
-            "p.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + '\\n', encoding='utf-8')\n"
-            "print('wrote create project mapping:', p)\n"
-        )
-        return self._python_inline_command(code)
+        """Skip the removed mapping sidecar during terminal timeline execution."""
+        self._progress_callback("Create timeline: project mapping sidecar removed", None, 0)
+        return self._python_print_command("project mapping sidecar removed; USER_PROMPT.txt carries the handoff")
 
     def _write_create_dependency_layer_command(self) -> str:
-        self._progress_callback("Create timeline: resolving dependency layer", None, 0)
-        output = self._create_export_path() / "PROMPT_MANIFEST.json"
-        payload = {
-            "artifact": "PROMPT_MANIFEST.json",
-            "mode": "package_dependency_layer",
-            "stack": self.create_stack.get(),
-            "working_path": str(self._create_working_dir()),
-            "target_path": str(self._create_terminal_target_path()),
-            "version_policy": self.create_lts_policy.get(),
-            "nvm_version": self._normalize_nvm_version(self.create_nvm_version.get() or "None") or None,
-            "nvm_root_path": self._selected_nvm_root_path_text() or None,
-            "gradle_version": self._normalize_gradle_version(self.create_gradle_version.get() or "None") or None,
-            "dependency_rows": self._effective_dependency_rows(self._current_create_config()),
-            "dependency_abstraction": self._effective_dependency_layer(self._current_create_config()),
-            "rules": [
-                "Dependencies are grouped by ecosystem and manifest, not installed globally by default.",
-                "Exact versions require manifest evidence or explicit user input.",
-                "Swap decisions must keep imports, adapters and validation commands aligned.",
-            ],
-        }
-        code = (
-            "import json; from pathlib import Path; "
-            f"p=Path({str(output)!r}); p.parent.mkdir(parents=True, exist_ok=True); "
-            f"payload={payload!r}; "
-            "p.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + '\\n', encoding='utf-8'); "
-            "print('wrote dependency abstraction layer:', p)"
-        )
-        return self._python_script_command("write_create_dependency_layer", code)
+        self._progress_callback("Create timeline: dependency sidecar removed", None, 0)
+        return self._python_print_command("dependency sidecar removed; install commands still run from timeline")
 
     def _write_project_tree_markdown_command(self) -> str:
         workdir = self._create_working_dir()
@@ -10843,14 +10966,14 @@ raise SystemExit(2)
             "{$create_target[generated]}": lambda: self._create_target_mkdir_command("generated"),
             "{$create_target[assets]}": lambda: self._create_target_mkdir_command("assets"),
             "{$create_target[custom]}": lambda: self._create_target_mkdir_command("custom"),
-            "{$python_compileall}": lambda: self._shell_join([self._python_runtime_executable(self.create_build_target.get()), "-m", "compileall", target_path]),
+            "{$python_compileall}": lambda: self._python_compileall_command(target_path),
             "{$pytest_optional}": lambda: self._pytest_optional_command(target_path),
             "{$npm_run_build}": lambda: self._npm_script_optional_command("build", target_path, self._nvm_version_for_target(self.create_build_target.get())),
             "{$npm_run_lint}": lambda: self._npm_script_optional_command("lint", target_path, self._nvm_version_for_target(self.create_build_target.get())),
             "{$npm_run_test_optional}": lambda: self._npm_script_optional_command("test", target_path, self._nvm_version_for_target(self.create_build_target.get())),
-            "{$install_node[dependency_version]}": lambda: self._dependency_install_commands_for_ecosystems({"node", "yesvascript", "typescript", "frontend", "node/browser"}, "node"),
-            "{$install_python[dependency_version]}": lambda: self._dependency_install_commands_for_ecosystems({"python", "pip", "pyproject", "conda", "scientific_python"}, "python"),
-            "{$install_conda[dependency_version]}": lambda: self._dependency_install_commands_for_ecosystems({"conda", "scientific_python"}, "conda"),
+            "{$install_node[dependency_version]}": lambda: self._dependency_install_commands_for_ecosystems({"node", "yesvascript", "typescript", "frontend", "node/browser"}, "node", target_path),
+            "{$install_python[dependency_version]}": lambda: self._dependency_install_commands_for_ecosystems({"python", "pip", "pyproject", "conda", "scientific_python"}, "python", target_path),
+            "{$install_conda[dependency_version]}": lambda: self._dependency_install_commands_for_ecosystems({"conda", "scientific_python"}, "conda", target_path),
             "{$cmake_build_optional}": lambda: self._cmake_build_optional_command(target_path),
             "{$gradle_build_optional}": lambda: self._gradle_build_optional_command(target_path, self._gradle_version_for_target(self.create_build_target.get())),
             "{$flutter_test_optional}": lambda: self._flutter_test_optional_command(target_path),
@@ -10861,7 +10984,7 @@ raise SystemExit(2)
             "{$apply_temp_tree_to_working_path}": self._apply_create_temp_tree_command,
             "{$write_project_mapping}": self._write_create_project_mapping_command,
             "{$write_dependency_layer}": self._write_create_dependency_layer_command,
-            "{$write_export_manifest}": self._write_create_export_manifest_command,
+            "{$write_handoff_index}": self._write_create_handoff_index_command,
             "{$scan_project_scope}": self._write_project_tree_markdown_command,
             "{$write_dependency_inventory}": self._write_create_dependency_layer_command,
             "{$scan_dependency_manifests}": self._write_create_project_mapping_command,
@@ -10873,7 +10996,7 @@ raise SystemExit(2)
             return self._create_touch_file_command(token[len("{$write_file["):-2])
         for row in self._effective_dependency_rows(config):
             if token == self._dependency_row_install_token(row):
-                return self._dependency_install_command_for_row(row)
+                return self._dependency_install_command_for_row(row, target_path)
         if token in set(self._package_control_timeline_tokens(config)):
             return self._package_control_command_for_token(token)
         return ""
@@ -11267,6 +11390,52 @@ raise SystemExit(2)
             return ""
         return " && ".join(commands)
 
+    def _wrap_create_script_command(self, command: str) -> str:
+        command = str(command or "").strip()
+        if not command or not platform.system().lower().startswith("win"):
+            return command
+        if "\n" in command or "\r" in command:
+            return command
+        lowered = command.lstrip().lower()
+        head = lowered.lstrip("@")
+        first = head.split(None, 1)[0] if head else ""
+        passthrough_tokens = {
+            "call",
+            "cd",
+            "chdir",
+            "cls",
+            "color",
+            "copy",
+            "del",
+            "dir",
+            "echo",
+            "erase",
+            "exit",
+            "for",
+            "if",
+            "md",
+            "mkdir",
+            "move",
+            "popd",
+            "pushd",
+            "rd",
+            "rem",
+            "ren",
+            "rename",
+            "rmdir",
+            "set",
+            "shift",
+            "start",
+            "title",
+            "type",
+            "ver",
+            "verify",
+            "vol",
+        }
+        if head.startswith("::") or first in passthrough_tokens:
+            return command
+        return f"call {command}"
+
     def _write_create_terminal_script(self, compiled: list[dict[str, str]]) -> tuple[Path, str]:
         self._create_running_timeline_by_index = {index: str(item.get("timeline", "")) for index, item in enumerate(compiled, start=1)}
         export_dir = self._create_export_path()
@@ -11298,7 +11467,7 @@ raise SystemExit(2)
                 timeline = str(item.get("timeline", "")).replace("^", "^^").replace("&", "^&").replace("|", "^|").replace(">", "^>").replace("<", "^<")
                 lines.extend([
                     f"echo [create-task:{index}] {timeline}",
-                    item["command"],
+                    self._wrap_create_script_command(str(item.get("command") or "")),
                     f"if errorlevel 1 (echo [create-task:{index}:exit=%ERRORLEVEL%] & exit /b %ERRORLEVEL%)",
                     f"echo [create-task:{index}:exit=0]",
                 ])
@@ -11632,7 +11801,7 @@ raise SystemExit(2)
         config = self._current_create_config() if custom_first_active else self._create_stack_catalog().get(self.create_stack.get(), {})
         if config:
             if custom_first_active:
-                self.create_stack_category.set("Custom")
+                self.create_stack_category.set(self._resolved_create_stack_category(config))
             else:
                 self.create_stack_category.set(config.get("category", self.create_stack_category.get()))
             self.create_dependencies.set(str(config.get("dependencies", "")))
@@ -11979,6 +12148,19 @@ raise SystemExit(2)
         """
         if not isinstance(record, dict):
             return record
+        if str(record.get("mode") or "") == "new_project_abstraction":
+            # A New Abstraction build installs dependencies into the abstraction
+            # root itself.  Do not promote Build.complete to a package-less clone.
+            raw_source = str(record.get("temp_preview_dir") or "").strip()
+            if raw_source:
+                try:
+                    source_root = Path(raw_source).expanduser().resolve()
+                    if source_root.exists() and source_root.is_dir():
+                        record["build_complete_source_dir"] = str(source_root)
+                        record["preview_clone_dir"] = ""
+                except Exception:
+                    pass
+            return record
         raw_source = str(record.get("temp_preview_dir") or "").strip()
         if not raw_source:
             return record
@@ -12064,7 +12246,7 @@ raise SystemExit(2)
             if self.create_mode.get() != "feature_for_existing_project":
                 self.create_mode.set("feature_for_existing_project")
             try:
-                self.create_stack_category.set("Custom")
+                self.create_stack_category.set(self._resolved_create_stack_category(record=record))
             except Exception:
                 pass
             self.create_project_mode_status.set("Create mode: feature for existing project — Build.complete is primary base; Custom-first Mapping active")
@@ -12121,7 +12303,7 @@ raise SystemExit(2)
             "mode": run_mode,
             "stack": run_stack,
             "project_name": project_identity,
-            "category": config.get("category", self.create_stack_category.get()),
+            "category": self._resolved_create_stack_category(config),
             "temp_preview_dir": str(temp_dir),
             "preview_target_path": str(self._create_terminal_target_path()),
             "create_working_dir": str(self._create_working_dir()),
@@ -12166,7 +12348,7 @@ raise SystemExit(2)
             "create_export_dir": record.get("create_export_dir"),
             "project": {
                 "name": record.get("project_name") or (self._create_abstraction_project_name(config) if str(record.get("mode") or "") == "new_project_abstraction" else self.project_name.get()),
-                "category": config.get("category", self.create_stack_category.get()),
+                "category": self._resolved_create_stack_category(config, record),
                 "target_path": config.get("path", self.create_target_path.get()),
                 "path_type": config.get("path_type", self.create_build_target.get()),
                 "build_target": config.get("build_target", self.create_build_target.get()),
@@ -12265,7 +12447,7 @@ raise SystemExit(2)
         except Exception as exc:
             self._set_progress(f"Generator target sync skipped after Build.complete: {exc}", 0)
         try:
-            self.create_stack_category.set("Custom")
+            self.create_stack_category.set(self._resolved_create_stack_category(config, record))
         except Exception:
             pass
         if self._active_successful_create_build_for_current_stack():
@@ -13241,7 +13423,7 @@ raise SystemExit(2)
                 "credit_infobox_tokens": "{$credit_project}, {$credit_owner}, {$credit_year}, {$credit_license}, {$credit_meta_summary}",
                 "documentation_test_reuse_tokens": "{$ptb_schema_profile}, {$update_scope}, {$test_goal}, {$test_framework_policy}, {$resource_reuse_scope}",
                 "last_git_commit_tokens": "LAST-GIT-COMMIT erzeugt Referenz D aus einem read-only Patch-Tab-Git-Scan; Plan-Auswahl oder Export-Checkbox aktivieren die Referenz.",
-                "tasks_sidecar_tokens": "TASKS.TXT is generated from the left Prompt Builder CUSTOM_USER_PROMPT and kept as a sidecar outside the ZIP/folder output.",
+                "tasks_sidecar_tokens": "TASKS.TXT is generated during Export from Mode/Routine/Stack and kept as a sidecar outside the ZIP/folder output; left CUSTOM_USER_PROMPT is merged when present.",
                 "shortcut_command_tokens": "START, RESTART, REFACTOR, SKIP, EXTEND, SHRINK, FIX and STATUS are direct USER_PROMPT commands; the AI must apply their meaning exactly without expanding tool/access boundaries.",
             },
             "fields": list(fields_by_id.values()),
@@ -13270,7 +13452,7 @@ raise SystemExit(2)
                 "Unit-test plans reuse existing project test frameworks or return an explicit manual gap.",
                 "Feature and refactor entries must identify reusable local resources before creating parallel implementations.",
                 "Selecting a Last-Git-Commit plan triggers a read-only Git reference scan before the Prompt Builder compiles preview text.",
-                "TASKS.TXT is an automatic Prompt Builder export hook/sidecar for left-input task phases; it is not a selectable Create catalog entry and must be declared in export manifests only when present.",
+                "TASKS.TXT is an automatic Prompt Builder export hook/sidecar from Mode/Routine/Stack plus optional left-input task phases; it is not a selectable Create catalog entry.",
                 "Shortcut commands are immediate USER_PROMPT CMD semantics; when sent by the user, the receiving AI must apply them exactly while still preserving scope, validation and access boundaries.",
             ],
         }
@@ -13452,7 +13634,7 @@ raise SystemExit(2)
                 "steps": [
                     "Run the Patch-tab Git scan once before Prompt Builder compile when the plan is selected.",
                     "Capture repo, branch, dirty status and last commit read-only only.",
-                    "Synchronize Prompt Builder preview, USER_PROMPT.txt and export manifests with Reference D.",
+                    "Synchronize Prompt Builder preview, USER_PROMPT.txt and TASKS.TXT with Reference D.",
                     "Report missing Git repository as a known gap instead of inventing commit data.",
                 ],
                 "success_criteria": [
@@ -13535,7 +13717,7 @@ raise SystemExit(2)
             "parameter_boilerplates": config.get("create_parameter_boilerplates", self._create_mode_parameter_boilerplates()) if config else self._create_mode_parameter_boilerplates(),
             "parameter_context": config.get("create_parameter_context", self._create_parameter_context_priority()) if config else self._create_parameter_context_priority(),
             "boilerplates": chain_schema.get("boilerplates", []),
-            "timeline": ["{$write_project_mapping}", "{$write_dependency_layer}", "{$compiler_run}", "{$write_export_manifest}", "{$apply_temp_tree_to_working_path}"],
+            "timeline": ["{$write_project_mapping}", "{$write_dependency_layer}", "{$compiler_run}", "{$write_handoff_index}", "{$apply_temp_tree_to_working_path}"],
             "weights": ["changed_files_only", "export_traceability_standard", "prompt_evaluation_standard"],
             "operators": ["repository_management_prompt_operator", "create_export_boundary_operator", "prompt_eval_operator"],
             "prompt_rules": [
@@ -13549,7 +13731,7 @@ raise SystemExit(2)
                 "Do not create generated scale variants.",
                 "Use @target/path shortcuts as path references, not as prose variables.",
                 "Selecting a Last-Git-Commit feature plan scans Git before Prompt Builder compiles and embeds Referenz D when available.",
-                "Prompt Builder left input automatically creates TASKS.TXT as an export hook/sidecar when present; it is not a selectable Create catalog entry.",
+                "Prompt Builder export automatically creates TASKS.TXT from Mode/Routine/Stack; left input is merged when present. It is not a selectable Create catalog entry.",
                 "Shortcut commands are exported USER_PROMPT CMD semantics, not Create catalog entries.",
                 "CMD.json is the machine-readable CMD contract mirrored from USER_PROMPT.",
             ],
@@ -13690,7 +13872,7 @@ raise SystemExit(2)
             "parameter_boilerplates": config.get("create_parameter_boilerplates", self._create_mode_parameter_boilerplates()) if config else self._create_mode_parameter_boilerplates(),
             "parameter_context": config.get("create_parameter_context", self._create_parameter_context_priority()) if config else self._create_parameter_context_priority(),
             "boilerplates": chain_schema.get("boilerplates", []),
-            "timeline": ["{$write_project_mapping}", "{$write_dependency_layer}", "{$compiler_run}", "{$write_export_manifest}", "{$apply_temp_tree_to_working_path}"],
+            "timeline": ["{$write_project_mapping}", "{$write_dependency_layer}", "{$compiler_run}", "{$write_handoff_index}", "{$apply_temp_tree_to_working_path}"],
             "weights": ["clean_project_standard", "export_traceability_standard", "professional_solution_engineering_standard"],
             "operators": ["repository_management_prompt_operator", "create_project_mapping_operator", "create_export_boundary_operator", "prompt_eval_operator"],
             "prompt_rules": [
@@ -13934,7 +14116,7 @@ raise SystemExit(2)
         rows = self._prompt_builder_build_complete_token_rows(text, build_record, limit=12 if str(profile.get("id") or "") == "hoch" else 6)
         lines = [
             "### Build.complete Tokens / Own Weighted Prompt",
-            "- These tokens belong above the Own Prompt or inside the Own Weighted Prompt and are resolved against Build.complete/Create mapping before the build.",
+            "- These tokens are placed above or inside the Own Weighted Prompt and are resolved against Build.complete/Create mapping before USER_PROMPT.txt or TASKS.TXT is handed over.",
         ]
         if not rows:
             lines.append("- No Build.complete/Create mapping tokens available.")
@@ -13948,16 +14130,34 @@ raise SystemExit(2)
 
     def _refresh_prompt_builder_context_variable_menu(self) -> None:
         values = sorted(self._prompt_builder_context_variable_map().keys())
+        current = str(getattr(self, "prompt_builder_context_variable", tk.StringVar(value="")).get() or "").strip()
         box = getattr(self, "prompt_builder_context_box", None)
         if box is not None:
             try:
                 box.configure(values=values)
             except Exception:
                 pass
-        current = str(getattr(self, "prompt_builder_context_variable", tk.StringVar(value="")).get() or "").strip()
+        listbox = getattr(self, "prompt_builder_context_list", None)
+        if listbox is not None:
+            try:
+                listbox.delete(0, "end")
+                for value in values:
+                    listbox.insert("end", value)
+                if current in values:
+                    index = values.index(current)
+                    listbox.selection_set(index)
+                    listbox.see(index)
+            except Exception:
+                pass
         if not current and values:
             try:
                 self.prompt_builder_context_variable.set(values[0])
+                if listbox is not None:
+                    try:
+                        listbox.selection_set(0)
+                        listbox.see(0)
+                    except Exception:
+                        pass
             except Exception:
                 pass
         self._show_prompt_builder_context_preview()
@@ -13974,6 +14174,41 @@ raise SystemExit(2)
         except Exception:
             pass
 
+    def _set_prompt_builder_context_variable(self, value: str) -> None:
+        try:
+            self.prompt_builder_context_variable.set(str(value or ""))
+        except Exception:
+            pass
+        self._show_prompt_builder_context_preview()
+
+    def _open_prompt_builder_context_dropdown(self) -> None:
+        """Open a robust visible shortcut dropdown next to the editable box."""
+        values = sorted(self._prompt_builder_context_variable_map().keys())
+        if not values:
+            return
+        menu = tk.Menu(self, tearoff=0)
+        for value in values:
+            menu.add_command(
+                label=value,
+                command=lambda selected=value: self._set_prompt_builder_context_variable(selected),
+            )
+        anchor = getattr(self, "prompt_builder_context_drop_button", None) or getattr(self, "prompt_builder_context_box", None)
+        try:
+            anchor.update_idletasks()
+            x = anchor.winfo_rootx()
+            y = anchor.winfo_rooty() + anchor.winfo_height()
+            menu.tk_popup(x, y)
+        except Exception:
+            try:
+                menu.post(self.winfo_pointerx(), self.winfo_pointery())
+            except Exception:
+                pass
+        finally:
+            try:
+                menu.grab_release()
+            except Exception:
+                pass
+
     def _focused_prompt_builder_text_widget(self):
         try:
             focused = self.focus_get()
@@ -13984,6 +14219,21 @@ raise SystemExit(2)
             if focused is widget:
                 return widget
         return getattr(self, "custom_prompt_text", None)
+
+    def _select_prompt_builder_context_from_list(self, event=None, *, insert: bool = False) -> None:
+        listbox = getattr(self, "prompt_builder_context_list", None)
+        if listbox is None:
+            return
+        try:
+            selection = listbox.curselection()
+            if not selection:
+                return
+            self.prompt_builder_context_variable.set(listbox.get(selection[0]))
+            self._show_prompt_builder_context_preview()
+            if insert:
+                self._insert_prompt_builder_context_variable()
+        except Exception:
+            pass
 
     def _insert_prompt_builder_context_variable(self) -> None:
         key = str(getattr(self, "prompt_builder_context_variable", tk.StringVar(value="")).get() or "").strip()
@@ -14005,9 +14255,23 @@ raise SystemExit(2)
             return
         try:
             source = widget.get("1.0", "end")
+            if target == "custom":
+                # The left Own-Prompt field is the user's editable input surface.
+                # Compiling it must only resolve the user's text/@ shortcuts and
+                # must not write the large Prompt-Builder orientation/operator
+                # wrapper back into the input box. If the box already contains an
+                # older wrapped compile result, recover only the embedded user task.
+                user_input = self._extract_prompt_builder_task_overlay(source)
+                compiled = self._resolve_create_context_shortcuts(user_input)
+                widget.delete("1.0", "end")
+                widget.insert("1.0", compiled.rstrip() + ("\n" if compiled.strip() else ""))
+                self._show_prompt_builder_context_preview()
+                self._apply_text_widget_theme()
+                self._set_progress("Prompt Builder: Own Prompt input compiled", 1, 1)
+                return
             compiled = self._resolve_create_context_shortcuts(source)
-            source_kind = "shortcut_compile_custom" if target == "custom" else "shortcut_compile_generated"
-            overlay_task = self._prompt_builder_custom_task_text() if target != "custom" else self._extract_prompt_builder_task_overlay(source)
+            source_kind = "shortcut_compile_generated"
+            overlay_task = self._prompt_builder_custom_task_text()
             compiled = self._wrap_human_prompt_builder_output(source_kind, compiled, custom_task=overlay_task, already_compiled=True)
             widget.delete("1.0", "end")
             widget.insert("1.0", compiled.rstrip() + "\n")
@@ -14311,7 +14575,7 @@ raise SystemExit(2)
                 # When the user switches to a normal feature/refactor entry the
                 # Export-tab checkbox must be cleared again so stale
                 # LAST_GIT_COMMIT.json artifacts are not carried into unrelated
-                # prompts/exports. Manual checkbox changes are still possible after
+                # prompt/export. Manual checkbox changes are still possible after
                 # the selection settles.
                 self._sync_last_git_commit_export_checkbox(False, reason=reason)
                 self._update_create_git_reference_status(getattr(self, "_create_git_reference_payload", {}))
@@ -15161,37 +15425,58 @@ raise SystemExit(2)
 
     def _create_export_path_policy_payload(self, base: Path | str | None = None) -> dict:
         absolute_enabled = self._create_export_absolute_paths_enabled()
+        root = self._create_project_scope_root(base)
         return {
             "absolute_project_paths": absolute_enabled,
-            "project_root": "/" if absolute_enabled else str(Path(str(base or self._create_working_dir())).resolve()),
+            "project_root": "/" if absolute_enabled else str(root),
             "compiled_path_format": "project_scope_absolute_path" if absolute_enabled else "project_relative_path",
             "relative_traceability": "relative_* fields preserve project-relative originals when project-scope absolute paths are enabled",
-            "zip_member_policy": "ZIP members remain project-relative for portable archives; manifests/prompts may display project-scope absolute paths such as /backend/app.py by checkbox",
+            "zip_member_policy": "ZIP members remain project-relative for portable archives; prompt handoffs may display project-scope absolute paths such as /backend/app.py by checkbox",
         }
+
+    def _create_project_scope_root(self, base: Path | str | None = None) -> Path:
+        candidates: list[object] = [
+            getattr(self, "_create_project_source_base", None),
+            self._active_create_build_root() if hasattr(self, "_active_create_build_root") else None,
+            self._create_working_dir() if hasattr(self, "_create_working_dir") else None,
+            self.output_base.get() if hasattr(self, "output_base") else None,
+            base,
+        ]
+        for candidate in candidates:
+            if candidate in (None, "", [], {}):
+                continue
+            try:
+                path = Path(str(candidate)).expanduser().resolve()
+                if path.exists():
+                    return path
+            except Exception:
+                continue
+        return Path(".").resolve()
 
     def _compile_project_path_for_export(self, value: object, base: Path | str | None = None) -> str:
         text = str(value or "").replace("\\", "/").strip()
         if not text:
             return text
-        if not self._create_export_absolute_paths_enabled():
-            return text
         if text.startswith("@") or "://" in text:
             return text
+        root = self._create_project_scope_root(base)
         try:
-            root = Path(str(base or self._create_working_dir())).resolve()
             candidate = Path(text)
             if candidate.is_absolute():
                 try:
                     rel = candidate.resolve().relative_to(root).as_posix()
-                    return "/" + rel.strip("/") if rel and rel != "." else "/"
+                    clean_rel = rel.strip("/")
+                    return ("/" + clean_rel) if self._create_export_absolute_paths_enabled() and clean_rel else (clean_rel or ".")
                 except Exception:
-                    text = candidate.name or text
+                    return candidate.as_posix() if not self._create_export_absolute_paths_enabled() else "/" + (candidate.name or "").strip("/")
         except Exception:
             pass
         clean = text.lstrip("/")
         while clean.startswith("./"):
             clean = clean[2:]
         clean = clean or "."
+        if not self._create_export_absolute_paths_enabled():
+            return clean
         if clean == ".":
             return "/"
         return "/" + clean.strip("/")
@@ -15282,7 +15567,7 @@ raise SystemExit(2)
             if str(item.get("id") or "").strip().lower() == level:
                 return dict(item)
         defaults = {
-            "niedrig": {"id": "niedrig", "label": "Low", "description": "Compact handoff with selected plan, declared manifest files and hard rules.", "chain_entry_limit": 1, "include_available_entries": False, "include_roles": False, "include_parameter_context": False, "include_tree_preview": False, "rule_limit": 6, "detail_limit": 2},
+            "niedrig": {"id": "niedrig", "label": "Low", "description": "Compact handoff with selected plan, schema resources and hard rules.", "chain_entry_limit": 1, "include_available_entries": False, "include_roles": False, "include_parameter_context": False, "include_tree_preview": False, "rule_limit": 6, "detail_limit": 2},
             "mittel": {"id": "mittel", "label": "Medium", "description": "Standard handoff with selected plan, roles, references, manifest purpose, scope recursion and validation text.", "chain_entry_limit": 8, "include_available_entries": False, "include_roles": True, "include_parameter_context": True, "include_tree_preview": True, "rule_limit": 10, "detail_limit": 4},
             "hoch": {"id": "hoch", "label": "High", "description": "Detailed handoff with manifest-faithful explanation, roles, references, recursive scope, parameters, validation and known-gap contract.", "chain_entry_limit": 30, "include_available_entries": False, "include_roles": True, "include_parameter_context": True, "include_tree_preview": True, "rule_limit": 20, "detail_limit": 8},
         }
@@ -15294,7 +15579,7 @@ raise SystemExit(2)
             "{$write_project_mapping}": "Projekt-Mapping schreiben",
             "{$write_dependency_layer}": "Dependency-Layer schreiben",
             "{$compiler_run}": "run compiler or validation pass",
-            "{$write_export_manifest}": "Export-Manifest schreiben",
+            "{$write_handoff_index}": "Handoff schreiben",
             "{$apply_temp_tree_to_working_path}": "Temp-Baum kontrolliert auf den Arbeitsstand anwenden",
             "{$write_temp_project_tree}": "write temporary project tree",
             "{$ptb_schema_profile}": "PTB-Schema-Profil",
@@ -15463,7 +15748,7 @@ raise SystemExit(2)
         header = f"### {'Selected plan' if selected else 'Plan reference'}: {label}"
         lines = [header]
         if entry_id:
-            lines.append("- Manifest reference: the exact schema entry remains machine-readable in the declared manifest files; this section translates only the actually available fields into human work logic.")
+            lines.append("- Schema reference: the exact schema entry remains machine-readable in written schema resources; this section translates only the actually available fields into human work logic.")
         for key, title in [
             ("user_goal", "Ziel"),
             ("context_hint", "Kontexthinweis"),
@@ -15526,9 +15811,9 @@ raise SystemExit(2)
     def _declared_human_export_files(self, config: dict | None = None, profile: dict | None = None) -> list[tuple[str, str]]:
         """Return only real export files that the USER_PROMPT may mention.
 
-        Create-specific context is consolidated into the existing EXPORT_MANIFEST.json
-        and PROMPT_MANIFEST.json. Do not reintroduce duplicate create-specific sidecars
-        for prompt, mapping, dependency, target or export data.
+        Create-specific context stays human-first and compact. Removed legacy
+        sidecars must not be reintroduced for prompt, mapping, dependency,
+        target or export data.
         """
         compact_var = getattr(self, "create_compact_export", None)
         zip_var = getattr(self, "create_export_as_zip", None)
@@ -15543,10 +15828,9 @@ raise SystemExit(2)
             rows.append(("*_compact_context.zip", "contains the recursively assembled project files and control artifacts of the compact export"))
         rows.extend([
             ("USER_PROMPT.txt", "human-compiled work instruction; no raw configuration and no full ID list"),
-            ("EXPORT_MANIFEST.json", "authoritative file, scope and export truth; contains consolidated Create export context instead of separate create-specific duplicate manifests"),
-            ("PROMPT_MANIFEST.json", "machine-readable prompt, chain, role, target, mapping and dependency layer; technical details stay there and are only introduced readably in USER_PROMPT"),
+            ("TOKENS.json", "single source of concrete @token values used by USER_PROMPT.txt, TASKS.TXT, AI-RULES.json and schema handoff resources"),
             ("CMD.json", "compact machine-readable CMD contract for START, RESTART, REFACTOR, SKIP, EXTEND, SHRINK, FIX and STATUS"),
-            ("PROMPT_EVAL_CHECKLIST.md", "checkable prompt and execution acceptance"),
+            (self._progress_json_file_name(), "compact callback/status contract for create responses"),
         ])
         if compact:
             rows.extend([
@@ -15557,8 +15841,7 @@ raise SystemExit(2)
             ])
         if include_last_git:
             rows.append(("LAST_GIT_COMMIT.json", "read-only Git reference with last commit, changed file titles and descriptions when LAST-GIT-COMMIT is enabled"))
-        if self._prompt_builder_custom_task_text().strip():
-            rows.append(("TASKS.TXT", "Prompt Builder CUSTOM_USER_PROMPT as normalized task/phase sidecar file outside the ZIP/folder output"))
+        rows.append(("TASKS.TXT", "Export-generated Mode/Routine/Stack task sidecar; Prompt Builder CUSTOM_USER_PROMPT is merged into it during Export when present"))
         seen: set[str] = set()
         unique: list[tuple[str, str]] = []
         for name, description in rows:
@@ -15622,7 +15905,7 @@ raise SystemExit(2)
             self._export_human_prompt_text("role_planning_intro"),
         ]
         if role_ids:
-            lines.append(f"- Active roles: {len(role_ids)}. The following descriptions are compiled from the declared role schemas; the exact keys are in the manifest files.")
+            lines.append(f"- Active roles: {len(role_ids)}. The following descriptions are compiled from the declared role schemas; exact keys remain in schema resources.")
             for role_id in role_ids[:limit]:
                 row = self._schema_lookup_row("operation_roles", role_id)
                 if row:
@@ -15818,10 +16101,10 @@ raise SystemExit(2)
             "command_names": [item.get("command") for item in commands],
             "shared_surfaces": [
                 "USER_PROMPT.txt",
-                "Prompt Builder preview",
-                "Create Preview pipeline config",
-                "EXPORT_MANIFEST.json",
-                "PROMPT_MANIFEST.json",
+                "USER_PROMPT source text",
+                "Create execution preview context",
+                "USER_PROMPT.txt",
+                "USER_PROMPT.txt",
                 "CMD.json",
             ],
             "guardrails": [
@@ -15829,7 +16112,7 @@ raise SystemExit(2)
                 "Commands operate only on the current task, the last patch, or the actually available session context as declared per command.",
                 "STATUS must never invent missing chat history, files or success metrics.",
             ],
-            "selected_chain_entry": (config or {}).get("selected_create_chain_entry") if isinstance(config, dict) else None,
+            "selected_plan": self._compact_create_plan_manifest_context(config).get("selected_plan", {}),
         }
 
     def _create_cmd_text_payload(self, config: dict | None = None) -> str:
@@ -15842,7 +16125,7 @@ raise SystemExit(2)
             "",
             f"Schema version: {payload.get('schema_version')}",
             f"Created: {payload.get('created_at')}",
-            f"Selected chain entry: {(payload.get('selected_chain_entry') or {}).get('display_name') or (payload.get('selected_chain_entry') or {}).get('label') or 'none'}",
+            f"Selected plan: {(payload.get('selected_plan') or {}).get('label') or (payload.get('selected_plan') or {}).get('id') or 'none'}",
             "",
             "## Commands",
         ]
@@ -15975,7 +16258,7 @@ raise SystemExit(2)
             row = rows_by_key.setdefault(key, {
                 "id": "target_" + re.sub(r"[^a-z0-9_]+", "_", f"{kind}_{rel}".lower()).strip("_"),
                 "title": self._active_target_title(rel, kind, str(ai_target or "")),
-                "description": "Active target from Create/Generator/Mapping evidence; content and rules continue through the declared manifest files.",
+                "description": "Active target from Create/Generator/Mapping evidence; content and rules continue through USER_PROMPT and schema resources.",
                 "path": self._compile_project_path_for_export(rel, project_root),
                 "relative_path": rel,
                 "path_type": kind,
@@ -15991,8 +16274,8 @@ raise SystemExit(2)
                 "dependency_packages": [],
                 "evidence": [],
                 "manifest_contract": [
-                    "PROMPT_MANIFEST.json contains the consolidated active target, tree boundary and dependency context.",
-                    "EXPORT_MANIFEST.json declares which target files are actually exported.",
+                    "USER_PROMPT.txt contains the consolidated active target, tree boundary and dependency context.",
+                    "USER_PROMPT.txt declares which target files are actually exported.",
                 ],
             })
             if str(ai_target or "").strip() and not str(row.get("ai_target") or "").strip():
@@ -16076,7 +16359,7 @@ raise SystemExit(2)
             add_target(
                 path=target_path,
                 path_type=target_name or "dependency_target",
-                source="PROMPT_MANIFEST.json",
+                source="USER_PROMPT.txt",
                 dependency_manifests=group.get("manifest_files", []),
                 dependency_packages=group.get("dependencies", []),
                 evidence={"ecosystem": group.get("ecosystem"), "install_token": group.get("install_token"), "validation_token": group.get("validation_token")},
@@ -16102,14 +16385,14 @@ raise SystemExit(2)
             if profile_names:
                 pieces.append("Profile: " + ", ".join(profile_names[:6]))
             if manifests:
-                pieces.append("Dependency details only through PROMPT_MANIFEST.json")
+                pieces.append("Dependency details only through USER_PROMPT.txt")
             row["description"] = "; ".join(pieces) + "."
         return rows
 
     def _create_active_targets_payload(self, config: dict | None = None, record: dict | None = None, base: Path | str | None = None) -> dict:
         rows = self._create_active_target_manifest_rows(config, record, base)
         return {
-            "artifact": "PROMPT_MANIFEST.active_targets",
+            "artifact": "active_targets",
             "schema_version": "2026.create.active_targets.v1",
             "created_at": datetime.now().isoformat(timespec="seconds"),
             "mode": self.create_mode.get(),
@@ -16120,8 +16403,8 @@ raise SystemExit(2)
             "targets": rows,
             "manifest_contract": [
                 "USER_PROMPT.txt and Prompt Builder introduce every active target in human language when export intelligence is high.",
-                "PROMPT_MANIFEST.json carries the active target, mapping and dependency context.",
-                "EXPORT_MANIFEST.json remains the file-level export truth.",
+                "USER_PROMPT.txt carries the active target, mapping and dependency context.",
+                "USER_PROMPT.txt remains the file-level export truth.",
             ],
         }
 
@@ -16141,8 +16424,8 @@ raise SystemExit(2)
             "This introduction replaces raw `Active target` dumps in the build prompt. It describes the default target structure readably and points technical lists to the manifests.",
             f"- Default target transition: `{wrapper_path}` ist die outer wrapper/project shell. Backend, frontend, assets and generated targets remain their own target boundaries and are not swallowed by the wrapper.",
             "- Tree reading: Wrapper → Frontend/Backend means a structural relationship in the Project Tree, not permission for broad changes across the entire project. Each active target section describes only its own scope boundary.",
-            "- Manifest guidance: PROMPT_MANIFEST.json bundles target, mapping, role and dependency context; EXPORT_MANIFEST.json remains the file and scope truth. No separate create-specific duplicate manifests are generated anymore.",
-            "- Dependency rule: Dependency packages, versions and install lists are not written out in the build prompt. The prompt references PROMPT_MANIFEST.json in readable form only.",
+            "- Manifest guidance: USER_PROMPT.txt carries target, mapping, role, dependency and scope context. No separate create-specific duplicate manifests are generated anymore.",
+            "- Dependency rule: Dependency packages, versions and install lists are not written out in the build prompt. The prompt references USER_PROMPT.txt in readable form only.",
             "- CMD-Verweis: START, RESTART, REFACTOR, SKIP, EXTEND, SHRINK, FIX und STATUS sind in CMD.json maschinenlesbar gespiegelt.",
             f"- Aktive Targets: {len(rows)}; Backend: {len(backend_rows)}, Frontend: {len(frontend_rows)}, weitere/Generated: {len(generated_rows)}.",
         ]
@@ -16169,7 +16452,7 @@ raise SystemExit(2)
                 values = row.get(key) if isinstance(row.get(key), list) else []
                 if values:
                     if key == "dependency_manifests":
-                        lines.append("- Dependency-Hinweis: Details stehen im maschinenlesbaren PROMPT_MANIFEST.json; Paketlisten werden im Build Prompt nicht ausgeschrieben.")
+                        lines.append("- Dependency-Hinweis: Details stehen im maschinenlesbaren USER_PROMPT.txt; Paketlisten werden im Build Prompt nicht ausgeschrieben.")
                     else:
                         lines.append(f"- {label}: " + ", ".join(str(item) for item in values[:8]))
             evidence = row.get("evidence") if isinstance(row.get("evidence"), list) else []
@@ -16185,13 +16468,13 @@ raise SystemExit(2)
                     lines.append("- Evidenz: " + " | ".join(compact))
             if str(row.get("path_type") or "").lower() in {"wrapper", "root"}:
                 lines.extend(self._wrapper_boilerplate_phase_lines(row, profile))
-            lines.append("- Manifest-Verweis: technische Target-, Mapping- und Dependency-Details stehen konsolidiert in PROMPT_MANIFEST.json; die exportierten files stehen in EXPORT_MANIFEST.json.")
+            lines.append("- Handoff-Verweis: technische Target-, Mapping- und Dependency-Details stehen kompakt im USER_PROMPT-Handoff.")
         return lines
 
     def _human_manifest_reference_lines(self, config: dict, profile: dict, create_tree: dict | None = None) -> list[str]:
         """Return compact inline manifest references; no USER_PROMPT section block."""
         names = self._manifest_names_for_human_prompt(config, profile)[:8]
-        names_text = ", ".join(names) if names else "EXPORT_MANIFEST.json, PROMPT_MANIFEST.json"
+        names_text = ", ".join(names) if names else "USER_PROMPT.txt"
         tree_note = ""
         if isinstance(create_tree, dict) and create_tree:
             tree_note = f" Scope tree summary: {int(create_tree.get('file_count', 0) or 0)} files / {int(create_tree.get('directory_count', 0) or 0)} directories."
@@ -16204,7 +16487,7 @@ raise SystemExit(2)
         profile = profile if isinstance(profile, dict) else self._export_intelligence_profile(self._create_export_intelligence_value())
         level = str(profile.get("id") or self._create_export_intelligence_value() or "mittel").strip().lower()
         return [
-            f"- Manifest-Hinweis: global/create/export settings for `{surface}` are stored in PROMPT_MANIFEST.json and EXPORT_MANIFEST.json; export intelligence={profile.get('label') or level}."
+            f"- Manifest-Hinweis: global/create/export settings for `{surface}` are stored in USER_PROMPT.txt; export intelligence={profile.get('label') or level}."
         ]
 
     def _wrapper_boilerplate_phase_lines(self, row: dict, profile: dict | None = None) -> list[str]:
@@ -16218,8 +16501,8 @@ raise SystemExit(2)
         lines = [
             "- Wrapper-Phasen nach Human API:",
             f"  - Phase 1 — Boundary: Wrapper `{rel}` ist die äußere Projekt-/Export-Hülle; Child-Targets bleiben eigene Grenzen.",
-            "  - Phase 2 — Schema/Boilerplate: technische Details bleiben in PROMPT_MANIFEST.json; USER_PROMPT.txt erklärt nur die Wirkung.",
-            "  - Phase 3 — Execution handoff: Änderungen müssen gegen EXPORT_MANIFEST.json, Target-Scope und Validierungs-/Rollback-Vertrag geprüft werden.",
+            "  - Phase 2 - Schema/Boilerplate: USER_PROMPT.txt erklaert die aktive Wirkung; Details kommen aus den geschriebenen schema/ Ressourcen.",
+            "  - Phase 3 - Execution handoff: Aenderungen muessen gegen USER_PROMPT, Target-Scope und Validierungs-/Rollback-Vertrag geprueft werden.",
         ]
         if str(profile.get("id") or "") == "hoch":
             if profiles:
@@ -16274,7 +16557,6 @@ raise SystemExit(2)
             f"- Active Generator targets: {len(normalized)}",
             f"- Export as ZIP: {'yes' if self.export_as_zip.get() else 'no'}",
             f"- Compact export: {'yes' if self.compact_export.get() else 'no'}",
-            f"- Changed-files-only: {'yes' if self.changed_files_only.get() else 'no'}",
             f"- Include imports: {'yes' if self.include_imports.get() else 'no'}",
             "- Create relation: Create export extends this normal export basis, but Create-tab values have priority and are not overwritten by Generator state.",
             "",
@@ -16299,27 +16581,28 @@ raise SystemExit(2)
         role_lines = self._human_role_reference_planning_lines({"roles": role_ids, "references": ref_ids}, profile)
         if role_lines:
             lines.extend(["", *role_lines])
-        tasks_payload = self._create_tasks_sidecar_payload()
-        task_lines = self._format_tasks_sidecar_reference_lines(tasks_payload)
-        if task_lines:
-            lines.extend(["", *task_lines])
+        if not bool(getattr(self, "_building_tasks_sidecar_payload", False)):
+            tasks_payload = self._create_tasks_sidecar_payload()
+            task_lines = self._format_tasks_sidecar_reference_lines(tasks_payload)
+            if task_lines:
+                lines.extend(["", *task_lines])
         custom_prompt = str(custom_prompt_text or "").strip()
         manual_prompt = str(export_prompt_text or "").strip()
         lines.extend(["", "## Custom inputs"])
-        lines.append("- Prompt Builder left CUSTOM_USER_PROMPT: " + ("present; exported as TASKS.TXT sidecar." if custom_prompt else "none."))
+        lines.append("- TASKS.TXT export hook: always generated from Mode/Routine/Stack; left CUSTOM_USER_PROMPT is merged when present (currently " + ("present" if custom_prompt else "empty") + ").")
         if manual_prompt:
             cleaned = self._sanitize_compiled_human_prompt(manual_prompt)
             preview = cleaned[:1200] + ("..." if len(cleaned) > 1200 else "")
             lines.extend(["- Prompt Builder right prompt is present and preserved as custom context:", "", preview])
         else:
-            lines.append("- Prompt Builder right prompt: none; generated target prompt rules remain in manifests/prompts.")
+            lines.append("- Prompt Builder right prompt: none; generated target prompt rules remain in prompt handoffs.")
         lines.extend([
             "",
             "## Export file contract",
             "- USER_PROMPT.txt is the human handoff and stays outside ZIP exports.",
-            "- TASKS.TXT is the Prompt Builder task sidecar and stays outside ZIP exports when the left CUSTOM_USER_PROMPT is present.",
-            "- JSON manifests remain machine-readable evidence; do not replace USER_PROMPT.txt or TASKS.TXT with USER_PROMPT.json or TASK.json.",
-            "- EXPORT_MANIFEST.json remains the file/scope truth; PROMPT_MANIFEST.json carries roles, references, schema chain and target context.",
+            "- TASKS.TXT is generated during Export from Mode/Routine/Stack and stays outside ZIP exports; left CUSTOM_USER_PROMPT is merged when present.",
+            "- CMD.json, PROGRESS.json and schema/ remain compact machine-readable evidence; do not replace USER_PROMPT.txt or TASKS.TXT with USER_PROMPT.json or TASK.json.",
+            "- USER_PROMPT.txt carries roles, references, schema chain and target context in human-readable form.",
             "",
             "## Validation and response contract",
             self._export_human_prompt_text("validation_intro"),
@@ -16327,21 +16610,22 @@ raise SystemExit(2)
             "- Do not invent files, roles, references, tasks, schemas or success metrics that are not in the export evidence.",
         ])
         text = "\n".join(str(line).rstrip() for line in lines if line is not None).strip()
-        return self._sanitize_compiled_human_prompt(text)
+        text = self._sanitize_compiled_human_prompt(text)
+        return self._with_handoff_header(text, changed_files_only=bool(self.changed_files_only.get()))
 
     def _human_cross_tab_control_lines(self, config: dict, profile: dict, record: dict | None = None) -> list[str]:
         """Return compact inline JSON reference for cross-tab state; no USER_PROMPT section block."""
         record = record or {}
         return [
-            f"- Manifest-Hinweis: cross-tab state is stored in PROMPT_MANIFEST.json.create_prompt_context and EXPORT_MANIFEST.json.create_context (mode={self.create_mode.get()}, stack={self.create_stack.get()}, absolute_paths={'yes' if self._create_export_absolute_paths_enabled() else 'no'})."
+            f"- Manifest-Hinweis: cross-tab state is stored in USER_PROMPT.txt (mode={self.create_mode.get()}, stack={self.create_stack.get()}, absolute_paths={'yes' if self._create_export_absolute_paths_enabled() else 'no'})."
         ]
 
     def _strip_machine_dump_sections(self, text: str) -> str:
         """Remove machine-routing dumps from human prompt surfaces.
 
-        The manifest files are the source of truth for exact project scope,
+        The compact handoff files are the source of truth for exact project scope,
         reference routing, operator roles, hooks, weights and validation posture.
-        Human-facing prompt text must explain how to use those manifests instead
+        Human-facing prompt text must explain how to use those compact resources instead
         of embedding long id lists or generated routing tables.
         """
         raw = str(text or "").replace("\r", "")
@@ -16390,6 +16674,7 @@ raise SystemExit(2)
             r"Shortcut commands",
             r"Manifest-Guided Project Processing",
             r"AI-CALLBACK\s*/\s*PROGRESS\.json",
+            r"Project-scope reference\s+preview",
         ]
         for pattern in forbidden_patterns:
             cleaned = re.sub(rf"(?ms)^##\s+{pattern}\s*\n.*?(?=^##\s+|\Z)", "", cleaned)
@@ -16400,13 +16685,81 @@ raise SystemExit(2)
         """Remove raw schema placeholders and machine dumps from human-facing surfaces."""
         cleaned = self._strip_machine_dump_sections(str(text or "").replace("\r", ""))
         cleaned = self._strip_forbidden_user_prompt_sections(cleaned)
-        cleaned = re.sub(r"(?ms)^Active target:\n.*?(?=^Operator voice:\n)", "Target context:\n- Use the human-readable section `Active targets and target boundaries` and PROMPT_MANIFEST.json; raw Active-Target dumps are not repeated here.\n\n", cleaned)
-        cleaned = re.sub(r"(?ms)^Dependency groups:\n.*?(?=^(?:Package dependency layer|Micro tasks|Terminal timeline steps|Editable token map|Chainable mode boilerplates|Target match boilerplate|Feature modules|Refactor modules):\n|\Z)", "Dependency-Manifest-Verweis:\n- Dependency-Gruppen werden im Build Prompt nicht als Paketliste gezeigt; Details stehen in PROMPT_MANIFEST.json.\n\n", cleaned)
-        cleaned = re.sub(r"(?ms)^Package dependency layer:\n.*?(?=^(?:Micro tasks|Terminal timeline steps|Editable token map|Chainable mode boilerplates|Target match boilerplate|Feature modules|Refactor modules):\n|\Z)", "Package dependency reference:\n- Package names, versions and install/validation tokens are exclusively in PROMPT_MANIFEST.json.\n\n", cleaned)
+        cleaned = re.sub(r"(?ms)^Active target:\n.*?(?=^Operator voice:\n)", "Target context:\n- Use the human-readable section `Active targets and target boundaries` and USER_PROMPT.txt; raw Active-Target dumps are not repeated here.\n\n", cleaned)
+        cleaned = re.sub(r"(?ms)^Dependency groups:\n.*?(?=^(?:Package dependency layer|Micro tasks|Terminal timeline steps|Editable token map|Chainable mode boilerplates|Target match boilerplate|Feature modules|Refactor modules):\n|\Z)", "Dependency-Manifest-Verweis:\n- Dependency-Gruppen werden im Build Prompt nicht als Paketliste gezeigt; Details stehen in USER_PROMPT.txt.\n\n", cleaned)
+        cleaned = re.sub(r"(?ms)^Package dependency layer:\n.*?(?=^(?:Micro tasks|Terminal timeline steps|Editable token map|Chainable mode boilerplates|Target match boilerplate|Feature modules|Refactor modules):\n|\Z)", "Package dependency reference:\n- Package names, versions and install/validation tokens are exclusively in USER_PROMPT.txt.\n\n", cleaned)
         cleaned = re.sub(r"\{\$([^}:|]+)(?::([^}]+))?\}", lambda m: (m.group(1) or "").replace("_", " "), cleaned)
         cleaned = re.sub(r"(?m)^\s*-\s*(?:[a-z0-9_]+(?:_[a-z0-9]+){2,})\s*(?:\||:).*$", "", cleaned)
+        cleaned = self._remove_false_export_text_lines(cleaned)
         cleaned = re.sub(r"\n{3,}", "\n\n", cleaned)
         return cleaned.strip()
+
+    def _is_false_export_line(self, line: str) -> bool:
+        """True for human-facing lines that only report inactive/false settings."""
+        text = str(line or "").strip()
+        if not text:
+            return False
+        # Remove explicit key/value false rows from USER_PROMPT/TASKS surfaces,
+        # e.g. "- Changed-files-only: no", "- enabled: false" or
+        # "- last_git_commit_reference: excluded".  Do not remove prose that
+        # merely contains the word "no" as part of a guardrail sentence.
+        if re.match(r"(?i)^[-*]\s*[^:\n]{1,120}:\s*(?:false|no|nein|disabled|deaktiviert|excluded|ausgeschlossen|off|0|none|null|leer|empty|-)(?:[.;,].*)?$", text):
+            return True
+        if re.match(r"(?i)^[-*]\s*[^=\n]{1,120}=\s*(?:false|no|nein|disabled|deaktiviert|excluded|ausgeschlossen|off|0|none|null|leer|empty|-)(?:[.;,].*)?$", text):
+            return True
+        return False
+
+    def _remove_false_export_text_lines(self, text: str) -> str:
+        """Drop false/inactive setting rows from human-facing export text."""
+        lines = []
+        for line in str(text or "").replace("\r", "").splitlines():
+            if self._is_false_export_line(line):
+                continue
+            lines.append(line)
+        return "\n".join(lines).strip()
+
+    def _prune_false_export_values(self, value: object) -> object:
+        """Recursively remove boolean False and empty false-derived containers.
+
+        Handoff indexs should not say that inactive settings are false; they
+        should simply omit those entries. True values and meaningful strings stay
+        intact because they describe active export state.
+        """
+        sentinel = object()
+
+        def prune(item: object) -> object:
+            if item is False or item is None:
+                return sentinel
+            if isinstance(item, str) and (not item.strip() or item.strip().lower() in {"false", "no", "nein", "disabled", "deaktiviert", "excluded", "ausgeschlossen", "off", "none", "null", "empty", "leer", "-"}):
+                return sentinel
+            if isinstance(item, dict):
+                cleaned: dict[object, object] = {}
+                for key, val in item.items():
+                    pruned = prune(val)
+                    if pruned is sentinel:
+                        continue
+                    # Drop containers that became empty solely because they held
+                    # inactive/false values. Keep explicit zero counts.
+                    if pruned in ({}, []):
+                        continue
+                    cleaned[key] = pruned
+                return cleaned
+            if isinstance(item, list):
+                cleaned_list = []
+                for val in item:
+                    pruned = prune(val)
+                    if pruned is sentinel or pruned in ({}, []):
+                        continue
+                    cleaned_list.append(pruned)
+                return cleaned_list
+            return item
+
+        result = prune(value)
+        return {} if result is sentinel else result
+
+    def _json_export_dumps(self, data: object) -> str:
+        """Serialize export JSON after omitting false/inactive values."""
+        return json.dumps(self._prune_false_export_values(data), indent=2, ensure_ascii=False) + "\n"
     def _has_human_prompt_builder_intro(self, text: str) -> bool:
         head = "\n".join(str(text or "").splitlines()[:8]).lower()
         return "human classification" in head or "human prompt builder context" in head
@@ -16465,7 +16818,7 @@ raise SystemExit(2)
         if self._has_human_prompt_builder_intro(body):
             if source_kind == "custom_weighted_prompt":
                 body = self._strip_prompt_builder_inline_user_prompt_tail(body)
-            return self._merge_prompt_builder_tasks_context(body, custom_task)
+            return self._inject_prompt_builder_tasks_context_into_preview(body, custom_task=custom_task)
         profile = self._export_intelligence_profile(self._create_export_intelligence_value())
         operator_flow = self._operator_flow_contract()
         text_id = {
@@ -16514,16 +16867,59 @@ raise SystemExit(2)
         git_reference = self._last_git_commit_reference_for_manifest(current_config, reason="prompt_builder") if self._create_should_include_last_git_commit_reference(current_config) else getattr(self, "_create_git_reference_payload", {})
         if isinstance(git_reference, dict) and (git_reference.get("enabled") or git_reference.get("available")):
             lines.extend(["", "### Last-Git-Commit-Referenz"] + self._format_last_git_commit_reference_lines(git_reference, detail="full" if self._create_high_export_intelligence_enabled() else "summary")[1:])
-        task_section = self._prompt_builder_tasks_context_section(custom_task) if str(profile.get("id")) != "niedrig" else ""
+        # TASKS.TXT is still visible in Prompt-Builder preview/compile so the
+        # user can follow the generated export hook, but it is never written
+        # back into the left Own-Prompt input. The durable TASKS.TXT merge/file
+        # is performed later by the Export path.
+        task_section = self._prompt_builder_tasks_context_section(custom_task)
         if task_section:
             lines.extend(["", task_section])
-        lines.extend(["", "### Kompilierter Prompt", body])
-        return "\n".join(line.rstrip() for line in lines if line is not None).strip()
+        lines.extend(["", "### Kompilierter Prompt", self._strip_prompt_builder_tasks_context(body)])
+        return self._remove_false_export_text_lines("\n".join(line.rstrip() for line in lines if line is not None)).strip()
+
+    def _strip_prompt_builder_tasks_context(self, text: str) -> str:
+        """Remove generated TASKS.TXT hook blocks before refreshing preview text.
+
+        The hook is allowed on the right Prompt-Builder preview/compile surface,
+        but it must be regenerated from current Mode/Routine/Stack state and must
+        never be treated as left-box user input.
+        """
+        body = str(text or "").replace("\r", "").strip()
+        if not body:
+            return ""
+        pattern = re.compile(
+            r"(?ms)^### Prompt-Builder TASKS\.TXT hook — human-compiled tasks\n.*?(?=^### Kompilierter Prompt\n|\Z)"
+        )
+        return pattern.sub("", body).strip()
+
+    def _inject_prompt_builder_tasks_context_into_preview(self, text: str, custom_task: str | None = None) -> str:
+        """Insert the export TASKS.TXT hook into right-side preview text only.
+
+        This is a preview/reference layer. It does not mutate the left Own Prompt
+        widget and it does not write TASKS.TXT; the real Own-Prompt merge into
+        TASKS.TXT happens only in the Export code path.
+        """
+        body = self._strip_prompt_builder_tasks_context(text)
+        section = self._prompt_builder_tasks_context_section(custom_task)
+        if not section:
+            return body
+        marker = "### Kompilierter Prompt"
+        if marker in body:
+            return body.replace(marker, section + "\n\n" + marker, 1).strip()
+        return (body + "\n\n" + section).strip() if body else section
 
     def _prompt_builder_tasks_overlay_heading(self) -> str:
         return "## Prompt-Builder TASKS.TXT Input"
 
     def _extract_prompt_builder_task_overlay(self, text: str) -> str:
+        """Return only human-authored left Own-Prompt text.
+
+        Prompt Builder previews and exported TASKS.TXT files may contain generated
+        TASKS reference blocks. Those blocks are useful on the right preview side,
+        but they must not be treated as a new custom prompt when they are copied or
+        left behind in the left input box. Prefer explicit user markers and recover
+        the user block from older generated payloads when possible.
+        """
         raw = str(text or "").replace("\r", "").strip()
         if not raw:
             return ""
@@ -16533,22 +16929,48 @@ raise SystemExit(2)
             overlay = raw[marker_index + len(heading):].strip()
             # Keep only the user overlay. A later generated heading means another
             # process has appended preview material, not user-authored TASK text.
-            end_match = re.search(r"(?m)^(?:# TASKS\.TXT\b|##\s+(?:Menschlich kompilierter Create-Prompt|Prompt-Builder-TASKS\.TXT Hook|Kompilierter Prompt|Remember:)\b)", overlay)
+            end_match = re.search(r"(?m)^(?:# TASKS\.TXT\b|###\s+Prompt-Builder TASKS\.TXT hook|##\s+(?:Menschlich kompilierter Create-Prompt|Prompt-Builder-TASKS\.TXT Hook|Kompilierter Prompt|Remember:)|###\s+Kompilierter Prompt\b)", overlay)
             if end_match:
                 overlay = overlay[:end_match.start()].strip()
             return overlay
+
+        # TASKS.TXT exports store the real merge under this heading. If such a
+        # file/block is pasted into the left box, recover only that user part.
+        merged_marker = "## Merged Own Prompt input"
+        if merged_marker in raw:
+            overlay = raw.split(merged_marker, 1)[1].strip()
+            end_match = re.search(r"(?m)^##\s+(?:Phase\s+\d+|Export task seed|Origin|Boilerplate-)", overlay)
+            if end_match:
+                overlay = overlay[:end_match.start()].strip()
+            return "" if overlay in {"- leer", "- empty"} else overlay
+
+        own_marker = "# Prompt Builder Own Prompt input"
+        if own_marker in raw:
+            overlay = raw.split(own_marker, 1)[1].strip()
+            end_match = re.search(r"(?m)^(?:###\s+Kompilierter Prompt\b|###\s+Prompt-Builder TASKS\.TXT hook|##\s+Phase\s+\d+\b)", overlay)
+            if end_match:
+                overlay = overlay[:end_match.start()].strip()
+            return overlay
+
+        # A right-side Prompt Builder wrapper contains a generated TASKS hook and
+        # a compiled prompt. It is process context, not left-box user input.
+        lowered = raw.lower()
+        if "prompt-builder tasks.txt hook" in lowered or "prompt builder / export tasks.txt hook" in lowered:
+            return ""
+
         # If the left box already contains a generated Create contract and no
         # overlay marker, it is process context, not a user TASKS.TXT input.
-        lower_head = "\n".join(raw.splitlines()[:6]).lower()
+        lower_head = "\n".join(raw.splitlines()[:10]).lower()
         generated_markers = (
             "human-compiled create prompt",
             "human classification for the prompt builder",
             "kompilierter prompt",
+            "# tasks.txt",
+            "preview/compile shows this tasks.txt export hook",
         )
         if any(marker in lower_head for marker in generated_markers):
             return ""
         return raw
-
     def _prompt_builder_custom_task_text(self) -> str:
         widget = getattr(self, "custom_prompt_text", None)
         if widget is None:
@@ -16571,22 +16993,331 @@ raise SystemExit(2)
         process = pattern.sub("", process).strip()
         return (process + "\n\n" + heading + "\n" + task).strip()
 
-    def _create_tasks_sidecar_payload(self, raw_text: str | None = None) -> dict:
-        raw = (raw_text if raw_text is not None else self._prompt_builder_custom_task_text()) or ""
-        raw = str(raw).replace("\r", "").strip()
-        payload = {
-            "artifact": "TASKS.TXT",
-            "source": "Prompt Builder / left CUSTOM_USER_PROMPT input",
-            "created_at": datetime.now().isoformat(timespec="seconds"),
-            "parsed_as": "empty",
-            "raw_text": raw,
-            "task_phases": [],
+    def _prompt_builder_export_task_seed_text(self, config: dict | None = None, user_task_text: str | None = None, recursive_context_text: str | None = None) -> str:
+        """Build the Export TASKS.TXT raw source in target/schema phase order.
+
+        TASKS must not parse the final USER_PROMPT back into itself.  The raw
+        source is therefore built from the selected Create context, the optional
+        left Own-Prompt input, enabled target rows and checkbox-active
+        boilerplate/schema rows, excluding file-type catalog rows.
+        """
+        seed = self._prompt_builder_generated_task_seed_text(config=config)
+        user_task = self._extract_prompt_builder_task_overlay(user_task_text or "")
+        context = str(recursive_context_text or "").replace("\r", "").strip()
+        if not context:
+            context = self._prompt_builder_target_schema_task_text(config=config)
+        parts = [seed]
+        if user_task:
+            parts.append("# Prompt Builder Own Prompt input\n" + user_task)
+        if context:
+            parts.append(context)
+        return "\n\n".join(part.strip() for part in parts if str(part or "").strip()).strip()
+
+    def _prompt_builder_recursive_schema_task_text(self, config: dict | None = None) -> str:
+        """Compatibility wrapper for older callers.
+
+        Older builds used the final USER_PROMPT as the recursive TASKS source,
+        which caused USER_PROMPT to repeat inside TASKS.TXT.  The recursive part
+        is now the explicit enabled-target plus checkbox-active schema/boilerplate contract.
+        """
+        return self._prompt_builder_target_schema_task_text(config=config)
+
+    def _prompt_builder_task_checked_schema_ids(self, config: dict | None = None) -> dict[str, set[str]]:
+        """Return schema ids that are explicitly active by UI checkbox/selection.
+
+        TASKS.TXT must not browse the full used-schema closure.  It may only
+        declare rows that are backed by an active target or by a checkbox/active
+        UI selection.  When the dynamic checkbox widgets are not available yet,
+        fall back to the current Create config so non-interactive export calls
+        still remain deterministic.
+        """
+        config = config if isinstance(config, dict) else self._current_create_config()
+
+        def checked_from_vars(attr: str, fallback: object = None) -> set[str]:
+            vars_map = getattr(self, attr, None)
+            if isinstance(vars_map, dict) and vars_map:
+                result: set[str] = set()
+                for key, var in vars_map.items():
+                    try:
+                        enabled = bool(var.get())
+                    except Exception:
+                        enabled = bool(var)
+                    if enabled and str(key).strip():
+                        result.add(str(key).strip())
+                return result
+            if isinstance(fallback, (list, tuple, set)):
+                return {str(item).strip() for item in fallback if str(item).strip()}
+            if fallback not in (None, "", [], {}):
+                return {str(fallback).strip()}
+            return set()
+
+        raw_profile_ids = checked_from_vars("profile_vars", config.get("profiles", []))
+        # Runtime-only UI/prompt-engineering profiles are deliberately hidden
+        # from manual TASK selection.  If an older preset/config still carries
+        # them, do not let them become TASKS phases; PromptEngineering context is
+        # added through the Human API wrapper instead.  CRUD stays selectable.
+        try:
+            profile_ids = set(self._filter_selectable_boilerplate_profile_ids(raw_profile_ids))
+        except Exception:
+            profile_ids = {value for value in raw_profile_ids if value not in RUNTIME_ONLY_BOILERPLATE_PROFILE_IDS}
+        ids: dict[str, set[str]] = {
+            "boilerplate_profiles": profile_ids,
+            "reference_domains": checked_from_vars("reference_vars", []),
+            "operation_roles": checked_from_vars("operation_role_vars", []),
         }
+
+        # The Create catalog entry is a single active selection rather than a
+        # checkbox.  Keep it as the only allowed create_chain_boilerplates row;
+        # never include the whole chain catalog.
+        raw_mode_catalog = self._create_mode_catalog(config)
+        raw_chain_schema = raw_mode_catalog.get("chain_schema") or (config.get("create_mode_context") or {}).get("chain_schema") or config.get("create_chain_schema") or {} if isinstance(raw_mode_catalog, dict) else {}
+        selected = config.get("selected_create_chain_entry") if isinstance(config.get("selected_create_chain_entry"), dict) else self._selected_create_chain_entry_from_schema(raw_chain_schema if isinstance(raw_chain_schema, dict) else {})
+        selected_id = str((selected or {}).get("id") or "").strip() if isinstance(selected, dict) else ""
+        if selected_id:
+            ids["create_chain_boilerplates"] = {selected_id}
+
+        # Parameter sliders/controls are summarized in the Export Context seed.
+        # They are not emitted as schema phases unless they are backed by an
+        # explicit checkbox/active Create catalog selection above.
+
+        return {key: {value for value in values if value} for key, values in ids.items() if values}
+
+    def _prompt_builder_active_task_target_rows(self, config: dict | None = None, build_record: dict | None = None, base: Path | str | None = None) -> list[dict]:
+        """Return TASKS target rows from active target checkboxes only."""
+        config = config if isinstance(config, dict) else self._current_create_config()
+        try:
+            project_root = Path(str(base or self._create_working_dir())).resolve()
+        except Exception:
+            project_root = Path(str(base or "."))
+        checked = self._prompt_builder_task_checked_schema_ids(config)
+        checked_profiles = checked.get("boilerplate_profiles", set())
+        profile_checkboxes_available = isinstance(getattr(self, "profile_vars", None), dict) and bool(getattr(self, "profile_vars", None))
+        try:
+            active_targets = [target.normalized(self.schema) for target in self._active_generator_targets()]
+        except Exception:
+            active_targets = []
+        rows: list[dict] = []
+        seen: set[tuple[str, str, str]] = set()
+        for target in active_targets:
+            try:
+                if not bool(getattr(target, "enabled", True)):
+                    continue
+                rel = self._normalize_create_target_relative_path(getattr(target, "path", "."))
+                kind = str(getattr(target, "path_type", "target") or "target").strip().lower() or "target"
+                ai_target = str(getattr(target, "ai_target", "") or config.get("ai_target") or self.ai_target_var.get() or "ChatGPT").strip() or "ChatGPT"
+                key = (rel, kind, ai_target)
+                if key in seen:
+                    continue
+                seen.add(key)
+                raw_profiles = [str(item).strip() for item in getattr(target, "boilerplate_profiles", []) if str(item).strip()]
+                raw_file_types = [str(item).strip() for item in getattr(target, "file_types", []) if str(item).strip()]
+                profiles = [item for item in raw_profiles if item in checked_profiles] if profile_checkboxes_available else [item for item in raw_profiles if not checked_profiles or item in checked_profiles]
+                rows.append({
+                    "id": "target_" + re.sub(r"[^a-z0-9_]+", "_", f"{kind}_{rel}".lower()).strip("_"),
+                    "title": self._active_target_title(rel, kind, ai_target),
+                    "description": "Active target checkbox row from WRITE_AI_RULES_TO / Generator target list.",
+                    "path": self._compile_project_path_for_export(rel, project_root),
+                    "relative_path": rel,
+                    "path_type": kind,
+                    "build_target": str(config.get("build_target") or self.create_build_target.get() or kind),
+                    "ai_target": ai_target,
+                    "enabled": True,
+                    "sources": ["active WRITE_AI_RULES_TO target checkbox"],
+                    "boilerplate_profiles": profiles,
+                    "raw_boilerplate_profiles": raw_profiles,
+                    "raw_file_types": raw_file_types,
+                })
+            except Exception:
+                continue
+        def sort_key(row: dict) -> tuple[int, str, str]:
+            kind = str(row.get("path_type") or "")
+            order = {"wrapper": 0, "root": 0, "backend": 1, "frontend": 2, "assets": 3, "generated": 4}.get(kind, 9)
+            return (order, str(row.get("relative_path") or ""), kind)
+        rows.sort(key=sort_key)
+        return rows
+
+    def _prompt_builder_target_schema_task_text(self, config: dict | None = None, build_record: dict | None = None, base: Path | str | None = None) -> str:
+        phases = self._prompt_builder_target_schema_task_phases(config=config, build_record=build_record, base=base, start_index=1)
+        return "\n\n".join(str(phase.get("text") or "").strip() for phase in phases if isinstance(phase, dict) and str(phase.get("text") or "").strip()).strip()
+
+    def _prompt_builder_target_schema_task_phases(self, config: dict | None = None, build_record: dict | None = None, base: Path | str | None = None, start_index: int = 1) -> list[dict]:
+        """Return TASKS phases for active targets plus checkbox-active schema rows.
+
+        This keeps the intended TASKS standard behavior without leaking inactive
+        catalog rows: active targets are taken only from enabled target rows, and
+        Boilerplate/Schema phases are emitted only for checkbox-active ids plus
+        the single selected Create catalog entry.
+        """
+        config = config if isinstance(config, dict) else self._current_create_config()
+        phases: list[dict] = []
+
+        def add(title: str, body: str, subtasks: list[str] | None = None) -> None:
+            text = self._remove_false_export_text_lines(str(body or "").replace("\r", "")).strip()
+            if not text:
+                return
+            phases.append({
+                "phase": start_index + len(phases),
+                "title": str(title or f"Phase {start_index + len(phases)}").strip(),
+                "text": text,
+                "subtasks": [str(item) for item in (subtasks or []) if str(item).strip()],
+            })
+
+        # 1) Targets: only enabled target rows from the WRITE_AI_RULES_TO/
+        # Generator target list.  Detected roots, dependency hints and wrapper
+        # defaults are not allowed to create target phases by themselves.
+        target_rows = self._prompt_builder_active_task_target_rows(config, build_record, base)
+        for row in target_rows:
+            if not isinstance(row, dict):
+                continue
+            title = str(row.get("title") or row.get("id") or row.get("relative_path") or "Active Target").strip()
+            lines = [
+                f"# Active Target: {title}",
+                f"Target path: {row.get('path') or row.get('relative_path') or '.'}",
+                f"Relative path: {row.get('relative_path') or '.'}",
+                f"Target kind: {row.get('path_type') or row.get('build_target') or 'target'}",
+                f"AI target: {row.get('ai_target') or '-'}",
+                "Instruction: Treat this enabled target checkbox as its own execution boundary. Do not create TASKS phases for inactive target rows.",
+            ]
+            profiles = row.get("boilerplate_profiles") if isinstance(row.get("boilerplate_profiles"), list) else []
+            if profiles:
+                lines.append("- Checkbox-active target boilerplates: " + ", ".join(str(item) for item in profiles[:24]))
+            lines.append("Manifest source: active WRITE_AI_RULES_TO target checkboxes; inactive detected/default targets are intentionally ignored for TASKS.TXT.")
+            add("Target: " + title, "\n".join(lines))
+
+        # 2) Schema/Boilerplate rows: direct checkbox-active rows only.  Do not
+        # use the recursive used-schema closure here, because that can pull in
+        # inactive catalog dependencies as TASKS phases.
+        active_ids = self._prompt_builder_task_checked_schema_ids(config)
+        preferred_order = [
+            "create_chain_boilerplates",
+            "boilerplate_profiles",
+            "reference_domains",
+            "operation_roles",
+        ]
+        for key in preferred_order:
+            ids = active_ids.get(key) or set()
+            if not ids:
+                continue
+            rows = self.schema.get(key, []) if isinstance(getattr(self, "schema", None), dict) else []
+            by_id = {str(row.get("id") or row.get("name") or "").strip(): row for row in rows if isinstance(row, dict)}
+            for row_id in sorted(ids):
+                row = by_id.get(str(row_id).strip())
+                if not isinstance(row, dict):
+                    continue
+                label = str(row.get("display_name") or row.get("label") or row.get("title") or row.get("name") or row_id or key).strip()
+                title = f"Schema {self._humanize_prompt_value(key)}: {label}"
+                add(title, self._prompt_builder_schema_row_task_text(key, row, {"task_scope": "checkbox_active_only"}))
+
+        if not phases:
+            add(
+                "Schema/Target fallback",
+                "# Schema/Target fallback\nNo enabled target checkbox or checkbox-active boilerplate/schema row was resolved. TASKS.TXT intentionally ignores inactive targets and unselected catalog rows.",
+            )
+        return phases
+
+    def _prompt_builder_schema_row_task_text(self, schema_key: str, row: dict, resolution: dict | None = None) -> str:
+        """Human-readable phase text for one checkbox-active schema/boilerplate row."""
+        row = row if isinstance(row, dict) else {}
+        row_id = str(row.get("id") or row.get("name") or "").strip()
+        label = str(row.get("display_name") or row.get("label") or row.get("title") or row.get("name") or row_id or schema_key).strip()
+        lines = [
+            f"# Schema/Boilerplate Phase: {self._humanize_prompt_value(schema_key)} / {label}",
+            f"Schema family: {schema_key}",
+            f"Schema id: {row_id or '-'}",
+            "Instruction: Apply this checkbox-active schema/boilerplate row as an execution phase for the active Create target context.",
+            "Manifest source: active UI checkbox/selection state; USER_PROMPT.txt remains the machine-readable detail source.",
+        ]
+        field_order = [
+            "intent", "user_goal", "context_hint", "description", "policy", "source_policy",
+            "category", "stack", "path_type", "build_target", "ai_target",
+            "profiles", "boilerplate_profiles", "references", "reference_domains",
+            "roles", "operation_roles", "hooks", "weights", "weight_profiles", "weight_operators",
+            "dependency_group_ids", "micro_task_ids", "feature_module_ids", "refactor_module_ids",
+            "target_match_boilerplates", "schema_contract", "boilerplate_template", "timeline", "placeholders",
+            "validation", "validation_focus", "success_criteria",
+        ]
+        seen: set[str] = set()
+        for key in field_order:
+            if key not in row:
+                continue
+            value = row.get(key)
+            if value is False or value in (None, "", [], {}):
+                continue
+            seen.add(key)
+            lines.append(f"- {self._humanize_prompt_value(key)}: {self._compact_task_value(value)}")
+        # Include a small number of additional scalar fields so custom schema rows
+        # still become understandable phases without dumping the whole catalog.
+        for key, value in row.items():
+            if key in seen or key in {"id", "display_name", "label", "title", "name", "file_types", "applies_to_file_types", "extensions"}:
+                continue
+            if value is False or value in (None, "", [], {}):
+                continue
+            if not isinstance(value, (str, int, float, bool)):
+                continue
+            lines.append(f"- {self._humanize_prompt_value(str(key))}: {self._compact_task_value(value)}")
+            if len(lines) >= 18:
+                break
+        return "\n".join(str(line).rstrip() for line in lines if line is not None).strip()
+
+    def _compact_task_value(self, value: object, limit: int = 1200) -> str:
+        value = self._prune_false_export_values(value)
+        if value in ({}, [], None) or value is False:
+            return ""
+        if isinstance(value, (dict, list, tuple, set)):
+            try:
+                text = json.dumps(value, ensure_ascii=False, sort_keys=True)
+            except Exception:
+                text = str(value)
+        else:
+            text = str(value)
+        text = re.sub(r"\s+", " ", text.replace("\r", " ").replace("\n", " ")).strip()
+        if text.lower() == "false":
+            return ""
+        return text[:limit] + ("..." if len(text) > limit else "")
+
+    def _prompt_builder_generated_task_seed_text(self, config: dict | None = None) -> str:
+        """Build only the automatic Mode/Routine/Stack TASKS seed."""
+        config = config or self._current_create_config()
+        context = config.get("create_mode_context") or self._create_mode_context(config=config)
+        raw_mode_catalog = self._create_mode_catalog(config)
+        raw_chain_schema = raw_mode_catalog.get("chain_schema") or context.get("chain_schema") or config.get("create_chain_schema") or {} if isinstance(raw_mode_catalog, dict) else {}
+        selected = config.get("selected_create_chain_entry") if isinstance(config.get("selected_create_chain_entry"), dict) else self._selected_create_chain_entry_from_schema(raw_chain_schema)
+        selected = selected if isinstance(selected, dict) else {}
+        profile = config.get("create_mode_parameters") or self._create_mode_parameter_profile()
+        values = profile.get("values", {}) if isinstance(profile, dict) and isinstance(profile.get("values"), dict) else {}
+        mode = str(self.create_mode.get() or config.get("mode") or "-").strip() or "-"
+        routine = str(context.get("routine") or "-").strip() or "-"
+        stack = str(self.create_stack.get() or config.get("label") or config.get("stack") or "-").strip() or "-"
+        target_path = str(config.get("path") or self.create_target_path.get() or ".").strip() or "."
+        build_target = str(config.get("build_target") or self.create_build_target.get() or "wrapper").strip() or "wrapper"
+        selected_plan = self._humanize_prompt_value(selected.get("display_name") or selected.get("label") or selected.get("id") or "Implement Feature")
+        plan_intent = self._humanize_prompt_value(selected.get("intent") or selected.get("user_goal") or selected.get("context_hint") or "Implement new or extended behavior in the existing project as the smallest useful, validatable slice.")
+        source_policy = self._humanize_prompt_value(selected.get("source_policy") or "Project Root / Create Working Dir, USER_PROMPT and schema resources are the source of truth.")
+        weight_summary = self._format_task_weight_summary({"weights": values})
+        lines = [
+            "# Auto Weighted Project Prompt",
+            f"Mode: {mode}",
+            f"Routine: {routine}",
+            f"Stack: {stack}",
+            f"Target path: {target_path}",
+            f"Build target: {build_target}",
+            f"Active boilerplate plan: {selected_plan}",
+            f"Boilerplate intent: {plan_intent}",
+            f"Weights: {weight_summary}",
+            f"Source of truth: {source_policy}",
+            "Task: Export a human-compiled TASKS.TXT handoff for the active project context. Declare enabled target checkboxes and checkbox-active boilerplate/schema rows as phases, excluding file-type catalog rows; merge the left Own Prompt only once as an additional weighted human instruction.",
+        ]
+        return "\n".join(line.rstrip() for line in lines if line is not None).strip()
+
+    def _parse_tasks_text_phases(self, text: str, *, start_index: int = 1, first_title: str = "Phase", default_title: str = "Phase") -> tuple[str, list[dict]]:
+        """Parse one TASKS source into phases without mixing it with another source."""
+        raw = str(text or "").replace("\r", "").strip()
         if not raw:
-            return payload
+            return "empty", []
+        phases: list[dict] = []
         try:
             parsed = json.loads(raw)
-            payload["parsed_as"] = "json"
+            parsed_as = "json"
             if isinstance(parsed, dict):
                 iterable = parsed.get("tasks") or parsed.get("task_phases") or parsed.get("phases") or []
                 if isinstance(iterable, dict):
@@ -16597,35 +17328,112 @@ raise SystemExit(2)
                 iterable = parsed
             else:
                 iterable = [parsed]
-            for index, item in enumerate(iterable, start=1):
+            for offset, item in enumerate(iterable):
+                index = start_index + offset
                 if isinstance(item, dict):
-                    title = str(item.get("title") or item.get("id") or item.get("name") or f"Phase {index}").strip()
+                    title = str(item.get("title") or item.get("id") or item.get("name") or (first_title if offset == 0 else f"{default_title} {offset + 1}")).strip()
                     body = item.get("text") or item.get("task") or item.get("description") or item
                     subtasks = item.get("subtasks") or item.get("steps") or []
                 else:
-                    title = f"Phase {index}"
+                    title = first_title if offset == 0 else f"{default_title} {offset + 1}"
                     body = item
                     subtasks = []
-                payload["task_phases"].append({"phase": index, "title": title, "text": str(body), "subtasks": [str(value) for value in subtasks] if isinstance(subtasks, list) else []})
-            return self._enrich_tasks_sidecar_payload(payload)
+                phases.append({"phase": index, "title": title, "text": str(body).strip(), "subtasks": [str(value) for value in subtasks] if isinstance(subtasks, list) else []})
+            return parsed_as, phases
         except Exception:
             pass
         phase_pattern = re.compile(r"(?m)^\s*((?:\d+[a-z]?|[a-z])\))\s*(.+?)\s*$")
         matches = list(phase_pattern.finditer(raw))
         if matches:
-            payload["parsed_as"] = "numbered_list"
-            for index, match in enumerate(matches, start=1):
+            for offset, match in enumerate(matches):
+                index = start_index + offset
                 start = match.end()
-                end = matches[index].start() if index < len(matches) else len(raw)
+                end = matches[offset + 1].start() if offset + 1 < len(matches) else len(raw)
                 rest = raw[start:end].strip()
                 head = match.group(2).strip()
-                text = head + (("\n" + rest) if rest else "")
-                payload["task_phases"].append({"phase": index, "title": match.group(1), "text": text.strip(), "subtasks": []})
-        else:
-            payload["parsed_as"] = "plain_text"
-            chunks = [chunk.strip() for chunk in re.split(r"\n\s*\n+", raw) if chunk.strip()] or [raw]
-            for index, chunk in enumerate(chunks, start=1):
-                payload["task_phases"].append({"phase": index, "title": f"Phase {index}", "text": chunk, "subtasks": []})
+                body = head + (("\n" + rest) if rest else "")
+                title = first_title if offset == 0 else str(match.group(1)).strip()
+                phases.append({"phase": index, "title": title, "text": body.strip(), "subtasks": []})
+            return "numbered_list", phases
+        chunks = [chunk.strip() for chunk in re.split(r"\n\s*\n+", raw) if chunk.strip()] or [raw]
+        for offset, chunk in enumerate(chunks):
+            index = start_index + offset
+            title = first_title if offset == 0 else f"{default_title} {offset + 1}"
+            phases.append({"phase": index, "title": title, "text": chunk, "subtasks": []})
+        return "plain_text", phases
+
+    def _create_tasks_sidecar_payload(self, raw_text: str | None = None, *, recursive_context_text: str | None = None, config: dict | None = None, build_record: dict | None = None, base: Path | str | None = None) -> dict:
+        """Build the TASKS.TXT export payload from selected targets/schema.
+
+        The final USER_PROMPT is deliberately not used as input.  TASKS.TXT is a
+        phase declaration over the active Create context: export seed, optional
+        left Own Prompt, enabled targets and checkbox-active boilerplate/schema
+        rows only.
+        """
+        config = config if isinstance(config, dict) else self._current_create_config()
+        record = build_record or self._active_successful_create_build_for_current_stack() or {}
+        user_raw = self._extract_prompt_builder_task_overlay(raw_text) if raw_text is not None else self._prompt_builder_custom_task_text()
+        if str(user_raw or "").strip():
+            user_raw = self._resolve_create_context_shortcuts(str(user_raw), record)
+        generated_seed = self._prompt_builder_generated_task_seed_text(config)
+
+        phases: list[dict] = []
+
+        def add_phase(title: str, body: str, subtasks: list[str] | None = None) -> None:
+            text = str(body or "").replace("\r", "").strip()
+            if not text:
+                return
+            phases.append({
+                "phase": len(phases) + 1,
+                "title": str(title or f"Phase {len(phases) + 1}").strip(),
+                "text": text,
+                "subtasks": [str(item) for item in (subtasks or []) if str(item).strip()],
+            })
+
+        add_phase("Export Context", generated_seed)
+        if str(user_raw or "").strip():
+            add_phase("Own Weighted Prompt", "# Prompt Builder Own Prompt input\n" + str(user_raw).strip())
+
+        # Build target/schema phases from the actual active UI context.  The
+        # legacy recursive_context_text parameter is intentionally ignored: TASKS
+        # must not parse USER_PROMPT.txt or inactive schema closures back into
+        # phase rows.
+        target_schema_phases = self._prompt_builder_target_schema_task_phases(
+            config=config,
+            build_record=record,
+            base=base,
+            start_index=len(phases) + 1,
+        )
+        phases.extend(target_schema_phases)
+
+        for index, phase in enumerate(phases, start=1):
+            if isinstance(phase, dict):
+                phase["phase"] = index
+
+        recursive_context = "\n\n".join(
+            str(phase.get("text") or "").strip()
+            for phase in target_schema_phases
+            if isinstance(phase, dict) and str(phase.get("text") or "").strip()
+        ).strip()
+        raw = "\n\n".join(
+            str(phase.get("text") or "").strip()
+            for phase in phases
+            if isinstance(phase, dict) and str(phase.get("text") or "").strip()
+        ).strip()
+
+        payload = {
+            "artifact": "TASKS.TXT",
+            "source": "Prompt Builder / Export TASKS.TXT hook",
+            "created_at": datetime.now().isoformat(timespec="seconds"),
+            "parsed_as": "active_target_checkbox_schema_phase_merge",
+            "raw_text": raw,
+            "generated_export_task_text": generated_seed,
+            "recursive_export_context_text": recursive_context,
+            "custom_user_prompt_text": user_raw,
+            "custom_user_prompt_merged": bool(str(user_raw or "").strip()),
+            "task_phases": phases,
+            "merge_policy": "USER_PROMPT.txt is not parsed into TASKS.TXT. TASKS phases are generated from enabled target checkboxes plus checkbox-active boilerplate/schema rows; left Own Prompt is merged exactly once.",
+        }
         return self._enrich_tasks_sidecar_payload(payload)
 
     def _tasks_boilerplate_context(self) -> dict:
@@ -16648,6 +17456,7 @@ raise SystemExit(2)
             "weights": values,
             "changed_files_only": bool(self.create_changed_files_only.get()),
             "include_imports": bool(self.create_include_imports.get()),
+            "human_api_engineering_wrapper": self._human_api_engineering_wrapper_context(),
         }
 
     def _format_task_weight_summary(self, context: dict | None = None) -> str:
@@ -16665,21 +17474,150 @@ raise SystemExit(2)
                 parts.append(f"{self._humanize_prompt_value(key)} {value}")
         return ", ".join(parts)
 
+    def _human_api_engineering_wrapper_context(self) -> dict:
+        """Return the non-selectable PromptEngineering Human API mantle.
+
+        PromptEngineering/ContextEngineering/PromptEvaluation/PromptSecurity
+        are runtime engineering context, not TASK phases and not Select-list
+        boilerplates.  The wrapper is therefore embedded around every compiled
+        TASK phase as Human API guidance.
+        """
+        schema = self.schema if isinstance(getattr(self, "schema", None), dict) else {}
+        profile_ids = list(HUMAN_API_ENGINEERING_WRAPPER_PROFILE_IDS)
+        profile_rows = {str(row.get("id") or ""): row for row in schema.get("boilerplate_profiles", []) if isinstance(row, dict)}
+        profiles: list[dict] = []
+        for profile_id in profile_ids:
+            row = profile_rows.get(profile_id)
+            if not isinstance(row, dict):
+                continue
+            profiles.append(self._prune_false_export_values({
+                "id": profile_id,
+                "label": row.get("label") or profile_id,
+                "purpose": row.get("purpose") or row.get("description"),
+                "rules": [str(item) for item in (row.get("rules") or [])[:4] if str(item).strip()],
+            }))
+
+        def profile_intersects(row: dict) -> bool:
+            values = row.get("boilerplate_profiles") or row.get("applies_to_profiles") or row.get("profiles") or []
+            if isinstance(values, str):
+                values = [values]
+            return any(str(value).strip() in profile_ids for value in values if str(value).strip())
+
+        roles: list[dict] = []
+        for row in schema.get("operation_roles", []) or []:
+            if isinstance(row, dict) and profile_intersects(row):
+                roles.append(self._prune_false_export_values({
+                    "id": row.get("id"),
+                    "label": row.get("label") or row.get("id"),
+                    "validation_focus": row.get("validation_focus"),
+                }))
+            if len(roles) >= 8:
+                break
+
+        hooks: list[dict] = []
+        for row in schema.get("hooks", []) or []:
+            if isinstance(row, dict) and profile_intersects(row):
+                hooks.append(self._prune_false_export_values({
+                    "id": row.get("id"),
+                    "label": row.get("label") or row.get("id"),
+                    "lifecycle_phase": row.get("lifecycle_phase"),
+                    "priority": row.get("priority"),
+                }))
+            if len(hooks) >= 10:
+                break
+
+        weights: list[dict] = []
+        wrapper_names = {"prompt", "context", "evaluation", "security"}
+        for row in schema.get("weight_table", []) or []:
+            if not isinstance(row, dict):
+                continue
+            row_text = " ".join(str(row.get(key) or "") for key in ("id", "label", "human_style")).lower()
+            if any(name in row_text for name in wrapper_names):
+                weights.append(self._prune_false_export_values({
+                    "id": row.get("id"),
+                    "label": row.get("label") or row.get("id"),
+                    "target_ai": row.get("target_ai"),
+                }))
+            if len(weights) >= 6:
+                break
+
+        return self._prune_false_export_values({
+            "wrapper": "Human API Engineering Mantle",
+            "policy": "PromptEngineering context wraps TASK phases through the Human API; it is not a selectable TASK and must not be emitted as its own phase.",
+            "profiles": profiles,
+            "roles": roles,
+            "hooks": hooks,
+            "weights": weights,
+        })
+
+    def _human_api_engineering_wrapper_inline(self, wrapper: dict | None = None) -> str:
+        wrapper = wrapper if isinstance(wrapper, dict) else self._human_api_engineering_wrapper_context()
+        profiles = wrapper.get("profiles") if isinstance(wrapper.get("profiles"), list) else []
+        labels = [str(item.get("label") or item.get("id") or "").strip() for item in profiles if isinstance(item, dict)]
+        labels = [label for label in labels if label]
+        if not labels:
+            return ""
+        return ", ".join(labels)
+
+    def _human_api_engineering_wrapper_instruction_text(self, wrapper: dict | None = None) -> str:
+        wrapper = wrapper if isinstance(wrapper, dict) else self._human_api_engineering_wrapper_context()
+        inline = self._human_api_engineering_wrapper_inline(wrapper)
+        if not inline:
+            return ""
+        return (
+            f"Human API Engineering Wrapper: {inline} bilden den nicht auswählbaren Mantel dieser TASK-Phase. "
+            "Nutze diesen Mantel nur für Prompt-Struktur, Kontextgrenzen, Evaluation und Security-Gates; "
+            "er ist keine eigene Arbeitsaufgabe und darf keine zusätzliche TASK-Phase erzeugen. "
+        )
+
+    def _human_api_engineering_wrapper_lines(self, wrapper: dict | None = None) -> list[str]:
+        wrapper = wrapper if isinstance(wrapper, dict) else self._human_api_engineering_wrapper_context()
+        profiles = wrapper.get("profiles") if isinstance(wrapper.get("profiles"), list) else []
+        if not profiles:
+            return []
+        lines = [
+            "## Human API Engineering Wrapper",
+            "Dieser Mantel leitet die TASK-Phasen über die Human API ein. Er ist keine auswählbare Boilerplate-Select-Option und keine eigene TASK-Phase.",
+            "- Wrapper profiles: " + ", ".join(str(item.get("id") or item.get("label") or "").strip() for item in profiles if isinstance(item, dict) and str(item.get("id") or item.get("label") or "").strip()),
+        ]
+        for item in profiles:
+            if not isinstance(item, dict):
+                continue
+            label = str(item.get("label") or item.get("id") or "").strip()
+            purpose = str(item.get("purpose") or "").strip()
+            if label and purpose:
+                lines.append(f"- {label}: {purpose}")
+            rules = item.get("rules") if isinstance(item.get("rules"), list) else []
+            if rules:
+                lines.append("  - Regeln: " + "; ".join(str(rule).strip() for rule in rules[:3] if str(rule).strip()))
+        roles = wrapper.get("roles") if isinstance(wrapper.get("roles"), list) else []
+        if roles:
+            lines.append("- Human API Rollenmantel: " + ", ".join(str(item.get("label") or item.get("id") or "").strip() for item in roles if isinstance(item, dict) and str(item.get("label") or item.get("id") or "").strip()))
+        hooks = wrapper.get("hooks") if isinstance(wrapper.get("hooks"), list) else []
+        if hooks:
+            lines.append("- Human API Gates/Hooks: " + ", ".join(str(item.get("id") or item.get("label") or "").strip() for item in hooks[:8] if isinstance(item, dict) and str(item.get("id") or item.get("label") or "").strip()))
+        return self._remove_false_export_text_lines("\n".join(lines)).splitlines()
+
     def _compiled_task_phase_instruction(self, phase: dict, context: dict | None = None) -> str:
         context = context if isinstance(context, dict) else self._tasks_boilerplate_context()
         raw = self._sanitize_compiled_human_prompt(str(phase.get("text") or "")).strip()
         raw = raw[:800] + ("..." if len(raw) > 800 else "")
         plan = context.get("selected_plan") or "aktiver Boilerplate-Plan"
         intent = context.get("plan_intent") or "Use the active boilerplate context as the execution frame."
-        source_policy = context.get("source_policy") or "Projekt-Scope, Export-Manifeste und aktive Pipeline-Konfiguration bleiben die Schreib- und Evidenzgrenze."
+        source_policy = context.get("source_policy") or "Projekt-Scope, USER_PROMPT, schema-Ressourcen und aktive Pipeline-Konfiguration bleiben die Schreib- und Evidenzgrenze."
         weight_summary = self._format_task_weight_summary(context)
-        scope_mode = "changed-files-only" if context.get("changed_files_only") else "resolved project scope"
-        return (
-            f"Treat this phase as a human-formulated work instruction for the plan '{plan}'. "
-            f"Task: {raw or 'keine Detailaufgabe angegeben'}. "
-            f"Boilerplate-Absicht: {intent}. "
-            f"Weighting: {weight_summary}. "
-            f"Scope: {scope_mode}; Imports {'include' if context.get('include_imports') else 'nicht automatisch include'}. "
+        extra_scope: list[str] = []
+        if context.get("changed_files_only"):
+            extra_scope.append("Scope: changed-files-only")
+        if context.get("include_imports"):
+            extra_scope.append("Imports: include")
+        scope_sentence = (" ".join(extra_scope) + ". ") if extra_scope else ""
+        return self._remove_false_export_text_lines(
+            f"Arbeitsabschnitt fuer Plan '{plan}'. "
+            f"Ziel: {raw or 'keine Detailaufgabe angegeben'}. "
+            f"Fachliche Herleitung: {intent}. "
+            f"Priorisierung: {weight_summary}. "
+            f"{scope_sentence}"
             f"Source rule: {source_policy}. "
             "Result must Done-Condition, betroffene files, Validierung, Rollback und Known-Gaps sauber trennen."
         )
@@ -16690,10 +17628,10 @@ raise SystemExit(2)
         context = self._tasks_boilerplate_context()
         payload["human_intro"] = (
             "Diese Datei ist eine automatische Nebenfunktion des Prompt-Builder-Tabs. "
-            "Sie übersetzt den linken CUSTOM_USER_PROMPT bei jedem Compile erneut in menschliche Tasknphasen, "
-            "ohne den bestehenden Boilerplate-/Pipeline-Prozess zu überschreiben."
+            "Sie erstellt beim Export aus Mode/Routine/Stack, aktivierten Target-Checkboxen und checkbox-aktiven Boilerplate-/Schema-Zeilen ohne File-Type-Katalogzeilen eine TASKS.TXT und merged den linken CUSTOM_USER_PROMPT genau einmal als zusätzliche menschliche Task-Phase. "
+            "Der Human-API-Engineering-Mantel wird einmal global eingebettet und nicht als eigene TASKS-Phase wiederholt."
         )
-        payload["boilerplate_context"] = {
+        payload["boilerplate_context"] = self._prune_false_export_values({
             "mode": context.get("mode"),
             "stack": context.get("stack"),
             "build_target": context.get("build_target"),
@@ -16701,37 +17639,28 @@ raise SystemExit(2)
             "selected_plan_id": context.get("selected_plan_id"),
             "plan_intent": context.get("plan_intent"),
             "source_policy": context.get("source_policy"),
-            "changed_files_only": context.get("changed_files_only"),
-            "include_imports": context.get("include_imports"),
-        }
-        payload["weight_context"] = context.get("weights")
+            "changed_files_only": True if context.get("changed_files_only") else False,
+            "include_imports": True if context.get("include_imports") else False,
+        })
+        payload["weight_context"] = self._prune_false_export_values(context.get("weights"))
+        payload["human_api_engineering_wrapper"] = self._prune_false_export_values(context.get("human_api_engineering_wrapper"))
         for phase in payload.get("task_phases") or []:
             if isinstance(phase, dict):
                 phase["compiled_instruction"] = self._compiled_task_phase_instruction(phase, context)
-        return payload
+        return self._prune_false_export_values(payload)
 
     def _prompt_builder_tasks_context_section(self, custom_task: str | None = None) -> str:
-        raw = self._extract_prompt_builder_task_overlay(custom_task or "")
-        if not raw:
-            return ""
-        payload = self._create_tasks_sidecar_payload(raw)
+        # Export-facing reference section. It is intentionally generated from
+        # Mode/Routine/Stack even when the left Own Prompt is empty.
+        payload = self._create_tasks_sidecar_payload(custom_task if custom_task is not None else None)
         lines = self._format_tasks_sidecar_reference_lines(payload)
         return "\n".join(lines).strip()
 
     def _merge_prompt_builder_tasks_context(self, prompt: str, custom_task: str | None = None) -> str:
-        text = str(prompt or "").replace("\r", "").strip()
-        raw = self._extract_prompt_builder_task_overlay(custom_task or "")
-        section = self._prompt_builder_tasks_context_section(raw) if raw else ""
-        pattern = re.compile(r"(?ms)^### Prompt-Builder-TASKS\.TXT Hook — menschlich kompilierte Taskn\n.*?(?=^### Kompilierter Prompt\n|\Z)")
-        if pattern.search(text):
-            text = pattern.sub(section, text).strip() if section else pattern.sub("", text).strip()
-        elif section:
-            marker = "\n### Kompilierter Prompt"
-            if marker in text:
-                text = text.replace(marker, "\n" + section + "\n" + marker, 1)
-            else:
-                text = (text + "\n\n" + section).strip()
-        return text
+        # Compatibility shim for older callers: keep TASKS.TXT visible in the
+        # right-side Prompt-Builder preview, but do not write/merge the left Own
+        # Prompt into TASKS.TXT until the Export path runs.
+        return self._inject_prompt_builder_tasks_context_into_preview(prompt, custom_task=custom_task)
 
     def _tasks_sidecar_text(self, payload: dict | None = None) -> str:
         payload = payload if isinstance(payload, dict) else self._create_tasks_sidecar_payload()
@@ -16743,27 +17672,44 @@ raise SystemExit(2)
             str(payload.get("human_intro") or "The left Prompt Builder input was compiled into human task phases."),
             "",
             "## Origin",
+            "- Token contract: Resolve @tokens_file first; all @token values are serialized from TOKENS.json and not inferred from this text.",
             f"- Source: {payload.get('source')}",
             f"- Parser: {payload.get('parsed_as')}",
             f"- Erstellt: {payload.get('created_at')}",
-            "- Behavior: automatische Prompt-Builder-Nebenfunktion; keine Create-Tab-Auswahl und kein Catalog Entry.",
+            "- Behavior: Export-Hook; Preview/Compile zeigt nur die Referenz, die Datei selbst wird erst beim Export geschrieben; keine Create-Tab-Auswahl und kein Catalog Entry.",
             "",
             "## Boilerplate- und Weight-Kontext",
-            f"- Mode: {context.get('mode') or '-'}",
-            f"- Stack: {context.get('stack') or '-'}",
-            f"- Build-Ziel: {context.get('build_target') or '-'}",
-            f"- Aktiver Plan: {context.get('selected_plan') or '-'}",
-            f"- Plan-ID: {context.get('selected_plan_id') or '-'}",
-            f"- Planabsicht: {context.get('plan_intent') or '-'}",
-            f"- Source rule: {context.get('source_policy') or 'Project scope and manifest evidence remain authoritative.'}",
+            "- Mode: @create_mode",
+            "- Stack: @create_stack",
+            "- Build-Ziel: @create_build_target",
+            "- Aktiver Plan: @create_selected_plan",
+            "- Plan-ID: @create_selected_plan_id",
+            "- Planabsicht: @create_plan_intent",
+            f"- Source rule: {context.get('source_policy') or 'Project scope, USER_PROMPT and schema evidence remain authoritative.'}",
             f"- Weights: {self._format_task_weight_summary({'weights': weight_context})}",
-            f"- Changed-files-only: {'yes' if context.get('changed_files_only') else 'no'}",
-            f"- Include imports: {'yes' if context.get('include_imports') else 'no'}",
-            "",
-            "## Original left input",
-            str(payload.get("raw_text") or "").strip() or "- leer",
-            "",
         ]
+        if context.get('include_imports'):
+            lines.append("- Include imports: yes")
+        wrapper_lines = self._human_api_engineering_wrapper_lines(payload.get("human_api_engineering_wrapper") if isinstance(payload.get("human_api_engineering_wrapper"), dict) else None)
+        if wrapper_lines:
+            lines.extend(["", *wrapper_lines])
+        lines.extend([
+            "",
+            "## Export task seed",
+            str(payload.get("generated_export_task_text") or "").strip() or "- leer",
+            "",
+        ])
+        if str(payload.get("custom_user_prompt_text") or "").strip():
+            lines.extend([
+                "## Merged Own Prompt input",
+                str(payload.get("custom_user_prompt_text") or "").strip(),
+                "",
+            ])
+        lines.extend([
+            "## Target/schema TASKS context",
+            str(payload.get("recursive_export_context_text") or "").strip() or "- leer",
+            "",
+        ])
         phases = payload.get("task_phases") if isinstance(payload.get("task_phases"), list) else []
         for phase in phases:
             if not isinstance(phase, dict):
@@ -16781,7 +17727,8 @@ raise SystemExit(2)
                 lines.append("### Unteraufgaben")
                 lines.extend(f"- {item}" for item in subtasks)
             lines.append("")
-        return "\n".join(str(line).rstrip() for line in lines).strip() + "\n"
+        body = self._remove_false_export_text_lines("\n".join(str(line).rstrip() for line in lines)).strip()
+        return self._with_handoff_header(body, changed_files_only=bool(context.get("changed_files_only"))) + "\n"
 
     def _format_tasks_sidecar_reference_lines(self, payload: dict | None = None) -> list[str]:
         payload = payload if isinstance(payload, dict) else self._create_tasks_sidecar_payload()
@@ -16791,19 +17738,24 @@ raise SystemExit(2)
         context = payload.get("boilerplate_context") if isinstance(payload.get("boilerplate_context"), dict) else {}
         lines = [
             "### Prompt-Builder TASKS.TXT hook — human-compiled tasks",
-            "The left Prompt Builder input is recompiled as a TASKS.TXT sidecar on every compile. The existing boilerplate/pipeline process remains intact; this layer adds a human-formulated task instruction.",
+            "Preview/Compile shows this TASKS.TXT export hook for traceability. The actual TASKS.TXT file is written only during Export; if the left Own Prompt contains text, Export merges it there as an additional human-formulated task instruction. The existing boilerplate/pipeline process remains intact.",
             f"- Source: {payload.get('source')}",
             f"- Parser: {payload.get('parsed_as')}",
             f"- Phasen: {len(phases)}",
             f"- Aktiver Boilerplate-Plan: {context.get('selected_plan') or '-'}",
             f"- Weights: {self._format_task_weight_summary({'weights': payload.get('weight_context') if isinstance(payload.get('weight_context'), dict) else {}})}",
         ]
+        wrapper_inline = self._human_api_engineering_wrapper_inline(payload.get("human_api_engineering_wrapper") if isinstance(payload.get("human_api_engineering_wrapper"), dict) else None)
+        if wrapper_inline:
+            lines.append(f"- Human API Engineering Wrapper: {wrapper_inline} (Mantel, keine TASK-Phase)")
+        if payload.get('custom_user_prompt_merged'):
+            lines.append("- Own Prompt merged: yes")
         for phase in phases[:8]:
             if isinstance(phase, dict):
                 compiled = self._sanitize_compiled_human_prompt(str(phase.get("compiled_instruction") or self._compiled_task_phase_instruction(phase)))
                 compiled = compiled[:360] + ("..." if len(compiled) > 360 else "")
                 lines.append(f"- Phase {phase.get('phase')}: {phase.get('title')} — {compiled}")
-        return lines
+        return [line for line in lines if not self._is_false_export_line(line)]
 
     def _write_tasks_sidecar_and_patch_manifest(self, export_dir: Path, payload: dict | None = None) -> None:
         payload = payload if isinstance(payload, dict) else self._create_tasks_sidecar_payload()
@@ -16813,29 +17765,64 @@ raise SystemExit(2)
         export_dir.mkdir(parents=True, exist_ok=True)
         tasks_path = export_dir / "TASKS.TXT"
         tasks_path.write_text(self._tasks_sidecar_text(payload), encoding="utf-8")
-        for manifest_name in ("EXPORT_MANIFEST.json", "EXPORT_MANIFEST.json", "PROMPT_MANIFEST.json"):
-            manifest_path = export_dir / manifest_name
-            if not manifest_path.exists():
-                continue
+
+    def _handoff_header_lines(self, *, changed_files_only: bool | None = None) -> list[str]:
+        flow = self._operator_flow_contract() if hasattr(self, "_operator_flow_contract") else {}
+        mode_var = getattr(self, "ai_operator_execution_mode", None)
+        try:
+            raw_mode = mode_var.get() if mode_var is not None else ""
+        except Exception:
+            raw_mode = ""
+        mode = str((flow or {}).get("mode") or raw_mode or "confirm_then_execute").strip() or "confirm_then_execute"
+        confirm_var = getattr(self, "ai_confirm_operators_before_start", None)
+        research_var = getattr(self, "ai_research_schemas_boilerplates", None)
+        try:
+            confirm = bool(confirm_var.get()) if confirm_var is not None else True
+        except Exception:
+            confirm = True
+        try:
+            research = bool(research_var.get()) if research_var is not None else False
+        except Exception:
+            research = False
+        if changed_files_only is None:
             try:
-                data = json.loads(manifest_path.read_text(encoding="utf-8"))
+                changed_files_only = bool(self.create_changed_files_only.get())
             except Exception:
-                continue
-            if isinstance(data, dict):
-                data["tasks_sidecar"] = {
-                    "file": "TASKS.TXT",
-                    "source": payload.get("source"),
-                    "parsed_as": payload.get("parsed_as"),
-                    "phase_count": len(payload.get("task_phases") or []),
-                    "outside_zip": True,
-                }
-                for key in ("outside_files", "artifacts", "allowed_files"):
-                    values = data.get(key)
-                    if isinstance(values, list) and "TASKS.TXT" not in values:
-                        values.append("TASKS.TXT")
-                if manifest_name == "EXPORT_MANIFEST.json":
-                    data["zip_sidecar_policy"] = "ZIP exports keep USER_PROMPT.txt and TASKS.TXT as text sidecars outside the ZIP; USER_PROMPT.json and TASK.json aliases are not written."
-            manifest_path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+                changed_files_only = False
+        research_line = (
+            "- Mandatory role/reference research is enabled. Verify current or uncertain facts before deriving requirements, versions, standards or external rules from them."
+            if research
+            else "- Mandatory role/reference research is not enabled. Still verify current or uncertain facts before deriving requirements, versions, standards or external rules from them."
+        )
+        return [
+            "You are now acting as: @operator_role.",
+            "Please answer in @response_language.",
+            "- Changed-files-only: @changed_files_only.",
+            "- Token contract: Resolve every @token from @tokens_file before deriving paths, scope, target metadata or execution requirements.",
+            "",
+            "### Operator Flow for this Prompt",
+            "- Mode: @operator_flow_mode",
+            "- First state the active operator roles, target boundary and smallest intended change slice. Start implementation only after that selection is confirmed or explicitly authorized by the prompt.",
+            "- Mandatory role/reference research is @role_reference_research. Still verify current or uncertain facts before deriving requirements, versions, standards or external rules from them.",
+            "- The operator flow is binding: @user_prompt_file explains it in human language; @role_manifest_file carries compact execution details.",
+            "- Confirmation before start: @confirmation_before_start",
+            "- Follow the active mode exactly: in confirmation mode, state roles and change slice and wait; in start-immediately mode, state roles and boundary briefly and proceed; in sequential mode, complete each role visibly in order.",
+        ]
+
+    def _strip_handoff_header(self, text: str) -> str:
+        cleaned = str(text or "").replace("\r", "").lstrip()
+        pattern = (
+            r"(?ms)^You are now acting as: (?:Human Schema-Grounded ChatGPT Operator|@operator_role)\.\n"
+            r"Please answer in (?:German|@response_language)\.\n"
+            r"- Changed-files-only: .*?\n\n"
+            r"### Operator Flow for this Prompt\n"
+            r".*?(?=\n#|\n##|\n###(?! Operator Flow for this Prompt)|\Z)"
+        )
+        return re.sub(pattern, "", cleaned, count=1).lstrip()
+
+    def _with_handoff_header(self, text: str, *, changed_files_only: bool | None = None) -> str:
+        body = self._strip_handoff_header(text)
+        return "\n".join(self._handoff_header_lines(changed_files_only=changed_files_only) + ["", body]).strip()
 
     def _compile_human_create_prompt_text(self, config: dict | None = None, build_record: dict | None = None, *, surface: str = "user_prompt_export") -> str:
         config = config or self._current_create_config()
@@ -16873,7 +17860,7 @@ raise SystemExit(2)
             f"- Target path: {display_target_path}",
             f"- Build-Ziel: {build_target}",
             f"- Export intelligence: {profile.get('label') or level}",
-            "- Machine manifests remain part of the export, but this text is the human-readable work instruction.",
+            "- USER_PROMPT.txt is the human-readable work instruction; schema/, CMD.json and PROGRESS.json carry compact execution context.",
             "",
         ]
         lines.extend(self._human_operator_flow_lines(operator_flow, profile))
@@ -16886,10 +17873,11 @@ raise SystemExit(2)
             lines.extend(["", *active_target_lines])
         lines.extend(["", "## Task and user context"])
         lines.append(resolved_details or raw_details or "- No additional user description provided. Use the selected mode, stack and plan as the task frame.")
-        tasks_payload = self._create_tasks_sidecar_payload()
-        task_lines = self._format_tasks_sidecar_reference_lines(tasks_payload)
-        if task_lines:
-            lines.extend(["", *task_lines])
+        if not bool(getattr(self, "_building_tasks_sidecar_payload", False)):
+            tasks_payload = self._create_tasks_sidecar_payload()
+            task_lines = self._format_tasks_sidecar_reference_lines(tasks_payload)
+            if task_lines:
+                lines.extend(["", *task_lines])
         if self._create_should_include_last_git_commit_reference(config):
             git_payload = self._last_git_commit_reference_for_manifest(config, reason="user_prompt_export")
             lines.extend(["", *self._format_last_git_commit_reference_lines(git_payload, detail="full" if self._create_high_export_intelligence_enabled() else "summary")])
@@ -16901,16 +17889,19 @@ raise SystemExit(2)
             f"- Primary evidence source: {evidence_source}",
             f"- Create Working Dir: {self._create_working_dir()}",
             f"- Build/temp path: {record.get('temp_preview_dir') or self._completed_create_build_root_for_current_stack() or self._create_terminal_work_dir()}",
-            f"- Changed-files-only: {'yes' if self.create_changed_files_only.get() else 'no'}",
-            f"- Include imports: {'yes' if self.create_include_imports.get() else 'no'}",
-            f"- Absolute Projektpfade im Export: {'yes' if self._create_export_absolute_paths_enabled() else 'no'}; ZIP-Mitgliedsnamen bleiben portabel projekt-relativ.",
-            "- Use project tree, mapping, dependency layer and export manifest as evidence sources; do not invent files, commands or frameworks.",
+        ])
+        if self.create_include_imports.get():
+            lines.append("- Include imports: yes")
+        if self._create_export_absolute_paths_enabled():
+            lines.append("- Absolute Projektpfade im Export: yes; ZIP-Mitgliedsnamen bleiben portabel projekt-relativ.")
+        lines.extend([
+            "- Use project tree, USER_PROMPT, schema resources, dependency evidence and compact CMD/PROGRESS context as evidence sources; do not invent files, commands or frameworks.",
             "- Write only inside the resolved target/scope area and document every deviation as a known gap.",
         ])
         if create_tree:
             lines.append(f"- Detected scope in Create working tree: {create_tree.get('file_count', 0)} files, {create_tree.get('directory_count', 0)} directories.")
             if str(profile.get("id") or "") == "hoch":
-                lines.append("- Individual paths are not embedded as a raw dump in USER_PROMPT.txt. Use the manifest files for the complete recursive file list.")
+                lines.append("- Individual paths are not embedded as a raw dump in USER_PROMPT.txt. Use the exported schema/resources and selected project tree for complete recursive evidence.")
         lines.extend(["", *self._human_manifest_reference_lines(config, profile, create_tree)])
         lines.extend(["", *self._human_api_schema_boilerplate_phase_lines(config, profile, record, prompt_base), "", "## Compiled schema chain"])
         lines.append(self._export_human_prompt_text("chain_intro"))
@@ -16941,22 +17932,22 @@ raise SystemExit(2)
             "- At the end, provide a short change summary with affected files.",
             "- Name executed tests or explain why tests were only possible as a manual gap.",
             "- Explicitly record rollback point, known gaps and unimplemented parts.",
-            "- The declared export files remain the machine-readable evidence layer: " + ", ".join(self._manifest_names_for_human_prompt(config, profile)[:12]) + ".",
+            "- The declared handoff files remain the compact evidence layer: " + ", ".join(self._manifest_names_for_human_prompt(config, profile)[:12]) + ".",
         ])
         lines.extend(["", "## Remember: binding execution flow", self._export_human_prompt_text("remember_execution_contract")])
         text = "\n".join(str(line).rstrip() for line in lines).strip()
         text = self._sanitize_compiled_human_prompt(text)
         # Guardrail: USER_PROMPT.txt must not leak raw schema token syntax.
         text = re.sub(r"\{\$([^}:|]+)(?::([^}]+))?\}", lambda m: (m.group(1) or "").replace("_", " "), text)
-        return text
+        return self._with_handoff_header(text, changed_files_only=bool(self.create_changed_files_only.get()))
 
 
     def _create_human_api_schema_resolution_payload(self, config: dict, profile: dict | None = None, record: dict | None = None, base: Path | None = None) -> dict:
         """Resolve Create Schema/Boilerplate content for Human API handoff.
 
-        USER_PROMPT.txt introduces the phases. PROMPT_MANIFEST.json stores the
-        complete JSON content for the exact schema rows used by the selected
-        stack, catalog entry, active targets and weights.
+        USER_PROMPT.txt introduces the phases. The written schema/ resources
+        carry the exact schema rows used by the selected stack, catalog entry,
+        active targets and weights.
         """
         record = record or self._active_successful_create_build_for_current_stack() or {}
         try:
@@ -16970,9 +17961,11 @@ raise SystemExit(2)
             targets = self._create_export_save_targets(config, record, base_path)
         except Exception:
             targets = [SaveTarget(str(config.get("path") or "."), str(config.get("path_type") or "wrapper"), str(config.get("ai_target") or "ChatGPT"), config.get("profiles", []), config.get("file_types", []))]
+        resolved_stack_category = self._resolved_create_stack_category(config, record)
+        resolved_stack = str(self.create_stack.get() or config.get("stack") or config.get("label") or DEFAULT_PROJECT_NAME)
         context = {
-            "selected_stack_category": config.get("category", self.create_stack_category.get()),
-            "selected_stack": self.create_stack.get(),
+            "selected_stack_category": resolved_stack_category,
+            "selected_stack": resolved_stack,
             "selected_chain_entry": selected_entry or {},
             "chain_schema": chain_schema if isinstance(chain_schema, dict) else {},
             "create_mode_parameters": parameter_profile if isinstance(parameter_profile, dict) else {},
@@ -16985,8 +17978,8 @@ raise SystemExit(2)
         resolution = build_used_schema_resolution(self.schema, targets, {}, compact_export_context=context)
         resolution["human_api_context"] = dict(resolution.get("human_api_context") or {})
         resolution["human_api_context"].update({
-            "stack_category": str(config.get("category", self.create_stack_category.get()) or "Custom"),
-            "stack": str(self.create_stack.get() or config.get("stack") or "Custom"),
+            "stack_category": resolved_stack_category,
+            "stack": resolved_stack,
             "catalog_entry_id": str((selected_entry or {}).get("id") or "") if isinstance(selected_entry, dict) else "",
             "catalog_entry_label": str((selected_entry or {}).get("display_name") or (selected_entry or {}).get("label") or "") if isinstance(selected_entry, dict) else "",
             "mode": self.create_mode.get(),
@@ -17003,11 +17996,11 @@ raise SystemExit(2)
         values = parameter_profile.get("values", {}) if isinstance(parameter_profile, dict) and isinstance(parameter_profile.get("values"), dict) else {}
         lines = [
             "## Human API schema/boilerplate phases",
-            "- Contract: USER_PROMPT.txt introduces Schema/Boilerplate as phases; full JSON content is resolved only in PROMPT_MANIFEST.json.used_schema_resolution.content.",
+            "- Contract: USER_PROMPT.txt introduces Schema/Boilerplate as phases; full JSON content is resolved only in exported schema resources.",
             "- Export rule: schema/ contains only explicitly used schema rows; no full schema dump and no unselected catalog browsing.",
             "### Phase 1 — Stack identity",
-            f"- Stack-Kategorie: {context.get('stack_category') or config.get('category') or 'Custom'}",
-            f"- Stack: {context.get('stack') or self.create_stack.get() or 'Custom'}",
+            f"- Stack-Kategorie: {context.get('stack_category') or self._resolved_create_stack_category(config, record)}",
+            f"- Stack: {context.get('stack') or self.create_stack.get() or config.get('label') or DEFAULT_PROJECT_NAME}",
             f"- Katalog-Entry: {context.get('catalog_entry_label') or context.get('catalog_entry_id') or 'none selected'}",
             "### Phase 2 — Weighted execution order",
         ]
@@ -17015,11 +18008,11 @@ raise SystemExit(2)
             for key, value in values.items():
                 lines.append(f"- {self._humanize_prompt_value(key)}: {value}")
         else:
-            lines.append("- No explicit weight values resolved; use schema/default weight rows from PROMPT_MANIFEST.json.used_schema_resolution.")
+            lines.append("- No explicit weight values resolved; use schema/default weight rows from exported schema resources.")
         lines.extend([
             "### Phase 3 — Required schema content",
             "- Resolve only these used schema families: " + (", ".join(used_keys) if used_keys else "none"),
-            "- Read the row content from PROMPT_MANIFEST.json.used_schema_resolution.content before deriving files, packages, boilerplate or feature/refactor steps.",
+            "- Read the row content from exported schema resources before deriving files, packages, boilerplate or feature/refactor steps.",
             "- Do not activate or infer additional schema rows unless the user explicitly changes Stack-Kategorie, Stack, Katalog-Entry, targets or weights.",
         ])
         return lines
@@ -17160,11 +18153,8 @@ raise SystemExit(2)
 
     def _create_context_artifact_names(self, config: dict | None = None) -> list[str]:
         names = [
-            "EXPORT_MANIFEST.json",
-            "PROMPT_MANIFEST.json",
             "CMD.json",
             self._progress_json_file_name(),
-            "PROMPT_EVAL_CHECKLIST.md",
         ]
         if self._create_should_include_last_git_commit_reference(config):
             names.append("LAST_GIT_COMMIT.json")
@@ -17177,65 +18167,17 @@ raise SystemExit(2)
         return unique
 
     def _write_json_alias_file(self, export_dir: Path, primary_name: str, alias_name: str, payload: dict) -> None:
-        text = json.dumps(payload, indent=2, ensure_ascii=False) + "\n"
+        text = self._json_export_dumps(payload)
         (export_dir / primary_name).write_text(text, encoding="utf-8")
         if alias_name and alias_name != primary_name:
             (export_dir / alias_name).write_text(text, encoding="utf-8")
 
-    def _register_create_context_artifacts_in_export_manifest(self, export_dir: Path, config: dict | None = None) -> None:
-        manifest_path = Path(export_dir) / "EXPORT_MANIFEST.json"
-        if not manifest_path.exists():
-            return
-        try:
-            data = json.loads(manifest_path.read_text(encoding="utf-8"))
-        except Exception:
-            return
-        if not isinstance(data, dict):
-            return
-        blocked = {
-            "CREATE_" + "EXPORT_MANIFEST.json",
-            "CREATE_" + "PROMPT_MANIFEST.json",
-            "CREATE_" + "PROJECT_MAPPING.json",
-            "CREATE_" + "DEPENDENCY_LAYER.json",
-            "CREATE_" + "CMD_MANIFEST.json",
-            "CREATE_" + "ACTIVE_TARGETS.json",
-        }
-        artifact_names = []
-        for name in self._create_context_artifact_names(config):
-            if name in blocked:
-                continue
-            if (Path(export_dir) / name).exists() and name not in artifact_names:
-                artifact_names.append(name)
-        data["create_context_artifacts"] = {
-            "written": artifact_names,
-            "cmd_manifest": "CMD.json" if "CMD.json" in artifact_names else None,
-            "progress_manifest": self._progress_json_file_name() if self._progress_json_file_name() in artifact_names else None,
-            "last_git_commit_manifest": "LAST_GIT_COMMIT.json" if "LAST_GIT_COMMIT.json" in artifact_names else None,
-            "write_policy": "Create context is consolidated into EXPORT_MANIFEST.json and PROMPT_MANIFEST.json; PROGRESS.json is the dedicated callback-design sidecar.",
-        }
-        for key in ("outside_files", "allowed_files", "copied_files", "generated_files"):
-            values = data.get(key)
-            if isinstance(values, list):
-                values[:] = [item for item in values if Path(str(item)).name not in blocked]
-                use_abs = any(os.path.isabs(str(item)) for item in values)
-                for name in artifact_names:
-                    item = str((Path(export_dir) / name).resolve()) if use_abs and key == "outside_files" else name
-                    if item not in values:
-                        values.append(item)
-        values = data.get("outside_files_relative")
-        if isinstance(values, list):
-            values[:] = [item for item in values if Path(str(item)).name not in blocked]
-            for name in artifact_names:
-                if name not in values:
-                    values.append(name)
-        manifest_path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    def _register_create_context_artifacts_in_handoff_index(self, export_dir: Path, config: dict | None = None) -> None:
+        return
 
     def _rewrite_zip_with_create_context_artifacts(self, export_dir: Path, config: dict | None = None) -> list[str]:
         export_dir = Path(export_dir)
         artifact_paths = [export_dir / name for name in self._create_context_artifact_names(config) if (export_dir / name).exists()]
-        export_manifest_path = export_dir / "EXPORT_MANIFEST.json"
-        if export_manifest_path.exists() and export_manifest_path not in artifact_paths:
-            artifact_paths.append(export_manifest_path)
         if not artifact_paths:
             return []
         zip_paths = sorted(list(export_dir.glob("*_scope_clone.zip")) + list(export_dir.glob("*_compact_context.zip")))
@@ -17264,12 +18206,42 @@ raise SystemExit(2)
                 messages.append(f"WARN  Create context artifacts not injected into {zip_path.name}: {exc}")
         return messages
 
-    def _apply_create_zip_sidecar_contract(self, export_dir: Path, config: dict, tasks_payload: dict) -> list[str]:
+    def _resolved_create_user_prompt_text(self, config: dict | None = None, build_record: dict | None = None, final_user_prompt_text: str | None = None) -> str:
+        prompt = str(final_user_prompt_text or "").strip()
+        if prompt:
+            return self._sanitize_compiled_human_prompt(prompt)
+        return self._create_export_prompt_text(config, build_record)
+
+    def _compact_create_plan_manifest_context(self, config: dict | None = None) -> dict:
+        """Return prompt/execution context without leaking raw Create UI schema rows."""
+        config = config if isinstance(config, dict) else {}
+        selected_entry = config.get("selected_create_chain_entry")
+        selected_plan: dict[str, str] = {}
+        if isinstance(selected_entry, dict):
+            field_map = {
+                "id": selected_entry.get("id"),
+                "label": selected_entry.get("display_name") or selected_entry.get("label") or selected_entry.get("title"),
+                "goal": selected_entry.get("user_goal") or selected_entry.get("intent") or selected_entry.get("context_hint"),
+            }
+            for key, value in field_map.items():
+                text = str(value or "").strip()
+                if text:
+                    selected_plan[key] = text[:600]
+
+        context: dict[str, object] = {
+            "mode": str(self.create_mode.get() or "").strip(),
+            "stack": str(self.create_stack.get() or "").strip(),
+        }
+        if selected_plan:
+            context["selected_plan"] = selected_plan
+        return {key: value for key, value in context.items() if value not in ("", {}, [], None)}
+
+    def _apply_create_zip_sidecar_contract(self, export_dir: Path, config: dict, tasks_payload: dict, final_user_prompt_text: str | None = None, build_record: dict | None = None) -> list[str]:
         """Keep outside ZIP sidecars human-first while preserving JSON inside ZIP.
 
-        The Export ZIP itself must contain the machine JSON context (CMD.json,
-        PROGRESS.json, PROMPT_MANIFEST.json, EXPORT_MANIFEST.json, etc.). Only the
-        outside export folder is cleaned to the final ZIP plus human text sidecars.
+        The Export ZIP keeps only compact machine JSON context (CMD.json and
+        PROGRESS.json). The outside export folder is cleaned to the final ZIP plus
+        human text sidecars.
         """
         export_dir = Path(export_dir)
         if not bool(self.create_export_as_zip.get()):
@@ -17278,30 +18250,33 @@ raise SystemExit(2)
         if not zip_paths:
             return []
         messages: list[str] = []
-        record = self._active_successful_create_build_for_current_stack()
-        prompt_text = self._create_export_prompt_text(config, record)
+        record = build_record or self._active_successful_create_build_for_current_stack()
+        prompt_text = self._resolved_create_user_prompt_text(config, record, final_user_prompt_text)
         user_prompt_path = export_dir / "USER_PROMPT.txt"
         user_prompt_path.write_text(prompt_text.rstrip() + "\n", encoding="utf-8")
         cmd_path = export_dir / "CMD.TXT"
         cmd_path.write_text(self._create_cmd_text_payload(config), encoding="utf-8")
         text_sidecar_names = {"USER_PROMPT.txt", "CMD.TXT"}
+        schema_handoff_files: list[str] = []
         if isinstance(tasks_payload, dict) and str(tasks_payload.get("raw_text") or "").strip():
             tasks_path = export_dir / "TASKS.TXT"
             tasks_path.write_text(self._tasks_sidecar_text(tasks_payload), encoding="utf-8")
             text_sidecar_names.add("TASKS.TXT")
+            self._write_tasks_schema_copy(export_dir, tasks_payload)
 
         manifest_payload = {
             "artifact": "MANIFEST.json",
-            "schema_version": "2026.create.zip_manifest.v2",
+            "schema_version": "2026.create.zip_manifest.v3",
             "created_at": datetime.now().isoformat(timespec="seconds"),
             "project_name": self.project_name.get().strip(),
-            "create_mode": self.create_mode.get(),
-            "create_stack": self.create_stack.get(),
-            "selected_chain_entry": (config or {}).get("selected_create_chain_entry"),
+            "manifest_scope": "prompt_execution_handoff",
+            "prompt_execution_context": self._compact_create_plan_manifest_context(config),
             "human_sidecars_outside_zip": sorted(text_sidecar_names),
-            "json_context_policy": "Machine JSON files remain inside the ZIP; the outside folder is human-sidecar-only.",
-            "required_json_inside_zip": ["CMD.json", self._progress_json_file_name(), "PROMPT_MANIFEST.json", "EXPORT_MANIFEST.json", "PROJECT_METADATA.json", "AI_MANAGER.json"],
+            "schema_handoff_files": schema_handoff_files,
+            "json_context_policy": "Only compact machine JSON files remain inside the ZIP; TASKS.TXT remains a human sidecar outside /schema; /schema contains schema resources.",
+            "required_json_inside_zip": ["CMD.json", self._progress_json_file_name()],
             "validation_focus": (config or {}).get("validation_focus", []),
+            "ui_state_policy": "UI widget/tab state is excluded; prompt and execution context is carried by USER_PROMPT.txt plus compact CMD/PROGRESS JSON.",
         }
 
         for zip_path in zip_paths:
@@ -17314,7 +18289,7 @@ raise SystemExit(2)
                         # sidecars are refreshed outside; they are not destructive.
                         target.writestr(info, source.read(info.filename))
                     if "MANIFEST.json" not in existing_names:
-                        target.writestr("MANIFEST.json", json.dumps(manifest_payload, indent=2, ensure_ascii=False) + "\n")
+                        target.writestr("MANIFEST.json", self._json_export_dumps(manifest_payload))
                 tmp_path.replace(zip_path)
                 messages.append(f"ZIP   preserved machine JSON context in {zip_path.name}")
             except Exception as exc:
@@ -17336,182 +18311,28 @@ raise SystemExit(2)
             except Exception as exc:
                 messages.append(f"WARN  outside artifact cleanup skipped for {path.name}: {exc}")
         messages.extend(f"WRITE {export_dir / name} (outside ZIP text sidecar)" for name in sorted(text_sidecar_names))
-        messages.append("ZIP_SIDECARS outside_files=ZIP, CMD.TXT, USER_PROMPT.txt, optional TASKS.TXT; machine JSON preserved inside ZIP")
+        messages.append("ZIP_SIDECARS outside_files=ZIP, CMD.TXT, USER_PROMPT.txt, TASKS.TXT; machine JSON preserved inside ZIP")
         return messages
 
-    def _write_create_export_context_sidecars(self, base: Path, export_dir: Path, config: dict, build_record: dict | None = None) -> list[str]:
-        self._write_create_export_context_files(base, export_dir, config, build_record)
-        self._register_create_context_artifacts_in_export_manifest(export_dir, config)
+    def _write_create_export_context_sidecars(self, base: Path, export_dir: Path, config: dict, build_record: dict | None = None, final_user_prompt_text: str | None = None) -> list[str]:
+        self._write_create_export_context_files(base, export_dir, config, build_record, final_user_prompt_text)
+        self._register_create_context_artifacts_in_handoff_index(export_dir, config)
         messages = [f"WRITE {Path(export_dir) / name}" for name in self._create_context_artifact_names(config) if (Path(export_dir) / name).exists()]
         messages.extend(self._rewrite_zip_with_create_context_artifacts(export_dir, config))
         return messages
 
-    def _write_create_export_context_files(self, base: Path, export_dir: Path, config: dict, build_record: dict | None = None) -> None:
+    def _write_create_export_context_files(self, base: Path, export_dir: Path, config: dict, build_record: dict | None = None, final_user_prompt_text: str | None = None) -> None:
         export_dir.mkdir(parents=True, exist_ok=True)
-        context = config.get("create_mode_context") or self._create_mode_context(config=config)
         record = build_record or {}
-        tasks_payload = self._create_tasks_sidecar_payload()
-        last_git_reference = self._last_git_commit_reference_for_manifest(config, reason="create_export_manifest")
+        final_prompt = self._resolved_create_user_prompt_text(config, record, final_user_prompt_text)
         cmd_manifest = self._create_cmd_manifest_payload(config)
         progress_payload = self._create_progress_json_payload(config, record)
-        active_target_payload = self._create_active_targets_payload(config, record, base)
-        project_mapping_payload = self._create_project_mapping_payload(config)
-        dependency_layer_payload = self._effective_dependency_layer(config)
-        human_api_schema_resolution = self._create_human_api_schema_resolution_payload(config, self._export_intelligence_profile(self._create_export_intelligence_value()), record, base)
-        blocked = {
-            "CREATE_" + "EXPORT_MANIFEST.json",
-            "CREATE_" + "PROMPT_MANIFEST.json",
-            "CREATE_" + "PROJECT_MAPPING.json",
-            "CREATE_" + "DEPENDENCY_LAYER.json",
-            "CREATE_" + "CMD_MANIFEST.json",
-            "CREATE_" + "ACTIVE_TARGETS.json",
-        }
-
-        def read_json_object(path: Path) -> dict:
-            try:
-                data = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
-            except Exception:
-                data = {}
-            return data if isinstance(data, dict) else {}
-
-        def clean_file_lists(data: dict) -> None:
-            for key in ("outside_files", "outside_files_relative", "allowed_files", "copied_files", "generated_files", "artifacts"):
-                values = data.get(key)
-                if isinstance(values, list):
-                    cleaned: list[object] = []
-                    seen: set[str] = set()
-                    for item in values:
-                        name = Path(str(item)).name
-                        if name in blocked:
-                            continue
-                        marker = str(item)
-                        if marker in seen:
-                            continue
-                        seen.add(marker)
-                        cleaned.append(item)
-                    values[:] = cleaned
-
-        export_context = {
-            "mode": "create_tab_context_export",
-            "created_at": datetime.now().isoformat(timespec="seconds"),
-            "source_base": str(base),
-            "create_working_dir": str(self._create_working_dir()),
-            "create_export_dir": str(export_dir),
-            "selected_stack": self.create_stack.get(),
-            "selected_mode": self.create_mode.get(),
-            "mode_context": context,
-            "selected_chain_entry": config.get("selected_create_chain_entry"),
-            "operator_flow": self._operator_flow_contract(),
-            "operator_research_plan": self._create_operator_research_plan(config),
-            "ai_response_callback": self._ai_response_callback_contract(),
-            "progress_manifest": self._progress_json_file_name(),
-            "source_clone": self._create_source_clone_manifest or None,
-            "active_targets": active_target_payload.get("targets", []),
-            "project_mapping": project_mapping_payload,
-            "human_api_schema_resolution": {"policy": human_api_schema_resolution.get("policy"), "counts": human_api_schema_resolution.get("counts", {}), "human_api_context": human_api_schema_resolution.get("human_api_context", {})},
-            "dependency_layer_summary": {
-                "group_count": len(dependency_layer_payload) if isinstance(dependency_layer_payload, list) else 0,
-                "targets": sorted({str(group.get("target") or "") for group in dependency_layer_payload if isinstance(group, dict) and str(group.get("target") or "").strip()}),
-                "manifest_files": sorted({str(item) for group in dependency_layer_payload if isinstance(group, dict) for item in (group.get("manifest_files") or [])}),
-            },
-            "last_git_commit_reference": last_git_reference,
-            "tasks_sidecar": {"file": "TASKS.TXT", "enabled": bool(str(tasks_payload.get("raw_text") or "").strip()), "parsed_as": tasks_payload.get("parsed_as"), "phase_count": len(tasks_payload.get("task_phases") or [])},
-            "cmd_manifest": "CMD.TXT",
-            "export_rules": {
-                "scope_source": "create_working_dir",
-                "changed_files_only": bool(self.create_changed_files_only.get()),
-                "include_imports": bool(self.create_include_imports.get()),
-                "packaging": "zip" if bool(self.create_export_as_zip.get()) else "folder",
-                "detail_level": "compact" if bool(self.create_compact_export.get()) else "full",
-                "export_intelligence": self._create_export_intelligence_value(),
-                "last_git_commit_reference": "included" if bool(self._create_should_include_last_git_commit_reference(config)) else "excluded",
-                "project_paths": "project_scope_absolute_and_relative" if bool(self._create_export_absolute_paths_enabled()) else "portable_relative",
-                "path_policy": self._create_export_path_policy_payload(base),
-                "text_sidecars": ["USER_PROMPT.txt", "TASKS.TXT if left prompt exists"],
-                "machine_manifests": ["MANIFEST.json inside ZIP"],
-            },
-            "write_policy": "No duplicate create-specific sidecars; create context is merged into EXPORT_MANIFEST.json and PROMPT_MANIFEST.json.",
-        }
-        prompt_context = {
-            "mode": self.create_mode.get(),
-            "stack": self.create_stack.get(),
-            "routine": context.get("routine"),
-            "profiles": config.get("profiles", []),
-            "references": config.get("references", []),
-            "roles": config.get("roles", []),
-            "weights": config.get("create_weight_profiles", context.get("weights", [])),
-            "prompt_essentials": context.get("prompt_essentials", []),
-            "mode_boilerplate": config.get("create_mode_boilerplate", {}),
-            "selected_chain_entry": config.get("selected_create_chain_entry"),
-            "export_intelligence": self._create_export_intelligence_value(),
-            "path_policy": self._create_export_path_policy_payload(base),
-            "human_prompt_locale_source": "schema/human_prompt_locale.json",
-            "mode_catalog": self._compact_create_mode_catalog_for_export(self._create_mode_catalog(config)),
-            "chain_schema": self._compact_create_chain_schema_for_export(config.get("create_chain_schema") or self._create_chain_schema(self.create_mode.get(), [], config)),
-            "package_control": self._package_control_findings(config),
-            "operator_flow": self._operator_flow_contract(),
-            "operator_research_plan": self._create_operator_research_plan(config),
-            "ai_response_callback": self._ai_response_callback_contract(),
-            "progress_manifest": self._progress_json_file_name(),
-            "context_shortcuts": self._create_shortcut_reference_rows(self.create_details_text.get("1.0", "end") if hasattr(self, "create_details_text") else "", record),
-            "last_git_commit_reference": last_git_reference,
-            "tasks_sidecar": {"file": "TASKS.TXT", "enabled": bool(str(tasks_payload.get("raw_text") or "").strip()), "parsed_as": tasks_payload.get("parsed_as"), "phase_count": len(tasks_payload.get("task_phases") or [])},
-            "shortcut_command_contract": self._human_shortcut_command_contract_lines(),
-            "cmd_manifest": cmd_manifest,
-            "source_clone": self._create_source_clone_manifest or None,
-            "active_targets": active_target_payload.get("targets", []),
-            "project_mapping": project_mapping_payload,
-            "dependency_layer": dependency_layer_payload,
-            "used_schema_resolution": human_api_schema_resolution,
-            "human_api_schema_resolution": human_api_schema_resolution,
-            "create_mode_parameters": config.get("create_mode_parameters", self._create_mode_parameter_profile()),
-            "create_parameter_boilerplates": config.get("create_parameter_boilerplates", self._create_mode_parameter_boilerplates(config.get("create_mode_parameters", self._create_mode_parameter_profile()))),
-            "create_parameter_context": config.get("create_parameter_context", self._create_parameter_context_priority(config.get("create_mode_parameters", self._create_mode_parameter_profile()))),
-            "write_policy": "Consolidated into PROMPT_MANIFEST.json; no duplicate create-specific sidecars for prompt, mapping, dependency or active-target context.",
-        }
-
-        export_manifest_path = export_dir / "EXPORT_MANIFEST.json"
-        export_manifest = read_json_object(export_manifest_path)
-        clean_file_lists(export_manifest)
-        export_manifest["create_context"] = export_context
-        export_manifest["create_context_artifacts"] = {
-            "written": [name for name in self._create_context_artifact_names(config) if name not in blocked],
-            "cmd_manifest": "CMD.TXT",
-            "progress_manifest": self._progress_json_file_name(),
-            "last_git_commit_manifest": "LAST_GIT_COMMIT.json" if self._create_should_include_last_git_commit_reference(config) else None,
-            "write_policy": "ZIP export keeps machine details compact: outside has only text sidecars and ZIP; MANIFEST.json inside ZIP points to schema/context references.",
-        }
-        export_manifest_path.write_text(json.dumps(export_manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-
-        prompt_manifest_path = export_dir / "PROMPT_MANIFEST.json"
-        prompt_manifest = read_json_object(prompt_manifest_path)
-        clean_file_lists(prompt_manifest)
-        prompt_manifest["used_schema_resolution"] = human_api_schema_resolution
-        prompt_manifest["human_api_schema_resolution"] = human_api_schema_resolution
-        prompt_manifest["create_prompt_context"] = prompt_context
-        prompt_manifest_path.write_text(json.dumps(prompt_manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-
-        (export_dir / "CMD.json").write_text(json.dumps(cmd_manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-        (export_dir / self._progress_json_file_name()).write_text(json.dumps(progress_payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        (export_dir / "CMD.json").write_text(self._json_export_dumps(cmd_manifest), encoding="utf-8")
+        (export_dir / self._progress_json_file_name()).write_text(self._json_export_dumps(progress_payload), encoding="utf-8")
         if self._create_should_include_last_git_commit_reference(config):
-            (export_dir / "LAST_GIT_COMMIT.json").write_text(json.dumps(self._last_git_commit_manifest_payload(config, last_git_reference, base=base), indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-        eval_lines = [
-            "# PROMPT EVAL CHECKLIST",
-            "",
-            "- [ ] Outcome is explicit and target-scoped.",
-            "- [ ] Project evidence is separated from assumptions.",
-            "- [ ] Generated files are discoverable from EXPORT_MANIFEST.json.",
-            "- [ ] Shortcut CMDs are mirrored in CMD.json and do not expand access/safety boundaries.",
-            "- [ ] AI callback designs are mirrored in PROGRESS.json, introduced with Human Text routine and exported inside plus outside ZIP.",
-            "- [ ] No duplicate create-specific prompt/mapping/dependency/target/export sidecars are produced.",
-            "- [ ] If enabled, LAST_GIT_COMMIT.json contains commit metadata and changed-file titles/descriptions.",
-            "- [ ] If absolute project paths are enabled, relative originals remain traceable and ZIP members stay portable.",
-            "- [ ] Dependencies are referenced through PROMPT_MANIFEST.json, not expanded as package lists in USER_PROMPT.txt.",
-            "- [ ] Validation commands are listed or marked as not run with a reason.",
-            "- [ ] Rollback point and changed-files-only policy are clear.",
-        ]
-        (export_dir / "PROMPT_EVAL_CHECKLIST.md").write_text("\n".join(eval_lines) + "\n", encoding="utf-8")
-        (export_dir / "USER_PROMPT.txt").write_text(self._create_export_prompt_text(config, build_record) + "\n", encoding="utf-8")
+            last_git_reference = self._last_git_commit_reference_for_manifest(config, reason="create_export")
+            (export_dir / "LAST_GIT_COMMIT.json").write_text(self._json_export_dumps(self._last_git_commit_manifest_payload(config, last_git_reference, base=base)), encoding="utf-8")
+        (export_dir / "USER_PROMPT.txt").write_text(final_prompt.rstrip() + "\n", encoding="utf-8")
 
     def _path_is_inside_any_selection(self, rel: str, selected_paths: list[str] | None) -> bool:
         selected = [str(item).replace("\\", "/").strip("/") or "." for item in (selected_paths or []) if str(item).strip()]
@@ -17531,7 +18352,7 @@ raise SystemExit(2)
             base_path = Path(str(base))
         files: list[str] = []
         dirs: list[str] = []
-        ignore_names = {".git", "node_modules", "venv", ".venv", "dist", "build", "__pycache__", ".pytest_cache", ".mypy_cache"}
+        ignore_names = {".git"} | set(DEPENDENCY_STORAGE_DIR_NAMES)
         selected_paths = [str(item).replace("\\", "/").strip("/") or "." for item in (selected_scope_paths or []) if str(item).strip()]
         try:
             for path in sorted(base_path.rglob("*")):
@@ -17643,7 +18464,6 @@ raise SystemExit(2)
         config = self._current_create_config()
         if self._create_should_include_last_git_commit_reference(config):
             self._ensure_create_last_git_commit_reference(reason="create_export", force=False)
-        tasks_payload = self._create_tasks_sidecar_payload()
         record = build_record or self._selected_create_build_record()
         base = self._create_export_base_for_record(record)
         if not base.exists():
@@ -17685,6 +18505,10 @@ raise SystemExit(2)
                 export_prompt = fallback_export_prompt
         if not export_prompt:
             export_prompt = fallback_export_prompt
+        # TASKS.TXT is built from the active Create targets, selected
+        # boilerplates and used-schema resolution.  It must not parse
+        # USER_PROMPT.txt back into itself.
+        tasks_payload = self._create_tasks_sidecar_payload(config=config, build_record=record, base=base)
         targets = self._create_export_save_targets(config, record, base)
         params = {
             "output_base": base,
@@ -17722,15 +18546,13 @@ raise SystemExit(2)
                     "worktree_compact_export": bool(self.compact_export.get()),
                     "scope_include_imports": bool(self.include_imports.get()),
                     "scope_changed_files_only": bool(self.changed_files_only.get()),
-                    "create_priority_rule": "Create-tab values override normal Generator defaults during Create export; Generator state is read as context only.",
+                    "create_priority_rule": "Create execution context overrides normal Generator defaults during Create export; Generator state is read as context only.",
                 },
                 "export_path_policy": "stable <project>_create_stable when overwrite is ON; otherwise <project>_create_<timestamp>_<id>",
                 "path_policy": self._create_export_path_policy_payload(base),
                 "overwrite_existing_generated_files": bool(self.overwrite.get()),
-                "create_mode": self.create_mode.get(),
-                "selected_stack_category": config.get("category", self.create_stack_category.get()),
-                "selected_stack": self.create_stack.get(),
-                "selected_chain_entry": config.get("selected_create_chain_entry") if isinstance(config.get("selected_create_chain_entry"), dict) else self._find_create_catalog_entry(config=config),
+                "prompt_execution_context": self._compact_create_plan_manifest_context(config),
+                "selected_stack_category": self._resolved_create_stack_category(config, record),
                 "profiles": config.get("profiles", []),
                 "references": config.get("references", []),
                 "roles": config.get("roles", []),
@@ -17761,14 +18583,14 @@ raise SystemExit(2)
             return generate_files(progress_callback=self._progress_callback, **params)
         def success(messages: list[str]) -> None:
             try:
-                messages.extend(self._write_create_export_context_sidecars(base, export_dir, config, record))
+                messages.extend(self._write_create_export_context_sidecars(base, export_dir, config, record, export_prompt))
             except Exception as exc:
                 messages.append(f"Create context sidecars skipped: {exc}")
             try:
                 self._write_tasks_sidecar_and_patch_manifest(export_dir, tasks_payload)
-                self._register_create_context_artifacts_in_export_manifest(export_dir, config)
+                self._register_create_context_artifacts_in_handoff_index(export_dir, config)
                 messages.extend(self._rewrite_zip_with_create_context_artifacts(export_dir, config))
-                messages.extend(self._apply_create_zip_sidecar_contract(export_dir, config, tasks_payload))
+                messages.extend(self._apply_create_zip_sidecar_contract(export_dir, config, tasks_payload, export_prompt, record))
             except Exception as exc:
                 messages.append(f"TASKS/ZIP sidecar contract skipped: {exc}")
             self._show_text("\n".join(messages + [f"Create export context: {export_dir}"]))
@@ -17831,13 +18653,13 @@ raise SystemExit(2)
         placeholder_lines = self._editable_text_lines("create_placeholder_text", config.get("placeholders", {}))
         artifacts = list(config.get("artifacts", []))
         if self.create_zip_contract.get():
-            for required in ["USER_PROMPT.txt", "EXPORT_MANIFEST.json", "PROMPT_MANIFEST.json"]:
+            for required in ["USER_PROMPT.txt"]:
                 if required not in artifacts:
                     artifacts.append(required)
         return "\n".join([
             "# CREATE PROJECT MAPPING CONTRACT",
             f"Mode: {self.create_mode.get()}",
-            f"Stack category: {config.get('category', self.create_stack_category.get())}",
+            f"Stack category: {self._resolved_create_stack_category(config)}",
             f"Stack: {self.create_stack.get()}",
             f"Target path: {config.get('path', self.create_target_path.get().strip() or '.')}",
             f"Create-only working path: {self._display_create_working_path()}",
@@ -17919,7 +18741,7 @@ raise SystemExit(2)
             "- Live-edited timeline tokens such as {$npm_run_build} and {$install_node[dependency_version]} stay explicit until the implementation target resolves them.",
             "- The editable project tree is compiled into a temp preview; Run keeps output in temp/export only.",
             "- Only one wrapper, backend and frontend root target may exist; structures outside a target-root parent are ignored.",
-            "- ZIP export remains compatible: final ZIP, USER_PROMPT.txt and EXPORT_MANIFEST.json must describe the same artifact set.",
+            "- ZIP export remains compatible: final ZIP, USER_PROMPT.txt must describe the same artifact set.",
             "- Create-only export stays isolated from Generator/Project Tree export unless the user explicitly copies the path there.",
             "- Compile writes/refreshes temp preview state; Run never writes the Start working tree and executes checked timeline steps only in temp/export context.",
             "",
@@ -17981,9 +18803,18 @@ raise SystemExit(2)
         previous_left_input = self._prompt_builder_custom_task_text() if hasattr(self, "custom_prompt_text") else ""
         contract = self._create_export_prompt_text(config, self._active_successful_create_build_for_current_stack())
         if hasattr(self, "custom_prompt_text"):
-            merged_contract = self._merge_prompt_builder_left_input_into_process(contract, previous_left_input)
-            self.custom_prompt_text.delete("1.0", "end")
-            self.custom_prompt_text.insert("1.0", merged_contract)
+            # The left Own-Prompt box is strictly user-authored input. Applying
+            # Create context may refresh previews, but must not write the
+            # generated process contract or TASKS.TXT hook into this box. If an
+            # older version already stored a generated wrapper with a recoverable
+            # overlay, compact it back to only the user's task text.
+            try:
+                current_left = self.custom_prompt_text.get("1.0", "end").strip()
+            except Exception:
+                current_left = ""
+            if previous_left_input and previous_left_input.strip() != current_left:
+                self.custom_prompt_text.delete("1.0", "end")
+                self.custom_prompt_text.insert("1.0", previous_left_input.rstrip() + "\n")
         if hasattr(self, "create_contract_preview"):
             self.create_contract_preview.delete("1.0", "end")
             self.create_contract_preview.insert("1.0", contract)
@@ -18123,10 +18954,10 @@ raise SystemExit(2)
             messagebox.showinfo("Micro Tasks", "Select a micro task first.")
             return
         task_id = str(task.get("id") or "")
-        exportable_tree_tokens = {"{$create_target[wrapper]}", "{$write_export_manifest}"}
+        exportable_tree_tokens = {"{$create_target[wrapper]}", "{$write_handoff_index}"}
         tokens = set(str(item) for item in task.get("timeline_tokens", []) + task.get("tokens", [])) if isinstance(task, dict) else set()
         outputs = " ".join(str(item).lower() for item in task.get("outputs", []))
-        if task_id in {"task_create_target_tree", "project_to_markdown", "task_write_export_manifest"} or exportable_tree_tokens.intersection(tokens) or "project tree" in outputs or "artifact list" in outputs:
+        if task_id in {"task_create_target_tree", "project_to_markdown", "task_write_handoff_index"} or exportable_tree_tokens.intersection(tokens) or "project tree" in outputs or "artifact list" in outputs:
             self._run_micro_task_project_to_markdown()
             return
         export_dir = self._resolve_export_path(self.export_dir.get(), "custom-export")
@@ -18877,7 +19708,7 @@ raise SystemExit(2)
             "export_intelligence": self._create_export_intelligence_value(),
             "detail_level": "full" if self._create_high_export_intelligence_enabled() else "summary",
             "path_policy": self._create_export_path_policy_payload(base or payload.get("git_root") or self._create_working_dir()),
-            "selected_chain_entry": (config or {}).get("selected_create_chain_entry") if isinstance(config, dict) else None,
+            "selected_plan": self._compact_create_plan_manifest_context(config).get("selected_plan", {}),
             "repository": {
                 "available": bool(payload.get("available")),
                 "git_root": payload.get("git_root"),
@@ -19111,11 +19942,9 @@ raise SystemExit(2)
 
     def _patch_denied_file_names(self) -> set[str]:
         return {
-            "EXPORT_MANIFEST.json", "AI_MANAGER.json", "AI-RULES.json", "AI_GENERATION_LOG.json",
-            "PROCESS_LOG.md", "SUMMARY.md", "LIBRARY.log", "PROMPT_MANIFEST.json",
-            "PROMPT_QUALITY_REPORT.md", "PROMPT_EVAL_CHECKLIST.md", "PROJECT_METADATA.json",
-            "USER_PROMPT.txt", "ROLE_OPERATOR_BOILERPLATE_MANIFEST.json", "EXPORT_CONDITIONS.json",
-            "EXPORT_MANIFEST.json", "PROMPT_MANIFEST.json", "CREATE_SOURCE_CLONE_MANIFEST.json",
+            "USER_PROMPT.txt", "AI-RULES.json", "TOKENS.json", "LIBRARY.log",
+            "ROLE_OPERATOR_BOILERPLATE_MANIFEST.json", "EXPORT_CONDITIONS.json",
+            "CREATE_SOURCE_CLONE_MANIFEST.json",
             "CREATE_PREVIEW_TREE.json", "PATCH_REVIEW.json", "PATCH_DELETE_MANIFEST.json", ".patch_delete_manifest.json",
         }
 
@@ -20388,14 +21217,31 @@ raise SystemExit(2)
         shortcut_row = ttk.Frame(prompt_shortcuts)
         shortcut_row.pack(fill="x")
         ttk.Label(shortcut_row, text="Shortcut").pack(side="left")
-        self.prompt_builder_context_box = ttk.Combobox(shortcut_row, textvariable=self.prompt_builder_context_variable, values=["@frontend", "@backend", "@wrapper", "@root"], state="normal", width=34)
+        self.prompt_builder_context_box = ttk.Combobox(
+            shortcut_row,
+            textvariable=self.prompt_builder_context_variable,
+            width=42,
+            height=12,
+            state="normal",
+            postcommand=self._refresh_prompt_builder_context_variable_menu,
+        )
         self.prompt_builder_context_box.pack(side="left", padx=(6, 0))
         self.prompt_builder_context_box.bind("<<ComboboxSelected>>", lambda _event: self._show_prompt_builder_context_preview())
         self.prompt_builder_context_box.bind("<KeyRelease>", lambda _event: self._show_prompt_builder_context_preview())
+        # Some Tk/Windows themes hide or flatten the native ttk.Combobox arrow
+        # when custom dark styles are active. Keep the editable Combobox, but
+        # add a small explicit arrow button that opens the same shortcut values.
+        self.prompt_builder_context_drop_button = ttk.Button(
+            shortcut_row,
+            text="▼",
+            width=3,
+            command=self._open_prompt_builder_context_dropdown,
+        )
+        self.prompt_builder_context_drop_button.pack(side="left", padx=(2, 0))
         ttk.Button(shortcut_row, text="Insert", command=self._insert_prompt_builder_context_variable).pack(side="left", padx=(6, 0))
         ttk.Button(shortcut_row, text="Compile Own Prompt", command=lambda: self._compile_prompt_builder_shortcuts("custom")).pack(side="left", padx=(6, 0))
         ttk.Button(shortcut_row, text="Clear", command=self._clear_custom_prompt).pack(side="left", padx=(6, 0))
-        ttk.Label(shortcut_row, textvariable=self.prompt_builder_context_preview).pack(side="left", padx=(10, 0), fill="x", expand=True)
+        ttk.Label(prompt_shortcuts, textvariable=self.prompt_builder_context_preview, wraplength=1050).pack(anchor="w", pady=(6, 0))
         ttk.Label(prompt_shortcuts, textvariable=self.create_git_reference_status, wraplength=1050).pack(anchor="w", pady=(6, 0))
 
         self.custom_prompt_text = self._pack_text_with_scrollbars(custom_box, wrap="word", height=18)
@@ -21558,6 +22404,54 @@ raise SystemExit(2)
         pane.add(output_text_frame, weight=3)
 
     # ---------- Dynamic Controls ----------
+    def _normalise_boilerplate_profile_key(self, value: object) -> str:
+        return re.sub(r"[^a-z0-9]+", "", str(value or "").lower())
+
+    def _is_runtime_only_boilerplate_profile(self, profile: object) -> bool:
+        if isinstance(profile, dict):
+            if profile.get("selectable") is False or profile.get("runtime_only") is True:
+                return True
+            values = [profile.get("id"), profile.get("label"), profile.get("display_name"), profile.get("name")]
+        else:
+            values = [profile]
+        for value in values:
+            text = str(value or "").strip()
+            if not text:
+                continue
+            if text in RUNTIME_ONLY_BOILERPLATE_PROFILE_IDS:
+                return True
+            if self._normalise_boilerplate_profile_key(text) in RUNTIME_ONLY_BOILERPLATE_PROFILE_ALIASES:
+                return True
+        return False
+
+    def _selectable_boilerplate_profiles(self) -> list[dict]:
+        """Return profiles users may select manually.
+
+        Runtime-only Create/Pipeline/Prompt-engineering profiles remain schema
+        resolvable for generated manifests, but they are not manual target
+        boilerplate choices.
+        """
+        result: list[dict] = []
+        for profile in self.schema.get("boilerplate_profiles", []):
+            if not isinstance(profile, dict) or not profile.get("id"):
+                continue
+            if self._is_runtime_only_boilerplate_profile(profile):
+                continue
+            result.append(profile)
+        return result
+
+    def _selectable_boilerplate_profile_ids(self) -> set[str]:
+        return {str(profile.get("id")) for profile in self._selectable_boilerplate_profiles() if profile.get("id")}
+
+    def _filter_selectable_boilerplate_profile_ids(self, values: object) -> list[str]:
+        selectable = self._selectable_boilerplate_profile_ids()
+        result: list[str] = []
+        for value in values or []:
+            text = str(value or "").strip()
+            if text and text in selectable and text not in result:
+                result.append(text)
+        return result
+
     def _rebuild_dynamic_controls(self) -> None:
         if hasattr(self, "file_type_frame"):
             for widget in self.file_type_frame.winfo_children():
@@ -21579,8 +22473,9 @@ raise SystemExit(2)
                     widget.destroy()
 
         self.file_type_vars = {ft["id"]: tk.BooleanVar(value=False) for ft in self.schema.get("file_types", [])}
-        default_profiles = set(default_profile_ids(self.schema))
-        self.profile_vars = {profile["id"]: tk.BooleanVar(value=profile["id"] in default_profiles) for profile in self.schema.get("boilerplate_profiles", []) if profile.get("id")}
+        selectable_profiles = self._selectable_boilerplate_profiles()
+        default_profiles = set(self._filter_selectable_boilerplate_profile_ids(default_profile_ids(self.schema)))
+        self.profile_vars = {profile["id"]: tk.BooleanVar(value=profile["id"] in default_profiles) for profile in selectable_profiles if profile.get("id")}
         self.reference_vars = {ref["id"]: tk.BooleanVar(value=False) for ref in self.schema.get("reference_domains", []) if ref.get("id")}
         self.operation_role_vars = {role["id"]: tk.BooleanVar(value=False) for role in self.schema.get("operation_roles", []) if role.get("id")}
 
@@ -21590,7 +22485,7 @@ raise SystemExit(2)
                 ttk.Checkbutton(self.file_type_frame, text=label, variable=self.file_type_vars[ft["id"]]).pack(anchor="w")
 
         if hasattr(self, "profile_frame"):
-            for profile in self.schema.get("boilerplate_profiles", []):
+            for profile in selectable_profiles:
                 name = profile.get("id")
                 if name in self.profile_vars:
                     label = f"{name} — {profile.get('purpose', profile.get('label', ''))}"
@@ -21631,7 +22526,11 @@ raise SystemExit(2)
         return selected or default_file_types_for_path_type(self.path_type_var.get(), self.schema)
 
     def _selected_profiles(self) -> list[str]:
-        return [name for name, var in self.profile_vars.items() if var.get()]
+        selected = [name for name, var in self.profile_vars.items() if var.get()]
+        if selected:
+            return selected
+        defaults = self._filter_selectable_boilerplate_profile_ids(default_profile_ids(self.schema))
+        return defaults or self._filter_selectable_boilerplate_profile_ids(["Programming", "Design", "Debugging", "Refactor"])
 
     # ---------- Presets ----------
     def _preset_monorepo(self) -> None:
@@ -21660,20 +22559,20 @@ raise SystemExit(2)
         self._refresh_targets()
 
     def _preset_repository_prompt_pack(self) -> None:
-        profiles = [profile for profile in ["RepositoryManagement", "PromptEngineering", "ContextEngineering", "PromptEvaluation", "PromptSecurity", "ProfessionalSolutionEngineering"] if profile in self.schema.get("supported_boilerplate_profiles", [])]
-        self.targets = [SaveTarget(".", "wrapper", "ChatGPT", profiles or default_profile_ids(self.schema), ["json", "md"])]
+        profiles = self._filter_selectable_boilerplate_profile_ids(["RepositoryManagement", "PromptEngineering", "ContextEngineering", "PromptEvaluation", "PromptSecurity", "ProfessionalSolutionEngineering"])
+        self.targets = [SaveTarget(".", "wrapper", "ChatGPT", profiles or self._selected_profiles(), ["json", "md"])]
         self._select_prompt_engineering_references()
         self._refresh_targets()
 
     def _preset_documentation_pack(self) -> None:
-        profiles = [profile for profile in ["RepositoryManagement", "Create", "ProfessionalSolutionEngineering"] if profile in self.schema.get("supported_boilerplate_profiles", [])]
-        self.targets = [SaveTarget(".", "wrapper", "ChatGPT", profiles or default_profile_ids(self.schema), ["md", "json"])]
+        profiles = self._filter_selectable_boilerplate_profile_ids(["RepositoryManagement", "Create", "ProfessionalSolutionEngineering"])
+        self.targets = [SaveTarget(".", "wrapper", "ChatGPT", profiles or self._selected_profiles(), ["md", "json"])]
         self._select_documentation_references()
         self._refresh_targets()
 
     def _preset_create_pipeline_wrapper(self) -> None:
-        profiles = [profile for profile in ["RepositoryManagement", "PromptEngineering", "ContextEngineering", "PromptEvaluation", "PromptSecurity", "Create", "ProfessionalSolutionEngineering", "CreatePipeline", "ProjectTreePreview", "BoilerplateDependencyCRUD", "TimelineCheckboxControl"] if profile in self.schema.get("supported_boilerplate_profiles", [])]
-        self.targets = [SaveTarget(".", "wrapper", "ChatGPT", profiles or default_profile_ids(self.schema), ["json", "md"])]
+        profiles = self._filter_selectable_boilerplate_profile_ids(["RepositoryManagement", "PromptEngineering", "ContextEngineering", "PromptEvaluation", "PromptSecurity", "Create", "ProfessionalSolutionEngineering", "CreatePipeline", "ProjectTreePreview", "BoilerplateDependencyCRUD", "TimelineCheckboxControl"])
+        self.targets = [SaveTarget(".", "wrapper", "ChatGPT", profiles or self._selected_profiles(), ["json", "md"])]
         self._select_create_stack_references()
         self._refresh_targets()
 
@@ -22676,7 +23575,7 @@ raise SystemExit(2)
         """Return Generator targets that are real generation/export inputs.
 
         Library/default targets remain visible in the Generator tab but inactive;
-        they must not leak into prompt metadata, AI_MANAGER, compact export or ZIP
+        they must not leak into prompt metadata, AI_RULES, compact export or ZIP
         output until Create or Project Root evidence links a concrete project
         target.
         """
@@ -22832,8 +23731,8 @@ raise SystemExit(2)
             summary.append(f"Custom prompt chars: {custom_len}")
         summary.extend([
             "Generator routing point of truth: Generator targets + Create config + schema matching. Editor selections above are ignored by generation/export.",
-            "Always-written docs: PROCESS_LOG.md, SUMMARY.md, LIBRARY.log",
-            "Prompt engineering docs: PROMPT_MANIFEST.json, PROMPT_QUALITY_REPORT.md, PROMPT_EVAL_CHECKLIST.md",
+            "Always-written docs: TOKENS.json and LIBRARY.log",
+            "Prompt engineering docs: USER_PROMPT.txt and TOKENS.json",
             "",
             "Preview is read-only and human-readable. Edit JSON only loads plugin/user overlay entries, never default schema entries.",
             "",
@@ -24915,7 +25814,7 @@ raise SystemExit(2)
             # cache. Passing include_imports=False prevents generate_files from
             # doing a hidden export-time import scan.
             "include_imports": False,
-            "custom_prompt_text": "",
+            "custom_prompt_text": custom_prompt,
             "include_dependency_manifests": self.include_dependency_manifests.get(),
             "changed_files_only": self.changed_files_only.get(),
             "compact_export": self.compact_export.get(),
@@ -24931,7 +25830,7 @@ raise SystemExit(2)
                 "human_prompt_locale_source": "schema/human_prompt_locale.json",
                 "ai_research_schemas_boilerplates": bool(self.ai_research_schemas_boilerplates.get()),
                 "library_editor_input_policy": "ignored_for_generation; targets/create_config/schema_matching_are_point_of_truth",
-                "tasks_sidecar": {"file": "TASKS.TXT", "enabled": bool(custom_prompt.strip())},
+                "tasks_sidecar": {"file": "TASKS.TXT", "enabled": True, "source": "export_mode_routine_stack_plus_optional_left_prompt"},
                 "text_sidecar_policy": "USER_PROMPT.txt and TASKS.TXT stay outside ZIP exports; USER_PROMPT.json/TASK.json aliases are disabled.",
             },
         }
@@ -24941,7 +25840,7 @@ raise SystemExit(2)
 
         def success(messages: list[str]) -> None:
             try:
-                sidecar_dir = export_target_dir if bool(self.export_as_zip.get()) else self._worktree_export_base()
+                sidecar_dir = export_target_dir
                 self._write_tasks_sidecar_and_patch_manifest(sidecar_dir, self._create_tasks_sidecar_payload(custom_prompt))
                 messages.append(f"TASKS.TXT sidecar checked: {sidecar_dir}")
             except Exception as exc:

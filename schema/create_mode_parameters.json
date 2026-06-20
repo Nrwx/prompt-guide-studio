@@ -28,8 +28,8 @@
           "create_mode_parameters",
           "create_parameter_boilerplates",
           "create_parameter_context",
-          "PROMPT_MANIFEST.json",
-          "PROMPT_MANIFEST.json"
+          "USER_PROMPT.txt",
+          "USER_PROMPT.txt"
         ],
         "validation": [
           "value stays inside declared range",
@@ -80,8 +80,8 @@
           "create_mode_parameters",
           "create_parameter_boilerplates",
           "create_parameter_context",
-          "PROMPT_MANIFEST.json",
-          "PROMPT_MANIFEST.json"
+          "USER_PROMPT.txt",
+          "USER_PROMPT.txt"
         ],
         "validation": [
           "value stays inside declared range",
@@ -132,8 +132,8 @@
           "create_mode_parameters",
           "create_parameter_boilerplates",
           "create_parameter_context",
-          "PROMPT_MANIFEST.json",
-          "PROMPT_MANIFEST.json"
+          "USER_PROMPT.txt",
+          "USER_PROMPT.txt"
         ],
         "validation": [
           "value stays inside declared range",
@@ -184,8 +184,8 @@
           "create_mode_parameters",
           "create_parameter_boilerplates",
           "create_parameter_context",
-          "PROMPT_MANIFEST.json",
-          "PROMPT_MANIFEST.json"
+          "USER_PROMPT.txt",
+          "USER_PROMPT.txt"
         ],
         "validation": [
           "value stays inside declared range",
@@ -236,8 +236,8 @@
           "create_mode_parameters",
           "create_parameter_boilerplates",
           "create_parameter_context",
-          "PROMPT_MANIFEST.json",
-          "PROMPT_MANIFEST.json"
+          "USER_PROMPT.txt",
+          "USER_PROMPT.txt"
         ],
         "validation": [
           "value stays inside declared range",
@@ -288,8 +288,8 @@
           "create_mode_parameters",
           "create_parameter_boilerplates",
           "create_parameter_context",
-          "PROMPT_MANIFEST.json",
-          "PROMPT_MANIFEST.json"
+          "USER_PROMPT.txt",
+          "USER_PROMPT.txt"
         ],
         "validation": [
           "value stays inside declared range",
@@ -354,8 +354,8 @@
           "create_mode_parameters",
           "create_parameter_boilerplates",
           "create_parameter_context",
-          "PROMPT_MANIFEST.json",
-          "PROMPT_MANIFEST.json"
+          "USER_PROMPT.txt",
+          "USER_PROMPT.txt"
         ],
         "validation": [
           "value stays inside declared range",
@@ -413,8 +413,8 @@
           "create_mode_parameters",
           "create_parameter_boilerplates",
           "create_parameter_context",
-          "PROMPT_MANIFEST.json",
-          "PROMPT_MANIFEST.json"
+          "USER_PROMPT.txt",
+          "USER_PROMPT.txt"
         ],
         "validation": [
           "value stays inside declared range",
@@ -472,8 +472,8 @@
           "create_mode_parameters",
           "create_parameter_boilerplates",
           "create_parameter_context",
-          "PROMPT_MANIFEST.json",
-          "PROMPT_MANIFEST.json"
+          "USER_PROMPT.txt",
+          "USER_PROMPT.txt"
         ],
         "validation": [
           "value stays inside declared range",
@@ -531,8 +531,8 @@
           "create_mode_parameters",
           "create_parameter_boilerplates",
           "create_parameter_context",
-          "PROMPT_MANIFEST.json",
-          "PROMPT_MANIFEST.json"
+          "USER_PROMPT.txt",
+          "USER_PROMPT.txt"
         ],
         "validation": [
           "value stays inside declared range",
@@ -590,8 +590,8 @@
           "create_mode_parameters",
           "create_parameter_boilerplates",
           "create_parameter_context",
-          "PROMPT_MANIFEST.json",
-          "PROMPT_MANIFEST.json"
+          "USER_PROMPT.txt",
+          "USER_PROMPT.txt"
         ],
         "validation": [
           "value stays inside declared range",
@@ -649,8 +649,8 @@
           "create_mode_parameters",
           "create_parameter_boilerplates",
           "create_parameter_context",
-          "PROMPT_MANIFEST.json",
-          "PROMPT_MANIFEST.json"
+          "USER_PROMPT.txt",
+          "USER_PROMPT.txt"
         ],
         "validation": [
           "value stays inside declared range",
@@ -692,7 +692,10 @@
       "rules": [
         "Enabled only through Feature/Refactor parameter resolution.",
         "Carries schema and prompt weighting; it is not a standalone stack boilerplate."
-      ]
+      ],
+      "selectable": false,
+      "runtime_only": true,
+      "ui_hidden_reason": "runtime/pipeline process; resolved internally, not a manual Boilerplate selection"
     },
     {
       "id": "CreateParameterArchitecture",
@@ -716,7 +719,10 @@
       "rules": [
         "Enabled only through Feature/Refactor parameter resolution.",
         "Carries schema and prompt weighting; it is not a standalone stack boilerplate."
-      ]
+      ],
+      "selectable": false,
+      "runtime_only": true,
+      "ui_hidden_reason": "runtime/pipeline process; resolved internally, not a manual Boilerplate selection"
     },
     {
       "id": "CreateParameterDocumentation",
@@ -740,7 +746,10 @@
       "rules": [
         "Enabled only through Feature/Refactor parameter resolution.",
         "Carries schema and prompt weighting; it is not a standalone stack boilerplate."
-      ]
+      ],
+      "selectable": false,
+      "runtime_only": true,
+      "ui_hidden_reason": "runtime/pipeline process; resolved internally, not a manual Boilerplate selection"
     },
     {
       "id": "CreateParameterUsability",
@@ -764,7 +773,10 @@
       "rules": [
         "Enabled only through Feature/Refactor parameter resolution.",
         "Carries schema and prompt weighting; it is not a standalone stack boilerplate."
-      ]
+      ],
+      "selectable": false,
+      "runtime_only": true,
+      "ui_hidden_reason": "runtime/pipeline process; resolved internally, not a manual Boilerplate selection"
     },
     {
       "id": "CreateParameterSecurity",
@@ -788,7 +800,10 @@
       "rules": [
         "Enabled only through Feature/Refactor parameter resolution.",
         "Carries schema and prompt weighting; it is not a standalone stack boilerplate."
-      ]
+      ],
+      "selectable": false,
+      "runtime_only": true,
+      "ui_hidden_reason": "runtime/pipeline process; resolved internally, not a manual Boilerplate selection"
     },
     {
       "id": "CreateParameterWeight",
@@ -812,7 +827,10 @@
       "rules": [
         "Enabled only through Feature/Refactor parameter resolution.",
         "Carries schema and prompt weighting; it is not a standalone stack boilerplate."
-      ]
+      ],
+      "selectable": false,
+      "runtime_only": true,
+      "ui_hidden_reason": "runtime/pipeline process; resolved internally, not a manual Boilerplate selection"
     }
   ],
   "reference_domains": [
@@ -1562,7 +1580,7 @@
       "rules": [
         "Resolve parameter schemas before Create context is sorted.",
         "Use Weight as context budget, not as confidence.",
-        "Include parameter boilerplates and active context drivers in export manifests."
+        "Include parameter boilerplates and active context drivers in compact handoff files."
       ]
     }
   ],

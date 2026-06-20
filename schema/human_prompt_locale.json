@@ -5,7 +5,7 @@
       "purpose": "Opening paragraph for the human-facing Create export prompt.",
       "translations": {
         "GERMAN": "Du erhältst einen menschlich kompilierten Create-Prompt. Verarbeite ihn wie einen klaren Arbeitsauftrag: zuerst Kontext und Operator-Flow verstehen, dann den ausgewählten Plan anwenden, anschließend Validierung, Rollback und bekannte Lücken dokumentieren. Die JSON-Manifeste bleiben als Nachweis im Export, aber dieser Text ist die lesbare Handlungsanweisung.",
-        "ENGLISH": "You receive a human-compiled Create prompt. Treat it as a clear work order: understand context and operator flow first, apply the selected plan, then document validation, rollback and known gaps. JSON manifests stay in the export as evidence, but this text is the readable instruction layer."
+        "ENGLISH": "You receive a human-compiled Create prompt. Treat it as a clear work order: understand context and operator flow first, apply the selected plan, then document validation, rollback and known gaps. compact JSON handoffs stay in the export as evidence, but this text is the readable instruction layer."
       }
     },
     {
@@ -69,7 +69,7 @@
       "purpose": "Opening for final USER_PROMPT.txt export surface.",
       "translations": {
         "GERMAN": "Dieser Prompt ist die finale, menschlich kompilierte Übergabe aus allen relevanten Tabs. Er erklärt Aufgabe, Operator-Flow, Export-Intelligenz, rekursive Projektverarbeitung und Validierungsvertrag; technische Listen, IDs und Rohkonfigurationen bleiben in den mitgelieferten Manifestdateien.",
-        "ENGLISH": "This prompt is the final human-compiled handoff from all relevant tabs. It explains task, operator flow, export intelligence, recursive project processing, and validation contract; technical lists, IDs, and raw configuration remain in the accompanying manifest files."
+        "ENGLISH": "This prompt is the final human-compiled handoff from all relevant tabs. It explains task, operator flow, export intelligence, recursive project processing, and validation contract; technical lists, IDs, and raw configuration remain in the accompanying handoff files."
       }
     },
     {
@@ -173,7 +173,7 @@
       "purpose": "Medium intelligence detailed wording.",
       "translations": {
         "GERMAN": "Mittlere Intelligenz bedeutet: Der Prompt enthält den ausgewählten Plan, alle relevanten deklarierten Nachbarpläne, eine echte Rollen-/Referenz-Einleitung, die vorhandenen Manifestdateien mit Zweckbeschreibung, Parameterpriorität und einen klaren Validierungsvertrag. Er bleibt lesbar, aber verliert keine belegte Ausführungslogik.",
-        "ENGLISH": "Medium intelligence means: the prompt includes the selected plan, all relevant declared neighboring plans, a real role/reference introduction, the actual manifest files with purpose descriptions, parameter priority, and a clear validation contract. It stays readable without losing evidenced execution logic."
+        "ENGLISH": "Medium intelligence means: the prompt includes the selected plan, all relevant declared neighboring plans, a real role/reference introduction, the actual handoff files with purpose descriptions, parameter priority, and a clear validation contract. It stays readable without losing evidenced execution logic."
       }
     },
     {
@@ -188,7 +188,7 @@
       "id": "manifest_guided_intro",
       "translations": {
         "GERMAN": "Nutze die mitgelieferten Manifestdateien als maschinenlesbare Nachweisschicht. Dieser Prompt erklärt menschlich, wie sie zu verwenden sind: Die Details werden nicht gelöscht, sondern aus den tatsächlich deklarierten Manifesten und Schemas in lesbare Ausführungsregeln übersetzt.",
-        "ENGLISH": "Use the accompanying manifest files as the machine-readable evidence layer. This prompt explains in human language how to use them: details are not removed, but translated from the actually declared manifests and schemas into readable execution rules."
+        "ENGLISH": "Use the accompanying handoff files as the machine-readable evidence layer. This prompt explains in human language how to use them: details are not removed, but translated from the actually written handoff and schema resources into readable execution rules."
       },
       "purpose": "Manifest-guided prompt intro."
     },
@@ -203,14 +203,14 @@
       "id": "manifest_operator_reference_intro",
       "translations": {
         "GERMAN": "Die Operator-, Rollen-, Referenz-, Hook- und Weight-Details werden nicht als Rohkonfiguration in USER_PROMPT.txt eingebettet. Lies sie bei Bedarf aus den Prompt-, Rollen- und Exportmanifesten und setze sie als Ausführungsgrenze um.",
-        "ENGLISH": "Operator, role, reference, hook, and weight details are not embedded as raw configuration in USER_PROMPT.txt. Read them from the prompt, role, and export manifests when needed and apply them as execution boundaries."
+        "ENGLISH": "Operator, role, reference, hook, and weight details are not embedded as raw configuration in USER_PROMPT.txt. Read them from the USER_PROMPT, role schema, and compact handoff files when needed and apply them as execution boundaries."
       }
     },
     {
       "id": "operator_flow_manifest_contract",
       "translations": {
-        "GERMAN": "Der Operator-Flow ist verbindlich: USER_PROMPT.txt erklärt ihn menschlich, PROMPT_MANIFEST.json und ROLE_OPERATOR_BOILERPLATE_MANIFEST.json enthalten die exakten maschinenlesbaren Details.",
-        "ENGLISH": "The operator flow is binding: USER_PROMPT.txt explains it in human language, while PROMPT_MANIFEST.json and ROLE_OPERATOR_BOILERPLATE_MANIFEST.json contain the exact machine-readable details."
+        "GERMAN": "Der Operator-Flow ist verbindlich: USER_PROMPT.txt erklärt ihn menschlich; TOKENS.json enthält die konkreten @token-Werte; ROLE_OPERATOR_BOILERPLATE_MANIFEST.json enthält kompakte Ausführungsdetails.",
+        "ENGLISH": "The operator flow is binding: USER_PROMPT.txt explains it in human language; TOKENS.json carries concrete @token values; ROLE_OPERATOR_BOILERPLATE_MANIFEST.json carries compact execution details."
       }
     },
     {
@@ -223,23 +223,23 @@
     {
       "id": "remember_execution_contract",
       "translations": {
-        "GERMAN": "Lies zuerst die menschliche Aufgabe. Prüfe danach rekursiv die in den Manifesten zugelassenen Projektdateien und verwende die Manifeste als technische Wahrheit für Scope, Rollen, Referenzen, Hooks, Gewichte, Validierung und Exportartefakte. Wenn der Operator-Flow eine Bestätigung verlangt, darf keine Implementierung beginnen, bevor Rollen, Zielgrenze und kleinster Änderungsschnitt bestätigt sind. Wenn Sofortstart erlaubt ist, beginne trotzdem nur innerhalb des manifestierten Scopes und dokumentiere die verwendeten Rollen. Wenn sequenzielle Rollen aktiv sind, arbeite Rolle für Rolle und halte pro Schritt Evidenz, Entscheidung und Ergebnis fest. Erfinde keine Dateien, Commands, Frameworks oder Standards; schwache Evidenz ist ein Known Gap. USER_PROMPT.txt bleibt menschlich, die vollständigen technischen Details bleiben in den Manifesten.",
-        "ENGLISH": "Read the human task first. Then recursively inspect the project files allowed by the manifests and use the manifests as the technical truth for scope, roles, references, hooks, weights, validation, and export artifacts. If the operator flow requires confirmation, no implementation may start until roles, target boundary, and smallest change slice are confirmed. If immediate start is allowed, still work only inside the manifested scope and document the roles used. If sequential roles are active, work role by role and record evidence, decision, and result for each step. Do not invent files, commands, frameworks, or standards; weak evidence is a known gap. USER_PROMPT.txt stays human-readable, while full technical details remain in the manifests."
+        "GERMAN": "Lies zuerst die menschliche Aufgabe und löse danach alle @tokens über TOKENS.json auf. Prüfe rekursiv die zugelassenen Projektdateien und verwende TOKENS.json plus Rollen-/Schema-Handoff als technische Wahrheit für Scope, Rollen, Referenzen, Hooks, Gewichte, Validierung und Exportartefakte. Wenn der Operator-Flow eine Bestätigung verlangt, darf keine Implementierung beginnen, bevor Rollen, Zielgrenze und kleinster Änderungsschnitt bestätigt sind. Wenn Sofortstart erlaubt ist, beginne trotzdem nur innerhalb des manifestierten Scopes und dokumentiere die verwendeten Rollen. Wenn sequenzielle Rollen aktiv sind, arbeite Rolle für Rolle und halte pro Schritt Evidenz, Entscheidung und Ergebnis fest. Erfinde keine Dateien, Commands, Frameworks oder Standards; schwache Evidenz ist ein Known Gap. USER_PROMPT.txt bleibt menschlich, konkrete Werte bleiben in TOKENS.json.",
+        "ENGLISH": "Read the human task first and then resolve every @token through TOKENS.json. Recursively inspect the allowed project files and use TOKENS.json plus the role/schema handoff as the technical truth for scope, roles, references, hooks, weights, validation, and export artifacts. If the operator flow requires confirmation, no implementation may start until roles, target boundary, and smallest change slice are confirmed. If immediate start is allowed, still work only inside the manifested scope and document the roles used. If sequential roles are active, work role by role and record evidence, decision, and result for each step. Do not invent files, commands, frameworks, or standards; weak evidence is a known gap. USER_PROMPT.txt stays human-readable, concrete values stay in TOKENS.json."
       }
     },
     {
       "id": "all_plan_catalog_intro",
       "translations": {
         "GERMAN": "Die folgenden Pläne sind menschliche Referenzen zu den verfügbaren Feature- und Refactor-Möglichkeiten. Je nach Export-Intelligenz werden nur der ausgewählte Plan oder zusätzlich passende Nachbarpläne erklärt; die vollständige maschinenlesbare Liste bleibt im Prompt-Manifest.",
-        "ENGLISH": "The following plans are human references for available feature and refactor options. Depending on export intelligence, only the selected plan or additional neighboring plans are explained; the full machine-readable list remains in the prompt manifest."
+        "ENGLISH": "The following plans are human references for available feature and refactor options. Depending on export intelligence, only the selected plan or additional neighboring plans are explained; the full machine-readable list remains in the TOKENS.json and role handoff."
       }
     },
     {
       "id": "declared_manifest_files_intro",
       "purpose": "Intro for manifest file descriptions that must not invent undeclared sidecars.",
       "translations": {
-        "GERMAN": "Die folgenden Dateien sind im aktuellen Exportmodus deklariert und dürfen im USER_PROMPT als Referenzschicht erwähnt werden. Nenne keine weiteren Manifeste oder Module, wenn sie nicht in EXPORT_MANIFEST.json beziehungsweise im tatsächlichen Export vorhanden sind.",
-        "ENGLISH": "The following files are declared by the current export mode and may be mentioned in USER_PROMPT as the reference layer. Do not name additional manifests or modules unless they are present in EXPORT_MANIFEST.json or in the actual export."
+        "GERMAN": "Die folgenden Dateien sind im aktuellen Exportmodus deklariert und dürfen im USER_PROMPT als Referenzschicht erwähnt werden. Nenne keine weiteren Manifeste oder Module, wenn sie nicht in USER_PROMPT.txt beziehungsweise im tatsächlichen Export vorhanden sind.",
+        "ENGLISH": "The following files are declared by the current export mode and may be mentioned in USER_PROMPT as the reference layer. Do not name additional manifests or modules unless they are present in USER_PROMPT.txt or in the actual export."
       }
     },
     {

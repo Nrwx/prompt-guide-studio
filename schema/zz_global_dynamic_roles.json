@@ -14,7 +14,10 @@
         "new vue project",
         "vue setup",
         "initialize vue"
-      ]
+      ],
+      "selectable": false,
+      "runtime_only": true,
+      "ui_hidden_reason": "runtime/pipeline process; resolved internally, not a manual Boilerplate selection"
     },
     {
       "id": "ImportAwareExport",
@@ -27,19 +30,25 @@
         "backend",
         "assets",
         "generated"
-      ]
+      ],
+      "selectable": false,
+      "runtime_only": true,
+      "ui_hidden_reason": "runtime/pipeline process; resolved internally, not a manual Boilerplate selection"
     },
     {
       "id": "DependencyManifestExport",
       "label": "Dependency Manifest Export",
-      "description": "Copies dependency manifest files into ZIP only when explicitly enabled; dependency lists are not embedded in AI-RULES.",
+      "description": "Copies dependency handoff files into ZIP only when explicitly enabled; dependency lists are not embedded in AI-RULES.",
       "default_enabled": false,
       "applies_to_path_types": [
         "wrapper",
         "frontend",
         "backend",
         "generated"
-      ]
+      ],
+      "selectable": false,
+      "runtime_only": true,
+      "ui_hidden_reason": "runtime/pipeline process; resolved internally, not a manual Boilerplate selection"
     }
   ],
   "reference_domains": [
@@ -290,7 +299,7 @@
       "rules": [
         "Expand selected files with resolved local imports before generating AI-RULES/prompt scope.",
         "Keep external packages as dependency evidence only, never as files to copy.",
-        "Document import-expanded paths in PROJECT_METADATA.scope_expansion."
+        "Document import-expanded paths in LIBRARY.scope_expansion."
       ]
     },
     {
@@ -344,7 +353,7 @@
         "scss"
       ],
       "rules": [
-        "Keep prompt engineering behavior consistent across GUI, CLI, schema, generated AI-RULES, prompts, manifest and eval checklist.",
+        "Keep prompt engineering behavior consistent across GUI, CLI, schema, generated AI-RULES, prompts, manifest and validation checklist.",
         "Dynamic evidence routing beats project-specific prompt blocks.",
         "Every custom prompt wrapper must preserve user intent while adding scope, roles, weights and validation boundaries."
       ]
@@ -409,7 +418,7 @@
       ],
       "rules": [
         "Project root and generated/export output folder are separate paths.",
-        "Generated files, prompt files, schema copies, logs, summaries, ZIPs and export manifests must prefer output/export.",
+        "Generated files, prompt files, schema copies, logs, summaries, ZIPs and compact handoff files must prefer output/export.",
         "ZIP export clears only stale clone/ZIP/manifest/prompt sidecars inside output/export, never the project root and never the whole generated output folder."
       ]
     },

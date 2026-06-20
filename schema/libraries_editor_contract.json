@@ -28,7 +28,7 @@
       "validation_focus": [
         "No call from Generator/Prompt/Worktree Export to _selected_reference_ids or _selected_operation_role_ids.",
         "Libraries Editor can still preview/edit selected records without mutating target routing.",
-        "PROCESS_LOG and metadata distinguish generator-pinned IDs from editor preview state."
+        "TOKENS and metadata distinguish generator-pinned IDs from editor preview state."
       ]
     }
   ],

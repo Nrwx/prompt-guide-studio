@@ -274,6 +274,43 @@
         "rollback_note",
         "known_gaps"
       ]
+    },
+    {
+      "id": "feature_boilerplate_dependency_crud_module",
+      "label": "Boilerplate Dependency CRUD Feature Module",
+      "stack_node_id": "generic",
+      "modes": [
+        "feature_for_existing_project"
+      ],
+      "boilerplate_profiles": [
+        "BoilerplateDependencyCRUD"
+      ],
+      "context_alignment": [
+        "Treat CRUD as the only user-selectable task from the former runtime/UI boilerplate group.",
+        "CRUD edits are bounded dependency-abstraction rows for the active target, not PromptEngineering or UI runtime work.",
+        "PromptEngineering context wraps the resulting TASK phases through the Human API mantle."
+      ],
+      "steps": [
+        "Resolve the active target and selected CRUD row intent.",
+        "Create, update, delete or review only the requested dependency-abstraction rows.",
+        "Record validation, rollback and manifest delta."
+      ],
+      "acceptance_criteria": [
+        "Only CRUD dependency-abstraction rows are changed.",
+        "No hidden PromptEngineering/UI runtime boilerplate becomes a task.",
+        "TASKS.TXT declares the CRUD work as an active checkbox-backed phase when selected."
+      ],
+      "match_rules": [
+        "BoilerplateDependencyCRUD",
+        "dependency CRUD",
+        "boilerplate dependency CRUD"
+      ],
+      "output_contract": [
+        "crud_delta",
+        "affected_target",
+        "validation_or_manual_gap",
+        "rollback_note"
+      ]
     }
   ],
   "refactor_modules": [
@@ -318,7 +355,7 @@
       "steps": [
         "Check scan cache/signature.",
         "Harden missing repo and timeout states.",
-        "Keep Prompt Builder and export manifests synchronized."
+        "Keep Prompt Builder and compact handoff files synchronized."
       ],
       "acceptance_criteria": [
         "No duplicate Git utility.",
@@ -418,6 +455,43 @@
         "manual_save_point",
         "rollback_note",
         "known_gaps"
+      ]
+    },
+    {
+      "id": "refactor_boilerplate_dependency_crud_module",
+      "label": "Boilerplate Dependency CRUD Refactor Module",
+      "stack_node_id": "generic",
+      "modes": [
+        "refactor_existing_stack"
+      ],
+      "boilerplate_profiles": [
+        "BoilerplateDependencyCRUD"
+      ],
+      "context_alignment": [
+        "Treat CRUD as a behavior-preserving dependency-abstraction cleanup task.",
+        "Do not convert UI/runtime PromptEngineering components into refactor tasks.",
+        "Keep Human API engineering context as wrapper-only guidance."
+      ],
+      "steps": [
+        "Resolve existing CRUD rows and target boundaries.",
+        "Normalize, rename, remove or consolidate only explicit CRUD rows.",
+        "Document compatibility, validation and rollback."
+      ],
+      "acceptance_criteria": [
+        "CRUD rows remain target-scoped and manifest-traceable.",
+        "No broad schema/catalog refactor is hidden inside the CRUD task.",
+        "PromptEngineering wrapper remains a mantle, not a phase."
+      ],
+      "match_rules": [
+        "BoilerplateDependencyCRUD",
+        "dependency CRUD refactor",
+        "boilerplate dependency cleanup"
+      ],
+      "output_contract": [
+        "refactor_delta",
+        "affected_target",
+        "validation_or_manual_gap",
+        "rollback_note"
       ]
     }
   ],
